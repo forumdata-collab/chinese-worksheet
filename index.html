@@ -15,6 +15,8 @@
   --red: #C0392B;
   --red-light: #E8D5D0;
   --red-grid: #CCAAAA;  /* softer guide line color */
+  --guide-line: #C9A0A0; /* print-safe guide line color (SVG strokes print fine) */
+  --guide-tint: #F2B8AE; /* tracing guide character tint (copybook red-ish, prints visibly) */
   --blue: #2C6FAC;
   --blue-light: #E8F0F8;
   --green: #3A7D44;
@@ -262,28 +264,9 @@ body {
   justify-content: center;
   color: var(--ink);
 }
-/* 米字格 background */
-.char-cell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(var(--red-light) 1px, transparent 1px),
-    linear-gradient(90deg, var(--red-light) 1px, transparent 1px);
-  background-size: 50% 50%;
-  opacity: 0.6;
-  pointer-events: none;
-}
-.char-cell::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%),
-    linear-gradient(-45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%);
-  opacity: 0.5;
-  pointer-events: none;
-}
+/* guide lines for the demo/model cell are drawn by the inline .cell-guides SVG
+   (see 導線樣式 below) — background-gradient pseudo-elements were removed because
+   browsers don't print CSS backgrounds. */
 .char-details {
   flex: 1;
   min-width: 0;
@@ -356,28 +339,9 @@ body {
   background: white;
   flex-shrink: 0;
 }
-/* 十字虛線 + 導線樣式 (guides via background gradient) */
-.practice-cell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(var(--red-light) 1px, transparent 1px),
-    linear-gradient(90deg, var(--red-light) 1px, transparent 1px);
-  background-size: 50% 50%;
-  opacity: 0.55;
-  pointer-events: none;
-}
-.practice-cell::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%),
-    linear-gradient(-45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%);
-  opacity: 0.45;
-  pointer-events: none;
-}
+/* 十字虛線 + 導線樣式 — REPLACED by inline SVG (.cell-guides). The old ::before/::after
+   used CSS background gradients, which browsers don't print → grid lines vanished in PDF.
+   SVG strokes are real DOM ink and always print. */
 .practice-cell.last { border-right: 2px solid var(--red-grid); }
 /* Guide mode: show faint char */
 .practice-cell .guide-char {
@@ -388,7 +352,7 @@ body {
   justify-content: center;
   font-size: var(--cell-guide-font, 58px);
   line-height: 1;
-  color: #F0E0D0;
+  color: var(--guide-tint);
   pointer-events: none;
   user-select: none;
 }
@@ -617,9 +581,13 @@ body {
     background: white;
     /* print sizing overrides screen px vars (JS sets --print-* from optPrintSize) */
     --cell-practice: var(--print-cell-practice, 2.2cm) !important;
-    --cell-font: var(--print-cell-font, calc(2.2cm * 0.65)) !important;
-    --cell-guide-font: var(--print-cell-guide-font, calc(2.2cm * 0.65)) !important;
+    --cell-font: var(--print-cell-font, calc(2.2cm * 0.78)) !important;
+    --cell-guide-font: var(--print-cell-guide-font, calc(2.2cm * 0.78)) !important;
+    --guide-line: #B98A8A !important; /* slightly darker so grid prints clearly */
+    --guide-tint: #E8A79C !important; /* tracing char prints as light red copybook */
+    --red-grid: #B08080 !important;
   }
+  .cell-guides line { stroke-width: 1.5; }
   .char-card { page-break-inside: avoid; }
   .char-info { margin-bottom: 12px; }
   .ws-header { margin-bottom: 16px; padding-bottom: 12px; }
@@ -653,6 +621,8 @@ body {
   display: inline-block;
   transform-origin: center;
   will-change: transform;
+  position: relative;
+  z-index: 3; /* above the SVG guide lines (z-index 1) */
 }
 
 /* ===== 選項分組 (grouped options) ===== */
@@ -715,50 +685,43 @@ details.advance-collapse summary:hover { color: var(--red); }
   border-top: 2px dashed var(--red-light);
 }
 
-/* ===== 導線樣式 (guide styles) ===== */
-/* 田字格 (四宮格): cross only, hide diagonals */
-.guide-tian .char-cell::after, .guide-tian .practice-cell::after { display: none; }
-/* 米字格: cross + diagonals — default, already in base CSS */
+/* ===== 導線樣式 (guide styles) =====
+   Lines are drawn as inline <svg> inside each cell (real DOM content), NOT CSS
+   background gradients — browsers don't print backgrounds by default, which made
+   every grid line vanish in print/PDF. SVG prints reliably. */
 
-/* Shared 3×3 grid lines (九宮格/井字格 both use a # shape) */
-.guide-grid3 .char-cell::before,
-.guide-grid3 .practice-cell::before {
-  background:
-    linear-gradient(transparent calc(50% - 0.5px), var(--red-light) calc(50% - 0.5px), var(--red-light) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--red-light) calc(50% - 0.5px), var(--red-light) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px)),
-    linear-gradient(90deg, transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(90deg, transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px));
-  background-size: 100% 100%;
-  opacity: 0.5;
+/* Default: hide all guide lines; each style reveals its own set */
+.cell-guides { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; display: block; }
+.cell-guides line {
+  stroke: var(--guide-line);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  display: none;
 }
-.guide-grid3 .char-cell::after,
-.guide-grid3 .practice-cell::after { display: none; }  /* no diagonals */
 
-/* 九宮格: 3×3 with center-cell border emphasized (中宮) */
-.guide-jiugong .char-cell::before,
-.guide-jiugong .practice-cell::before {
-  background:
-    linear-gradient(transparent calc(50% - 0.5px), var(--red-grid) calc(50% - 0.5px), var(--red-grid) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--red-grid) calc(50% - 0.5px), var(--red-grid) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px)),
-    linear-gradient(90deg, transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(90deg, transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px));
-  background-size: 100% 100%;
-  opacity: 0.55;
-}
-.guide-jiugong .char-cell::after,
-.guide-jiugong .practice-cell::after { display: none; }
+/* 米字格 (default): cross + diagonals */
+.guide-mizi .cell-guides .g-h, .guide-mizi .cell-guides .g-v,
+.guide-mizi .cell-guides .g-d1, .guide-mizi .cell-guides .g-d2 { display: block; }
 
-/* 虛線格: lighter, more transparent */
-.guide-dashed .char-cell::before, .guide-dashed .char-cell::after { opacity: 0.3 !important; }
-.guide-dashed .practice-cell::before, .guide-dashed .practice-cell::after { opacity: 0.25 !important; }
+/* 田字格: cross only */
+.guide-tian .cell-guides .g-h, .guide-tian .cell-guides .g-v { display: block; }
 
-/* 空白格: no guides */
-.guide-blank .char-cell::before, .guide-blank .char-cell::after,
-.guide-blank .practice-cell::before, .guide-blank .practice-cell::after { display: none; }
+/* 九宮格: 3×3 (兩橫兩直 @33%/66%) — 中宮自然強調 */
+.guide-jiugong .cell-guides .g-h3a, .guide-jiugong .cell-guides .g-h3b,
+.guide-jiugong .cell-guides .g-v3a, .guide-jiugong .cell-guides .g-v3b { display: block; }
+
+/* 井字格: 3×3 井字 */
+.guide-grid3 .cell-guides .g-h3a, .guide-grid3 .cell-guides .g-h3b,
+.guide-grid3 .cell-guides .g-v3a, .guide-grid3 .cell-guides .g-v3b { display: block; }
+
+/* 虛線格: cross + diagonals as dashed */
+.guide-dashed .cell-guides .g-h, .guide-dashed .cell-guides .g-v,
+.guide-dashed .cell-guides .g-d1, .guide-dashed .cell-guides .g-d2 { display: block; stroke-dasharray: 6 6; opacity: 0.5; }
+
+/* 空白格: no guides (all stay hidden) */
+.guide-blank .cell-guides { display: none; }
+
+/* Old background-gradient guides removed — replaced by SVG above */
 
 /* ===== 每行格數 (cells per row) ===== */
 .practice-row[data-perrow] .practice-cell {
@@ -1167,6 +1130,21 @@ function generate() {
 }
 
 // ===== RENDER =====
+function guideSvg() {
+  // Inline SVG guide layer — strokes print reliably (CSS background gradients don't).
+  // viewBox 0-100, lines at 33.3/50/66.7 positions; CSS classes toggle which show.
+  return `<svg class="cell-guides" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
+    `<line class="g-h" x1="0" y1="50" x2="100" y2="50"/>` +
+    `<line class="g-v" x1="50" y1="0" x2="50" y2="100"/>` +
+    `<line class="g-d1" x1="0" y1="0" x2="100" y2="100"/>` +
+    `<line class="g-d2" x1="0" y1="100" x2="100" y2="0"/>` +
+    `<line class="g-h3a" x1="0" y1="33.3" x2="100" y2="33.3"/>` +
+    `<line class="g-h3b" x1="0" y1="66.7" x2="100" y2="66.7"/>` +
+    `<line class="g-v3a" x1="33.3" y1="0" x2="33.3" y2="100"/>` +
+    `<line class="g-v3b" x1="66.7" y1="0" x2="66.7" y2="100"/>` +
+    `</svg>`;
+}
+
 function renderWorksheet() {
   const o = currentOptions;
   const ws = document.getElementById('worksheet');
@@ -1186,14 +1164,14 @@ function renderWorksheet() {
     ps = Math.min(Math.max(cm, 1.5), 2.6).toFixed(2) + 'cm';
   }
   ws.style.setProperty('--print-cell-practice', ps);
-  // font ≈ 65% of cell for print (real handwriting practice needs large strokes;
-  // ~58% was too small for young learners)
-  ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.65)`);
-  ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.65)`);
+  // font ≈ 78% of cell for print — copybook style: character fills most of the grid.
+  ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.78)`);
+  ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.78)`);
 
   // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
-  ws.classList.remove('guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
-  if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
+  ws.classList.remove('guide-mizi', 'guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
+  if (o.guideStyle === 'mizi') ws.classList.add('guide-mizi');
+  else if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
   else if (o.guideStyle === 'jiugong') ws.classList.add('guide-jiugong');
   else if (o.guideStyle === 'jingzi') ws.classList.add('guide-grid3');
   else if (o.guideStyle === 'dashed') ws.classList.add('guide-dashed');
@@ -1218,7 +1196,7 @@ function renderWorksheet() {
     // Char info row
     html += `<div class="char-info">`;
     html += `<div class="char-display" onclick="openStroke('${esc(ch)}')" title="點擊查看筆順">`;
-    html += `<div class="char-cell"><span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
+    html += `<div class="char-cell">${guideSvg()}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
     html += `</div>`;
     html += `<div class="char-details">`;
 
@@ -1272,6 +1250,7 @@ function renderWorksheet() {
       for (let r = 0; r < o.practice; r++) {
         const guideHtml = o.guide ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>` : '';
         html += `<div class="practice-cell">`;
+        html += guideSvg();
         html += guideHtml;
         html += `</div>`;
       }
