@@ -589,9 +589,8 @@ body {
   .input-section { padding: 16px; }
   .options { grid-template-columns: 1fr; }
   #worksheet { padding: 16px; margin: 10px; }
-  .char-cell { width: 96px; height: 96px; font-size: 64px; }
-  .practice-cell { width: var(--cell-sm); height: var(--cell-sm); }
-  .practice-cell .guide-char { font-size: 48px; }
+  /* cells follow the --cell-practice / --cell-font vars (set by updateCellStyles);
+     smaller default handled by var() fallback + options, not hard-coded px */
   .char-info { gap: 10px; }
   .reading-value { font-size: 1em; }
   .ws-meta { gap: 16px; font-size: 0.82em; }
@@ -617,9 +616,9 @@ body {
     max-width: none;
     background: white;
     /* print sizing overrides screen px vars (JS sets --print-* from optPrintSize) */
-    --cell-practice: var(--print-cell-practice, 1.8cm) !important;
-    --cell-font: var(--print-cell-font, 1.05cm) !important;
-    --cell-guide-font: var(--print-cell-guide-font, 1.05cm) !important;
+    --cell-practice: var(--print-cell-practice, 2.2cm) !important;
+    --cell-font: var(--print-cell-font, calc(2.2cm * 0.65)) !important;
+    --cell-guide-font: var(--print-cell-guide-font, calc(2.2cm * 0.65)) !important;
   }
   .char-card { page-break-inside: avoid; }
   .char-info { margin-bottom: 12px; }
@@ -831,10 +830,10 @@ details.advance-collapse summary:hover { color: var(--red); }
           <label>印刷格大小</label>
           <select id="optPrintSize">
             <option value="auto">跟螢幕</option>
-            <option value="1.2cm">特細 1.2cm</option>
             <option value="1.5cm">細 1.5cm</option>
-            <option value="1.8cm" selected>中 1.8cm</option>
-            <option value="2.2cm">大 2.2cm</option>
+            <option value="1.8cm">中 1.8cm</option>
+            <option value="2.2cm" selected>大 2.2cm（標準）</option>
+            <option value="2.6cm">特大 2.6cm</option>
           </select>
         </div>
         <div class="opt-group">
@@ -1042,7 +1041,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (saved.size) document.getElementById('optSize').value = saved.size;
       if (saved.guideStyle) document.getElementById('optGuideStyle').value = saved.guideStyle;
       if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
-      if (saved.printSize) document.getElementById('optPrintSize').value = saved.printSize;
+      if (saved.printSize) {
+        const v = saved.printSize;
+        // guard against values from older versions (e.g. removed 1.2cm)
+        if (['auto','1.5cm','1.8cm','2.2cm','2.6cm'].includes(v)) {
+          document.getElementById('optPrintSize').value = v;
+        }
+      }
       document.getElementById('optShowHeader').checked = saved.showHeader !== false;
       document.getElementById('optCanto').checked = saved.canto !== false;
       document.getElementById('optPinyin').checked = saved.pinyin !== false;
@@ -1171,15 +1176,20 @@ function renderWorksheet() {
   ws.style.setProperty('--cell-practice', (SIZE_PX[o.size] || 96) + 'px');
 
   // Print sizing — used by @media print. Explicit cm chosen, or 'auto':
-  // auto maps the screen px size to a comparable physical size (96px ≈ 2.54cm @96dpi,
-  // so scale = px / 96 * 2.54cm), keeping preview ≈ printed result consistent.
-  const ps = o.printSize && o.printSize !== 'auto'
-    ? o.printSize
-    : ((SIZE_PX[o.size] || 96) / 96 * 2.54).toFixed(2) + 'cm';
+  // auto maps screen px to physical size (96px ≈ 2.54cm) clamped to a sensible
+  // A4 print range so a large screen preview doesn't waste paper.
+  let ps;
+  if (o.printSize && o.printSize !== 'auto') {
+    ps = o.printSize;
+  } else {
+    const cm = (SIZE_PX[o.size] || 96) / 96 * 2.54;
+    ps = Math.min(Math.max(cm, 1.5), 2.6).toFixed(2) + 'cm';
+  }
   ws.style.setProperty('--print-cell-practice', ps);
-  // font ≈ 58% of cell for print (comfortable within grid)
-  ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.58)`);
-  ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.58)`);
+  // font ≈ 65% of cell for print (real handwriting practice needs large strokes;
+  // ~58% was too small for young learners)
+  ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.65)`);
+  ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.65)`);
 
   // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
   ws.classList.remove('guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
