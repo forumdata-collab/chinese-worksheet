@@ -588,6 +588,14 @@ body {
     --red-grid: #B08080 !important;
   }
   .cell-guides line { stroke-width: 1.5; }
+  /* Fix: per-row flex sizing must NOT override print cell size — grid cells follow
+     --cell-practice (cm) so box and font scale together. Row count then comes
+     naturally from the A4 width. flex-basis must be overridden too (it beats width). */
+  .practice-row[data-perrow] .practice-cell {
+    flex: 0 0 var(--cell-practice) !important;
+    width: var(--cell-practice) !important;
+    height: var(--cell-practice) !important;
+  }
   .char-card { page-break-inside: avoid; }
   .char-info { margin-bottom: 12px; }
   .ws-header { margin-bottom: 16px; padding-bottom: 12px; }
