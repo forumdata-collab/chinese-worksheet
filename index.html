@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
+<script src="data.js?v=1788925874"></script>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
+<style>
+:root {
+  --bg: #FDF8EE;
+  --ink: #33302A;
+  --red: #C0392B;
+  --red-light: #E8D5D0;
+  --red-grid: #D46A6A;
+  --blue: #2C6FAC;
+  --blue-light: #E8F0F8;
+  --green: #3A7D44;
+  --paper: #FFFCF7;
+  --card-bg: #FFFDF9;
+  --shadow: rgba(0,0,0,0.06);
+  --radius: 10px;
+  --cell-sm: 72px;
+  --cell-md: 96px;
+  --cell-lg: 128px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Hiragino Sans TC", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+/* ===== SCREEN UI ===== */
+.screen-only { max-width: 960px; margin: 0 auto; padding: 20px; }
+.hero {
+  text-align: center;
+  padding: 20px 16px 16px;
+  background: linear-gradient(135deg, #C0392B 0%, #922B21 100%);
+  color: white;
+  margin-bottom: 0;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: '字';
+  position: absolute;
+  right: -30px;
+  top: -20px;
+  font-size: 200px;
+  opacity: 0.07;
+  font-family: "Noto Serif TC", "KaiTi", "STKaiti", serif;
+}
+.hero h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: "Noto Serif TC", "Songti TC", "STSong", serif;
+  margin-bottom: 2px;
+}
+.hero p { opacity: 0.9; margin-top: 2px; font-size: 0.88em; }
+.input-section {
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 10px auto;
+  max-width: 960px;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.input-section label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.95em;
+}
+.input-section textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.2em;
+  font-family: "Noto Serif TC", "Songti TC", "STSong", "KaiTi", serif;
+  resize: vertical;
+  transition: border-color 0.2s;
+  background: white;
+}
+.input-section textarea:focus {
+  outline: none;
+  border-color: var(--red);
+}
+.quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.quick-btns button {
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.88em;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.quick-btns button:hover {
+  background: var(--red);
+  color: white;
+}
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+  padding: 16px;
+  background: #f8f6f2;
+  border-radius: 8px;
+}
+.opt-group { display: flex; flex-direction: column; gap: 4px; }
+.opt-group label { font-size: 0.82em; color: #666; margin: 0; }
+.opt-group input[type="number"],
+.opt-group select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95em;
+  background: white;
+}
+.opt-group .toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.opt-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--red);
+}
+.generate-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+.generate-btn:hover { background: #A93226; }
+.generate-btn:active { transform: scale(0.98); }
+
+/* ===== PRINT CONTROLS (screen only) ===== */
+.print-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  border-bottom: 2px solid var(--red-light);
+  padding: 10px 20px;
+  display: none;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+  max-width: 960px;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.print-bar.show { display: flex; }
+.print-bar button {
+  padding: 8px 20px;
+  border: 2px solid var(--red);
+  background: white;
+  color: var(--red);
+  border-radius: 6px;
+  font-size: 0.9em;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.print-bar button:hover { background: var(--red); color: white; }
+.print-bar button.active { background: var(--red); color: white; }
+
+/* ===== WORKSHEET ===== */
+#worksheet {
+  background: var(--paper);
+  max-width: 794px; /* A4 width approx */
+  margin: 20px auto;
+  padding: 28px;
+  box-shadow: 0 2px 20px var(--shadow);
+}
+.ws-header {
+  border-bottom: 3px double var(--red);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.ws-title {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--red);
+  font-family: "Noto Serif TC", "Songti TC", "STSong", serif;
+  letter-spacing: 0.1em;
+}
+.ws-meta {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 12px;
+  font-size: 0.9em;
+  color: #666;
+}
+.ws-meta span { border-bottom: 1px solid #999; padding-bottom: 2px; min-width: 100px; display: inline-block; }
+
+/* ===== CHARACTER CARD ===== */
+.char-card {
+  margin-bottom: 22px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.char-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.char-display {
+  flex-shrink: 0;
+  width: var(--cell-lg);
+  height: var(--cell-lg);
+  position: relative;
+  cursor: pointer;
+}
+.char-cell {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border: 2px solid var(--red-grid);
+  background: white;
+  font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
+  font-size: 88px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+/* 米字格 background */
+.char-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--red-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--red-light) 1px, transparent 1px);
+  background-size: 50% 50%;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.char-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%),
+    linear-gradient(-45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.char-details {
+  flex: 1;
+  min-width: 0;
+}
+.reading-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+.reading-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: white;
+  background: var(--blue);
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.reading-label.canto { background: var(--red); }
+.reading-value {
+  font-size: 1.15em;
+  font-weight: 600;
+  font-family: "Noto Serif TC", "KaiTi", serif;
+}
+.reading-alt {
+  font-size: 0.8em;
+  color: #888;
+}
+.play-btn {
+  background: none;
+  border: 1.5px solid #ccc;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.play-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+.play-btn.canto:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.meta-row {
+  font-size: 0.8em;
+  color: #777;
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.meta-row span { display: inline-flex; align-items: center; gap: 3px; }
+
+/* ===== PRACTICE GRIDS ===== */
+.practice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 4px;
+}
+.practice-cell {
+  width: var(--cell-practice, 96px);
+  height: var(--cell-practice, 96px);
+  border: 2px solid var(--red-grid);
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+}
+/* 十字虛線 + 導線樣式 (guides via background gradient) */
+.practice-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--red-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--red-light) 1px, transparent 1px);
+  background-size: 50% 50%;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.practice-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%),
+    linear-gradient(-45deg, transparent 48.5%, var(--red-light) 48.5%, var(--red-light) 51.5%, transparent 51.5%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.practice-cell.last { border-right: 2px solid var(--red-grid); }
+/* Guide mode: show faint char */
+.practice-cell .guide-char {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
+  font-size: 64px;
+  line-height: 1;
+  color: #F0E0D0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ===== FOOTER ===== */
+.ws-footer {
+  margin-top: 30px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  font-size: 0.75em;
+  color: #aaa;
+  text-align: center;
+}
+/* ===== QUIZ MODE (默書版): hide char, show readings as cue ===== */
+.quiz-mode .char-display,
+.quiz-mode .action-bar { display: none !important; }
+.quiz-mode .practice-row { margin-top: 0; }
+.quiz-mode .guide-char { display: none !important; }
+
+/* ===== HIDDEN IN PRINT (but shown on screen) ===== */
+.action-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.action-btn {
+  background: #f4f2ee;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 0.78em;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #555;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.action-btn:hover { background: var(--red-light); color: var(--red); border-color: var(--red-light); }
+.action-btn.btn-canto { border-color: #e8b4b0; color: var(--red); background: #fdf3f2; }
+.action-btn.btn-canto:hover { background: var(--red); color: white; }
+.action-btn.btn-mand { border-color: #b8d4e8; color: var(--blue); background: #f0f6fb; }
+.action-btn.btn-mand:hover { background: var(--blue); color: white; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white;
+  border-radius: 14px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-size: 1.1em; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4em;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+}
+.modal-close:hover { color: var(--red); }
+.modal-body {
+  padding: 20px;
+  text-align: center;
+}
+#stroke-target {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+#stroke-target svg { width: 100% !important; height: 100% !important; }
+.modal-controls {
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.modal-controls button {
+  padding: 8px 18px;
+  border: 2px solid var(--red);
+  background: white;
+  color: var(--red);
+  border-radius: 6px;
+  font-size: 0.9em;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.modal-controls button:hover { background: var(--red); color: white; }
+.modal-controls button.primary { background: var(--red); color: white; }
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.85em;
+}
+.speed-control input[type="range"] { flex: 1; }
+#quiz-target {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+#quiz-target svg { width: 100% !important; height: 100% !important; }
+
+/* ===== FOOTER LINKS ===== */
+.footer-links {
+  text-align: center;
+  margin: 14px 0 4px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  font-size: 0.9em;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+}
+.footer-links .sep { color: #ccc; }
+.footer-links a { transition: opacity 0.15s; }
+.footer-links a:hover { opacity: 0.8; }
+
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  font-size: 20px;
+  transition: background 0.2s, transform 0.15s;
+}
+.back-to-top:hover { background: #A93226; }
+.back-to-top:active { transform: scale(0.92); }
+.back-to-top.visible { display: flex; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+.empty-state .icon { font-size: 4em; margin-bottom: 16px; }
+.empty-state p { font-size: 1.1em; }
+
+/* ===== AUDIO STATUS ===== */
+.audio-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 0.88em;
+  z-index: 900;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.audio-toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .hero h1 { font-size: 1.4em; }
+  .input-section { padding: 16px; }
+  .options { grid-template-columns: 1fr; }
+  #worksheet { padding: 16px; margin: 10px; }
+  .char-cell { width: 96px; height: 96px; font-size: 64px; }
+  .practice-cell { width: var(--cell-sm); height: var(--cell-sm); }
+  .practice-cell .guide-char { font-size: 48px; }
+  .char-info { gap: 10px; }
+  .reading-value { font-size: 1em; }
+  .ws-meta { gap: 16px; font-size: 0.82em; }
+}
+
+/* ===== PRINT ===== */
+@media print {
+  @page { margin: 12mm; size: A4; }
+  body { background: white !important; }
+  .screen-only,
+  .hero,
+  .print-bar,
+  .action-bar,
+  .modal-overlay,
+  .audio-toast,
+  .no-print,
+  .back-to-top,
+  .footer-links { display: none !important; }
+  #worksheet {
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    background: white;
+  }
+  .char-card { page-break-inside: avoid; }
+  .char-info { margin-bottom: 12px; }
+  .ws-header { margin-bottom: 16px; padding-bottom: 12px; }
+  .practice-row { gap: 0; }
+  /* quiz mode in print: hide char, keep readings as dictation cue */
+  .quiz-mode .char-display,
+  .quiz-mode .action-bar { display: none; }
+  .quiz-mode .guide-char { display: none !important; }
+}
+
+/* Color mode for canto/mathy labels */
+.green { color: var(--green); }
+.blue { color: var(--blue); }
+.red { color: var(--red); }
+/* Jyutping tone digit colors: tone 1-6 */
+.tj1 { color: #C0392B; }
+.tj2 { color: #E67E22; }
+.tj3 { color: #F1C40F; }
+.tj4 { color: #27AE60; }
+.tj5 { color: #2980B9; }
+.tj6 { color: #8E44AD; }
+.jp-tone { font-weight: 700; }
+/* KaiTi for handwriting feel */
+.kaiti { font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", serif; }
+
+/* ===== 導線樣式 (guide styles) ===== */
+/* 田字格 (四宮格): cross only, hide diagonals */
+.guide-tian .char-cell::after, .guide-tian .practice-cell::after { display: none; }
+/* 米字格: cross + diagonals — default, already in base CSS */
+
+/* Shared 3×3 grid lines (九宮格/井字格 both use a # shape) */
+.guide-grid3 .char-cell::before,
+.guide-grid3 .practice-cell::before {
+  background:
+    linear-gradient(transparent calc(50% - 0.5px), var(--red-light) calc(50% - 0.5px), var(--red-light) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--red-light) calc(50% - 0.5px), var(--red-light) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px)),
+    linear-gradient(90deg, transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(90deg, transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px));
+  background-size: 100% 100%;
+  opacity: 0.5;
+}
+.guide-grid3 .char-cell::after,
+.guide-grid3 .practice-cell::after { display: none; }  /* no diagonals */
+
+/* 九宮格: 3×3 with center-cell border emphasized (中宮) */
+.guide-jiugong .char-cell::before,
+.guide-jiugong .practice-cell::before {
+  background:
+    linear-gradient(transparent calc(50% - 0.5px), var(--red-grid) calc(50% - 0.5px), var(--red-grid) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--red-grid) calc(50% - 0.5px), var(--red-grid) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px)),
+    linear-gradient(90deg, transparent calc(33.33% - 0.5px), var(--red-light) calc(33.33% - 0.5px), var(--red-light) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(90deg, transparent calc(66.67% - 0.5px), var(--red-light) calc(66.67% - 0.5px), var(--red-light) calc(66.67% + 0.5px), transparent calc(66.67% + 0.5px));
+  background-size: 100% 100%;
+  opacity: 0.55;
+}
+.guide-jiugong .char-cell::after,
+.guide-jiugong .practice-cell::after { display: none; }
+
+/* 虛線格: lighter, more transparent */
+.guide-dashed .char-cell::before, .guide-dashed .char-cell::after { opacity: 0.3 !important; }
+.guide-dashed .practice-cell::before, .guide-dashed .practice-cell::after { opacity: 0.25 !important; }
+
+/* 空白格: no guides */
+.guide-blank .char-cell::before, .guide-blank .char-cell::after,
+.guide-blank .practice-cell::before, .guide-blank .practice-cell::after { display: none; }
+
+/* ===== 每行格數 (cells per row) ===== */
+.practice-row[data-perrow] .practice-cell {
+  width: auto;
+  height: auto;
+  flex: 0 0 calc((100% - 4px * (var(--n, 4) - 1)) / var(--n));
+  aspect-ratio: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="hero no-print">
+  <h1>✍️ 中文筆順練習簿</h1>
+  <p>輸入中文字 → 生成練習簿（粵音普通話朗讀 · 筆順練習 · 列印A4）</p>
+</div>
+
+<!-- INPUT SECTION -->
+<div class="input-section screen-only" id="inputSection">
+  <label for="inputText">輸入中文字或一段文字</label>
+  <textarea id="inputText" placeholder="例如：你好，我是香港人。今天天氣很好。">你好，我是香港人。今天天氣很好。</textarea>
+  <div class="quick-btns">
+    <button onclick="setInput('一二三四五六七八九十')">一～十</button>
+    <button onclick="setInput('人之初性本善')">三字經</button>
+    <button onclick="setInput('天平地平')">天地</button>
+    <button onclick="setInput('東西南北')">方向</button>
+    <button onclick="setInput('上下左右')">方位</button>
+    <button onclick="setInput('大中小')">大小</button>
+    <button onclick="setInput('春夏秋冬')">四季</button>
+    <button onclick="setInput('金木水火土')">五行</button>
+    <button onclick="setInput('馬牛羊鳥魚')">動物</button>
+    <button onclick="setInput('口手足心耳目')">身體</button>
+    <button onclick="setInput('你我他她')">人稱</button>
+    <button onclick="setInput('日月水火石')">日月水火</button>
+  </div>
+
+  <div class="options">
+    <div class="opt-group">
+      <label>每字練習格數</label>
+      <input type="number" id="optPractice" value="4" min="0" max="10">
+    </div>
+    <div class="opt-group">
+      <label>導線樣式</label>
+      <select id="optGuideStyle">
+        <option value="mizi" selected>米字格（十字+對角線）</option>
+        <option value="tian">田字格（十字）</option>
+        <option value="jiugong">九宮格（中宮）</option>
+        <option value="jingzi">井字格（3×3）</option>
+        <option value="dashed">虛線格</option>
+        <option value="blank">空白格</option>
+      </select>
+    </div>
+    <div class="opt-group">
+      <label>練習格大小</label>
+      <select id="optSize">
+        <option value="xs">特小 (56px)</option>
+        <option value="sm">小 (72px)</option>
+        <option value="md" selected>中 (96px)</option>
+        <option value="lg">大 (128px)</option>
+      </select>
+    </div>
+    <div class="opt-group">
+      <label>每行格數</label>
+      <select id="optPerRow">
+        <option value="auto" selected>自動</option>
+        <option value="4">4格</option>
+        <option value="6">6格</option>
+        <option value="8">8格</option>
+      </select>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optCanto" checked>
+        <label for="optCanto">顯示粵拼</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optPinyin" checked>
+        <label for="optPinyin">顯示普通話拼音</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optStrokes" checked>
+        <label for="optStrokes">顯示筆畫數</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optDedup">
+        <label for="optDedup">去重（只寫一次）</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optS2T">
+        <label for="optS2T">簡體輸入轉繁體</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optGuide" checked>
+        <label for="optGuide">淺色範本指引</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <div class="toggle-row">
+        <input type="checkbox" id="optShowHeader" checked>
+        <label for="optShowHeader">顯示標題 / 姓名 / 日期</label>
+      </div>
+    </div>
+    <div class="opt-group">
+      <label>練習紙標題</label>
+      <input type="text" id="optTitle" value="練習簿" placeholder="例如：中文科練習">
+    </div>
+    <div class="opt-group">
+      <label>姓名</label>
+      <input type="text" id="optName" value="" placeholder="同學姓名">
+    </div>
+    <div class="opt-group">
+      <label>日期</label>
+      <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
+    </div>
+  </div>
+
+  <button class="generate-btn" onclick="generate()">📝 生成練習簿</button>
+</div>
+
+<!-- PRINT/QUIZ TOOLBAR -->
+<div class="print-bar screen-only no-print" id="printBar">
+  <button onclick="printWorksheet()" title="列印練習紙">🖨️ 列印</button>
+  <button id="btnQuizMode" onclick="toggleQuizMode()" title="默書版：隱藏讀音，只留練習格">✍️ 默書版</button>
+  <button id="btnReadAllCanto" onclick="readAllText('canto')" title="朗讀全文（粵語）">🔊 粵語</button>
+  <button id="btnReadAllMand" onclick="readAllText('mand')" title="朗讀全文（普通話）">🔊 普通話</button>
+  <span class="audio-speed-wrap no-print">
+    <label for="audioRate" title="語音朗讀語速">🐢</label>
+    <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
+           style="width:60px;" title="語音語速">
+    <label for="audioRate">🐇</label>
+  </span>
+</div>
+
+<!-- WORKSHEET -->
+<div id="worksheet" style="display:none;">
+  <div class="ws-header">
+    <div class="ws-title" id="wsTitle"></div>
+    <div class="ws-meta" id="wsMeta"></div>
+  </div>
+  <div id="wsContent"></div>
+  <div class="ws-footer" id="wsFooter">
+    資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>
+    筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向
+  </div>
+  <div class="footer-links no-print">
+    <a href="https://ko-fi.com/forumdata" target="_blank" rel="noopener" style="color:#f59e0b;text-decoration:none;font-weight:600;">☕ 請我飲咖啡</a>
+    <span class="sep">·</span>
+    <a href="mailto:forumdata@gmail.com" style="color:#64748b;text-decoration:none;">✉️ 聯絡作者</a>
+  </div>
+</div>
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTop" aria-label="返回頂部" title="返回頂部">↑</button>
+
+<div id="emptyState" class="empty-state screen-only" style="display:none;">
+  <div class="icon">📝</div>
+  <p>輸入中文字，點擊「生成練習簿」開始</p>
+</div>
+
+<!-- STROKE ORDER MODAL -->
+<div class="modal-overlay" id="strokeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="strokeModalTitle">筆順動畫</h3>
+      <button class="modal-close" onclick="closeModal('strokeModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="stroke-target"></div>
+      <div class="speed-control">
+        <span>🐢</span>
+        <input type="range" id="strokeSpeed" min="0.3" max="2" step="0.1" value="0.7"
+               oninput="document.getElementById('speedVal').textContent=this.value+'x'">
+        <span>🐇</span>
+        <span id="speedVal">0.7x</span>
+      </div>
+    </div>
+    <div class="modal-controls">
+      <button class="primary" onclick="strokeReplay()">▶ 重播</button>
+      <button onclick="strokeStep()">⏭ 逐筆</button>
+      <button onclick="closeModal('strokeModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ (WRITE) MODAL -->
+<div class="modal-overlay" id="quizModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="quizModalTitle">試寫練習</h3>
+      <button class="modal-close" onclick="closeModal('quizModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.9em;color:#888;margin-bottom:10px;">用鼠標或觸屏書寫，依筆順提示完成</p>
+      <div id="quiz-target"></div>
+      <div id="quizResult" style="margin-top:12px;font-size:1.1em;font-weight:600;color:var(--green);min-height:1.5em;"></div>
+    </div>
+    <div class="modal-controls">
+      <button class="primary" onclick="startQuiz()">🔄 重新開始</button>
+      <button onclick="closeModal('quizModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO TOAST -->
+<div class="audio-toast" id="audioToast"></div>
+
+<script>
+// ===== STATE =====
+let currentChars = [];
+let currentOptions = {};
+let quizWriter = null;
+let strokeWriter = null;
+let currentStrokeChar = '';
+let quizMode = false;
+
+// Shared size config: px values (data clump fix — single source of truth)
+const SIZE_PX = { xs: 56, sm: 72, md: 96, lg: 128 };
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('optDate').value = todayStr();
+
+  // restore saved settings
+  try {
+    const saved = JSON.parse(localStorage.getItem('chinese-ws-settings'));
+    if (saved) {
+      if (saved.practice != null) document.getElementById('optPractice').value = saved.practice;
+      if (saved.size) document.getElementById('optSize').value = saved.size;
+      if (saved.guideStyle) document.getElementById('optGuideStyle').value = saved.guideStyle;
+      if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
+      document.getElementById('optShowHeader').checked = saved.showHeader !== false;
+      document.getElementById('optCanto').checked = saved.canto !== false;
+      document.getElementById('optPinyin').checked = saved.pinyin !== false;
+      document.getElementById('optStrokes').checked = saved.strokes !== false;
+      document.getElementById('optGuide').checked = saved.guide !== false;
+      if (saved.title) document.getElementById('optTitle').value = saved.title;
+      if (saved.name) document.getElementById('optName').value = saved.name;
+      if (saved.date) document.getElementById('optDate').value = saved.date;
+      document.getElementById('optS2T').checked = saved.s2t === true;
+    }
+  } catch(e) {}
+
+  document.getElementById('inputText').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') generate();
+  });
+
+  // Back to top button
+  const backBtn = document.getElementById('backToTop');
+  if (backBtn) {
+    window.addEventListener('scroll', () => backBtn.classList.toggle('visible', window.scrollY > 300));
+    backBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // auto-generate if URL has ?autogen param (for testing/screenshot)
+  if (location.search.includes('autogen')) {
+    setTimeout(generate, 300);
+  }
+});
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+function setInput(text) {
+  document.getElementById('inputText').value = text;
+}
+
+// ===== CHARACTER PARSING =====
+function parseInput(text) {
+  // Keep only CJK chars + common punctuation
+  const regex = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/gu;
+  return (text.match(regex) || []);
+}
+
+// ===== GENERATE WORKSHEET =====
+function generate() {
+  // save options to localStorage
+  try {
+    localStorage.setItem('chinese-ws-settings', JSON.stringify({
+      practice: document.getElementById('optPractice').value,
+      size: document.getElementById('optSize').value,
+      guideStyle: document.getElementById('optGuideStyle').value,
+      perRow: document.getElementById('optPerRow').value,
+      showHeader: document.getElementById('optShowHeader').checked,
+      canto: document.getElementById('optCanto').checked,
+      pinyin: document.getElementById('optPinyin').checked,
+      strokes: document.getElementById('optStrokes').checked,
+      guide: document.getElementById('optGuide').checked,
+      title: document.getElementById('optTitle').value,
+      name: document.getElementById('optName').value,
+      date: document.getElementById('optDate').value,
+      s2t: document.getElementById('optS2T').checked
+    }));
+  } catch(e) {}
+
+  let raw = document.getElementById('inputText').value.trim();
+  if (!raw) { showToast('請輸入中文字'); return; }
+
+  // simplified -> traditional if enabled
+  if (document.getElementById('optS2T').checked) {
+    raw = toTraditional(raw);
+  }
+  document.getElementById('inputText').value = raw;
+
+  let chars = parseInput(raw);
+  if (chars.length === 0) { showToast('未找到中文字'); return; }
+
+  const dedup = document.getElementById('optDedup').checked;
+  if (dedup) {
+    const seen = new Set();
+    chars = chars.filter(c => {
+      if (seen.has(c)) return false;
+      seen.add(c);
+      return true;
+    });
+  }
+
+  currentChars = chars;
+  quizMode = false;  // new worksheet always starts in practice mode
+  currentOptions = {
+    practice: parseInt(document.getElementById('optPractice').value) || 0,
+    size: document.getElementById('optSize').value,
+    guideStyle: document.getElementById('optGuideStyle').value || 'mizi',
+    perRow: document.getElementById('optPerRow').value || 'auto',
+    showHeader: document.getElementById('optShowHeader').checked,
+    canto: document.getElementById('optCanto').checked,
+    pinyin: document.getElementById('optPinyin').checked,
+    strokes: document.getElementById('optStrokes').checked,
+    guide: document.getElementById('optGuide').checked,
+    title: document.getElementById('optTitle').value || '練習簿',
+    name: document.getElementById('optName').value,
+    date: document.getElementById('optDate').value,
+  };
+
+  renderWorksheet();
+  document.getElementById('printBar').classList.add('show');
+  document.getElementById('worksheet').style.display = '';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('worksheet').scrollIntoView({behavior:'smooth'});
+}
+
+// ===== RENDER =====
+function renderWorksheet() {
+  const o = currentOptions;
+  const ws = document.getElementById('worksheet');
+  const content = document.getElementById('wsContent');
+
+  // Set size variable (CSS var --cell-practice drives both char cell + practice cells)
+  ws.style.setProperty('--cell-practice', (SIZE_PX[o.size] || 96) + 'px');
+
+  // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
+  ws.classList.remove('guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
+  if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
+  else if (o.guideStyle === 'jiugong') ws.classList.add('guide-jiugong');
+  else if (o.guideStyle === 'jingzi') ws.classList.add('guide-grid3');
+  else if (o.guideStyle === 'dashed') ws.classList.add('guide-dashed');
+  else if (o.guideStyle === 'blank') ws.classList.add('guide-blank');
+
+  // Header
+  document.getElementById('wsTitle').textContent = o.title;
+  const wsHeader = document.querySelector('#worksheet .ws-header');
+  if (wsHeader) wsHeader.style.display = o.showHeader ? '' : 'none';
+  let metaHtml = '';
+  if (o.name) metaHtml += `<span>姓名：${esc(o.name)}</span>`;
+  if (o.date) metaHtml += `<span>日期：${esc(o.date)}</span>`;
+  document.getElementById('wsMeta').innerHTML = metaHtml;
+
+  // Content
+  let html = '';
+  currentChars.forEach((ch, i) => {
+    const d = window.CHAR_DB[ch] || {};
+    const cName = o.quizMode ? 'quiz-mode' : '';
+    html += `<div class="char-card ${cName}" data-char="${esc(ch)}">`;
+
+    // Char info row
+    html += `<div class="char-info">`;
+    html += `<div class="char-display" onclick="openStroke('${esc(ch)}')" title="點擊查看筆順">`;
+    html += `<div class="char-cell">${esc(ch)}</div>`;
+    html += `</div>`;
+    html += `<div class="char-details">`;
+
+    // Canto reading
+    if (o.canto && d.jy) {
+      html += `<div class="reading-row">`;
+      html += `<span class="reading-label canto">粵拼</span>`;
+      html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
+      if (d.jy2 && d.jy2.length) {
+        html += `<span class="reading-alt">又讀：${d.jy2.map(jyutpingHtml).join('、')}</span>`;
+      }
+      html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
+      html += `</div>`;
+    }
+
+    // Mandarin reading
+    if (o.pinyin && d.py) {
+      html += `<div class="reading-row">`;
+      html += `<span class="reading-label">拼音</span>`;
+      html += `<span class="reading-value">${esc(d.py)}</span>`;
+      if (d.py2 && d.py2.length) {
+        html += `<span class="reading-alt">又讀：${esc(d.py2.join('、'))}</span>`;
+      }
+      html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
+      html += `</div>`;
+    }
+
+    // Meta info
+    let metaParts = [];
+    if (o.strokes && d.s) metaParts.push(`✏️ ${d.s}畫`);
+    if (d.si) metaParts.push(`簡體：${esc(d.si)}`);
+    if (metaParts.length) {
+      html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
+    }
+
+    // Action bar (screen only)
+    html += `<div class="action-bar no-print">`;
+    html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
+    html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
+    html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
+    html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
+    html += `</div>`;
+
+    html += `</div>`; // .char-details
+    html += `</div>`; // .char-info
+
+    // Practice grids
+    if (o.practice > 0) {
+      const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
+      html += `<div class="practice-row"${perRowAttr}>`;
+      for (let r = 0; r < o.practice; r++) {
+        const guideHtml = o.guide ? `<span class="guide-char">${esc(ch)}</span>` : '';
+        html += `<div class="practice-cell">`;
+        html += guideHtml;
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `</div>`; // .char-card
+  });
+
+  content.innerHTML = html;
+
+  // footer char count
+  document.getElementById('wsFooter').innerHTML =
+    `共 ${currentChars.length} 個字 · 資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>` +
+    `筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向`;
+
+  updateCellStyles();
+}
+
+function updateCellStyles() {
+  const size = SIZE_PX[currentOptions.size] || SIZE_PX.md;
+  const fontMap = { [SIZE_PX.xs]: '40px', [SIZE_PX.sm]: '54px', [SIZE_PX.md]: '64px', [SIZE_PX.lg]: '88px' };
+  const fontSize = fontMap[size] || '64px';
+
+  document.querySelectorAll('.char-cell').forEach(el => {
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.fontSize = fontSize;
+  });
+}
+
+// ===== QUIZ MODE =====
+function toggleQuizMode() {
+  quizMode = !quizMode;
+  const btn = document.getElementById('btnQuizMode');
+  btn.classList.toggle('active', quizMode);
+  btn.textContent = quizMode ? '📖 練習版' : '✍️ 默書版';
+
+  document.querySelectorAll('.char-card').forEach(card => {
+    card.classList.toggle('quiz-mode', quizMode);
+  });
+  // Keep state in sync after regenerate
+  if (typeof currentOptions === 'object') currentOptions.quizMode = quizMode;
+}
+
+// ===== PRINT =====
+function printWorksheet() {
+  window.print();
+}
+
+// ===== AUDIO =====
+// Language → TTS tags (alias order matters: exact match first)
+const AUDIO_LANGS = {
+  canto: { tags: ['zh-HK', 'zh-Hant-HK', 'yue'], label: '粵語' },
+  mand:  { tags: ['zh-CN', 'zh-Hans-CN', 'zh-Hans'], label: '普通話' },
+};
+
+// Cache of voices, refreshed on voiceschanged (kept up-to-date in background)
+let _voicesCache = [];
+let _voicesReady = false;
+
+function refreshVoiceCache() {
+  if ('speechSynthesis' in window) {
+    _voicesCache = speechSynthesis.getVoices() || [];
+    _voicesReady = _voicesCache.length > 0;
+  }
+}
+
+function waitForVoices(timeoutMs = 3000) {
+  return new Promise(resolve => {
+    if (_voicesCache.length > 0) { _voicesReady = true; resolve(); return; }
+    let waited = 0;
+    const poll = () => {
+      refreshVoiceCache();
+      if (_voicesCache.length > 0 || waited >= timeoutMs) { _voicesReady = true; resolve(); return; }
+      waited += 100;
+      setTimeout(poll, 100);
+    };
+    poll();
+  });
+}
+
+/** Pick the best available voice: exact match → prefix → any zh → any (never null). */
+function pickVoice(tags, voices) {
+  // precompute normalized tags once
+  const ntags = tags.map(normLang);
+  const norm = x => normLang(x.lang);
+  // 1. exact match on any alias (case-insensitive, _ / - tolerant)
+  for (const t of ntags) {
+    const v = voices.find(x => norm(x) === t);
+    if (v) return v;
+  }
+  // 2. prefix match (zh-HK → zh-HK-Sin-ji; zh-CN → zh-CN-XiaoxiaoNeural)
+  for (const t of ntags) {
+    const v = voices.find(x => norm(x).startsWith(t + '-'));
+    if (v) return v;
+  }
+  // 3. voice-name evidence for the dialect (e.g. "Cantonese", "廣東話", "普通話")
+  for (const t of ntags) {
+    const nl = t;
+    const v = voices.find(x => {
+      const n = String(x.name || '').toLowerCase();
+      const hints = nl.startsWith('zh-hk') || nl === 'yue'
+        ? ['cantonese', '廣東話', '粵語', 'hong kong', 'hkg']
+        : ['mandarin', '普通話', 'putonghua'];
+      return hints.some(h => n.includes(h));
+    });
+    if (v) return v;
+  }
+  // 4. any Chinese voice (pronunciation may differ — caller warns)
+  const zh = voices.find(x => norm(x).startsWith('zh'));
+  if (zh) return zh;
+  // 5. any voice at all — better some sound than none
+  return voices[0] || null;
+}
+
+function zhVoiceSummary(voices) {
+  return voices.filter(v => v.lang.startsWith('zh'))
+    .map(v => `${v.lang}（${v.name}）`).join('、');
+}
+
+/** Fire-and-forget: if voices aren't loaded yet, retry after voiceschanged. */
+function speakWhenReady(text, cfg) {
+  refreshVoiceCache();
+  if (_voicesCache.length > 0) {
+    doSpeak(text, cfg, _voicesCache);
+    return;
+  }
+  // Voices not loaded yet — wait, but WITHOUT blocking the gesture chain.
+  // (Calling speechSynthesis.speak() asynchronously after a click is still allowed
+  //  by most browsers, just not inside an await before the first speak.)
+  waitForVoices().then(() => {
+    refreshVoiceCache();
+    if (_voicesCache.length > 0) doSpeak(text, cfg, _voicesCache);
+  });
+}
+
+/** Normalize a BCP-47 lang tag for comparison: lowercase, _ → -, strip script/region noise. */
+function normLang(lang) {
+  return String(lang || '').toLowerCase().replace(/_/g, '-').split('-').slice(0, 2).join('-');
+}
+
+/** True if the voice plausibly speaks the target dialect (lang tag OR voice name evidence). */
+function voiceMatchesTarget(voice, cfg) {
+  const nl = normLang(voice.lang);
+  // 1. lang tag matches one of the dialect tags
+  if (cfg.tags.some(t => nl === normLang(t) || nl.startsWith(normLang(t) + '-'))) return true;
+  // 2. voice NAME contains dialect evidence (e.g. "Cantonese", "廣東話", "Hong Kong")
+  const name = String(voice.name || '').toLowerCase();
+  const cantoHints = ['cantonese', '廣東話', '粵語', 'hong kong', 'hkg', 'yue'];
+  const mandHints  = ['mandarin', '普通話', 'putonghua', 'chinese', '中文', 'zh-cn', 'zh_cn'];
+  const hints = cfg.tags[0] === 'zh-HK' ? cantoHints : mandHints;
+  return hints.some(h => name.includes(h));
+}
+
+function doSpeak(text, cfg, voices) {
+  const voice = pickVoice(cfg.tags, voices);
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = cfg.tags[0];   // critical: tells engine the intended dialect
+  if (voice) u.voice = voice;
+  const audioSlider = document.getElementById('audioRate');
+  u.rate = audioSlider ? parseFloat(audioSlider.value) : 0.9;
+  u.pitch = 1;
+
+  if (!voice) {
+    showToast('⚠️ 無可用語音引擎，請檢查瀏覽器設定');
+  } else if (voiceMatchesTarget(voice, cfg)) {
+    showToast(`${cfg.label}朗讀：${text}（${voice.name}）`);
+  } else {
+    // Voice exists but is a different language — warn softly, still play
+    showToast(`🔊 以「${voice.name}」(${voice.lang}) 讀出（${cfg.label}語音不可用）`);
+  }
+
+  window.speechSynthesis.speak(u);
+}
+
+function speak(text, lang) {
+  if (!('speechSynthesis' in window)) {
+    showToast('⚠️ 此瀏覽器不支援語音朗讀');
+    return;
+  }
+  const cfg = AUDIO_LANGS[lang] || AUDIO_LANGS.mand;
+  window.speechSynthesis.cancel();
+  speakWhenReady(text, cfg);
+}
+
+function readAllText(lang) {
+  const text = currentChars.join('');
+  speak(text, lang);
+}
+
+// ===== STROKE ORDER MODAL =====
+// Shared HanziWriter config (Duplicated Code fix)
+function hanziWriterOpts(extra = {}) {
+  return Object.assign({
+    width: 300,
+    height: 300,
+    padding: 10,
+    showOutline: true,
+    delayBetweenStrokes: 200,
+    drawingColor: '#C0392B',
+    outlineColor: '#DDD',
+    radicalColor: '#D46A6A',
+  }, extra);
+}
+
+function openStroke(ch) {
+  currentStrokeChar = ch;
+  document.getElementById('strokeModalTitle').textContent = `筆順：${ch}`;
+  openModal('strokeModal');
+
+  const target = document.getElementById('stroke-target');
+  target.innerHTML = '';
+
+  try {
+    strokeWriter = HanziWriter.create(target, ch, hanziWriterOpts({
+      showCharacter: true,
+      strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
+      strokeColor: '#33302A',
+    }));
+    strokeWriter.animateCharacter();
+  } catch(e) {
+    target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
+  }
+
+  // Bind speed change
+  document.getElementById('strokeSpeed').oninput = function() {
+    document.getElementById('speedVal').textContent = this.value + 'x';
+  };
+}
+
+function strokeReplay() {
+  if (strokeWriter) {
+    strokeWriter.cancelAnimation();
+    strokeWriter.animateCharacter();
+  }
+}
+
+function strokeStep() {
+  if (strokeWriter) {
+    strokeWriter.pauseAnimation();
+    strokeWriter.animateStroke();
+  }
+}
+
+// ===== QUIZ MODAL =====
+function openQuiz(ch) {
+  currentStrokeChar = ch;
+  document.getElementById('quizModalTitle').textContent = `試寫：${ch}`;
+  openModal('quizModal');
+  startQuiz();
+}
+
+function startQuiz() {
+  const target = document.getElementById('quiz-target');
+  target.innerHTML = '';
+  document.getElementById('quizResult').textContent = '';
+
+  try {
+    quizWriter = HanziWriter.create(target, currentStrokeChar, hanziWriterOpts({
+      showCharacter: false,
+      highlightOnCorrect: true,
+      drawOnStroke: true,
+      strokeAnimationSpeed: 1,
+    }));
+    quizWriter.quiz({
+      onCorrectStroke: (data) => {
+        const done = data.strokeNum + 1;
+        const total = data.strokesRemaining + data.strokeNum + 1;
+        document.getElementById('quizResult').textContent = `✅ 正確！已寫 ${done} / ${total} 筆`;
+        document.getElementById('quizResult').style.color = 'var(--green)';
+      },
+      onComplete: () => {
+        document.getElementById('quizResult').textContent = `🎉 完成！每一筆都寫對了`;
+        document.getElementById('quizResult').style.color = 'var(--green)';
+      }
+    });
+  } catch(e) {
+    target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(currentStrokeChar)}</div><p style="margin-top:10px;color:#999;">此字暫無試寫功能，請用練習格練習</p>`;
+  }
+}
+
+// ===== UTILITIES =====
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Color the trailing jyutping tone digit: nei5 -> nei + colored 5
+function jyutpingHtml(jp) {
+  const m = jp.match(/^(.+?)([1-6])$/);
+  if (m) return `${esc(m[1])}<span class="jp-tone tj${m[2]}">${m[2]}</span>`;
+  return esc(jp);
+}
+
+// ===== SIMPLIFIED-TO-TRADITIONAL (built from CHAR_DB si fields, no external lib) =====
+const SIM2T = {};
+(function buildSim2T() {
+  for (const [trad, d] of Object.entries(window.CHAR_DB || {})) {
+    if (d.si) (SIM2T[d.si] = SIM2T[d.si] || []).push(trad);
+  }
+})();
+
+function toTraditional(input) {
+  return Array.from(input).map(ch => {
+    if (window.CHAR_DB[ch]) return ch;         // already traditional / shared
+    const cands = SIM2T[ch];
+    if (cands && cands.length === 1) return cands[0];  // unambiguous
+    return ch;                                  // unknown or ambiguous
+  }).join('');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  if (id === 'strokeModal' && strokeWriter) {
+    strokeWriter.cancelAnimation?.();
+    strokeWriter = null;
+  }
+  if (id === 'quizModal' && quizWriter) { quizWriter = null; }
+  document.body.style.overflow = '';
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) closeModal(el.id);
+  });
+});
+
+// Close modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(el => closeModal(el.id));
+  }
+});
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('audioToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== BACK TO TOP =====
+// (initialised in DOMContentLoaded handler above)
+
+// Load voices (addEventListener so it doesn't overwrite the one in waitForVoices)
+if ('speechSynthesis' in window) {
+  refreshVoiceCache();
+  speechSynthesis.addEventListener('voiceschanged', refreshVoiceCache);
+}
+</script>
+
+</body>
+</html>
