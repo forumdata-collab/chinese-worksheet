@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
 <script src="data.js?v=1788925874"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
@@ -254,7 +257,6 @@ body {
   position: relative;
   border: 2px solid var(--red-grid);
   background: white;
-  font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
   font-size: 88px;
   line-height: 1;
   display: flex;
@@ -386,7 +388,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
   font-size: 64px;
   line-height: 1;
   color: #F0E0D0;
@@ -639,8 +640,10 @@ body {
 .tj5 { color: #2980B9; }
 .tj6 { color: #8E44AD; }
 .jp-tone { font-weight: 700; }
-/* KaiTi for handwriting feel */
-.kaiti { font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", serif; }
+/* KaiTi for handwriting feel — LXGW WenKai TC (calligraphy) first, system kaiti fallback */
+.kaiti, .char-cell, .practice-cell .guide-char {
+  font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
+}
 
 /* ===== 選項分組 (grouped options) ===== */
 .opt-section { margin-bottom: 14px; }
@@ -1245,16 +1248,17 @@ function renderWorksheet() {
 
 function updateCellStyles() {
   const size = SIZE_PX[currentOptions.size] || SIZE_PX.md;
-  const fontMap = { [SIZE_PX.xs]: '40px', [SIZE_PX.sm]: '52px', [SIZE_PX.md]: '64px', [SIZE_PX.lg]: '88px' };
-  const fontSize = fontMap[size] || '64px';
+  // Font sizes capped so large grids give MORE breathing room, not bigger type
+  const fontMap = { [SIZE_PX.xs]: '36px', [SIZE_PX.sm]: '46px', [SIZE_PX.md]: '58px', [SIZE_PX.lg]: '66px' };
+  const fontSize = fontMap[size] || '58px';
 
   document.querySelectorAll('.char-cell').forEach(el => {
     el.style.width = size + 'px';
     el.style.height = size + 'px';
     el.style.fontSize = fontSize;
   });
-  // guide chars scale with the cell too
-  const guideSize = Math.round(size * 0.66) + 'px';
+  // guide chars scale with the cell too (capped)
+  const guideSize = Math.min(Math.round(size * 0.6), 72) + 'px';
   document.querySelectorAll('.practice-cell .guide-char').forEach(el => {
     el.style.fontSize = guideSize;
   });
