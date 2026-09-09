@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=optional" rel="stylesheet">
+<link href="fonts/lxgw.css" rel="stylesheet">
 <script src="data.js?v=1788925874"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
@@ -311,7 +309,7 @@ body {
 .reading-value {
   font-size: 1.15em;
   font-weight: 600;
-  font-family: "Noto Serif TC", "KaiTi", serif;
+  font-family: inherit;
 }
 .reading-alt {
   font-size: 0.8em;
@@ -644,9 +642,11 @@ body {
 .tj5 { color: #2980B9; }
 .tj6 { color: #8E44AD; }
 .jp-tone { font-weight: 700; }
-/* KaiTi for handwriting feel — LXGW WenKai TC (calligraphy) first, system kaiti fallback */
+/* KaiTi for handwriting feel — self-hosted LXGW WenKai TC (calligraphy) first.
+   Only applied to Han glyph surfaces (model char + tracing guides).
+   Fallbacks: system kaiti → Songti/serif (closer to handwriting than heiti). */
 .kaiti, .char-cell, .practice-cell .guide-char {
-  font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
+  font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif CJK TC", "Noto Serif TC", "Songti TC", "STSong", "PMingLiU", "AR PL UMing TW", serif;
 }
 
 /* ===== OPTICAL NORMALIZATION (per-char ink balance) ===== */
@@ -1170,18 +1170,16 @@ function renderWorksheet() {
   // Set size variable (CSS var --cell-practice drives both char cell + practice cells)
   ws.style.setProperty('--cell-practice', (SIZE_PX[o.size] || 96) + 'px');
 
-  // Print sizing (cm) — used by @media print; 'auto' = follow screen (no override)
-  const ps = o.printSize && o.printSize !== 'auto' ? o.printSize : null;
-  if (ps) {
-    ws.style.setProperty('--print-cell-practice', ps);
-    // font ≈ 58% of cell for print
-    ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.58)`);
-    ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.58)`);
-  } else {
-    ws.style.removeProperty('--print-cell-practice');
-    ws.style.removeProperty('--print-cell-font');
-    ws.style.removeProperty('--print-cell-guide-font');
-  }
+  // Print sizing — used by @media print. Explicit cm chosen, or 'auto':
+  // auto maps the screen px size to a comparable physical size (96px ≈ 2.54cm @96dpi,
+  // so scale = px / 96 * 2.54cm), keeping preview ≈ printed result consistent.
+  const ps = o.printSize && o.printSize !== 'auto'
+    ? o.printSize
+    : ((SIZE_PX[o.size] || 96) / 96 * 2.54).toFixed(2) + 'cm';
+  ws.style.setProperty('--print-cell-practice', ps);
+  // font ≈ 58% of cell for print (comfortable within grid)
+  ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.58)`);
+  ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.58)`);
 
   // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
   ws.classList.remove('guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
@@ -1347,10 +1345,10 @@ function normalizeGlyphs() {
 
 function updateCellStyles() {
   const size = SIZE_PX[currentOptions.size] || SIZE_PX.md;
-  // Font sizes capped so large grids give MORE breathing room, not bigger type
-  const fontMap = { [SIZE_PX.xs]: '36px', [SIZE_PX.sm]: '46px', [SIZE_PX.md]: '58px', [SIZE_PX.lg]: '66px' };
+  // Screen fonts: consistent ~0.6 ratio of the cell, capped so lg keeps breathing room
+  const fontMap = { [SIZE_PX.xs]: '36px', [SIZE_PX.sm]: '46px', [SIZE_PX.md]: '58px', [SIZE_PX.lg]: '72px' };
   const fontSize = fontMap[size] || '58px';
-  const guideSize = Math.min(Math.round(size * 0.6), 72) + 'px';
+  const guideSize = fontSize; // tracing guides match the model char size exactly
 
   // Set CSS vars on the worksheet — screen sizing (print overrides below)
   const ws = document.getElementById('worksheet');
@@ -1688,8 +1686,15 @@ if ('speechSynthesis' in window) {
   speechSynthesis.addEventListener('voiceschanged', refreshVoiceCache);
 }
 
-// Re-balance glyphs once the webfont actually finishes loading (font-display: optional
-// means it may arrive after first render; the scale factors change with the font).
+// Re-balance glyphs once the webfont actually finishes loading (font-display: swap
+// means fallback shows first, then swaps to LXGW; re-measure when it arrives).
+if (document.fonts && document.fonts.load) {
+  // Eagerly warm the webfont for the sample chars so the swap happens quickly
+  // after first render (instead of waiting for each glyph to be requested lazily).
+  try {
+    document.fonts.load('58px "LXGW WenKai TC"', '你好中文學龍飛樂一');
+  } catch (e) {}
+}
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => {
     INK_ERA++;
