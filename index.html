@@ -13,7 +13,7 @@
   --ink: #33302A;
   --red: #C0392B;
   --red-light: #E8D5D0;
-  --red-grid: #D46A6A;
+  --red-grid: #CCAAAA;  /* softer guide line color */
   --blue: #2C6FAC;
   --blue-light: #E8F0F8;
   --green: #3A7D44;
@@ -191,6 +191,12 @@ body {
 }
 .print-bar button:hover { background: var(--red); color: white; }
 .print-bar button.active { background: var(--red); color: white; }
+.bar-sep {
+  width: 1px;
+  height: 24px;
+  background: #ddd;
+  margin: 0 2px;
+}
 
 /* ===== WORKSHEET ===== */
 #worksheet {
@@ -237,8 +243,8 @@ body {
 }
 .char-display {
   flex-shrink: 0;
-  width: var(--cell-lg);
-  height: var(--cell-lg);
+  width: var(--cell-practice, 96px);
+  height: var(--cell-practice, 96px);
   position: relative;
   cursor: pointer;
 }
@@ -313,9 +319,9 @@ body {
   background: none;
   border: 1.5px solid #ccc;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -323,7 +329,7 @@ body {
   transition: all 0.15s;
   flex-shrink: 0;
 }
-.play-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+.play-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); transform: scale(1.08); }
 .play-btn.canto:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
 .meta-row {
   font-size: 0.8em;
@@ -622,7 +628,6 @@ body {
   .quiz-mode .guide-char { display: none !important; }
 }
 
-/* Color mode for canto/mathy labels */
 .green { color: var(--green); }
 .blue { color: var(--blue); }
 .red { color: var(--red); }
@@ -636,6 +641,66 @@ body {
 .jp-tone { font-weight: 700; }
 /* KaiTi for handwriting feel */
 .kaiti { font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", serif; }
+
+/* ===== 選項分組 (grouped options) ===== */
+.opt-section { margin-bottom: 14px; }
+.opt-section h3 {
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--red);
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+  letter-spacing: 0.03em;
+}
+.opt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 12px;
+}
+.opt-grid.collapse-wrap { padding-left: 10px; }
+details.sample-collapse { margin: 10px 0 0; }
+details.sample-collapse summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  color: #666;
+  padding: 6px 10px;
+  background: #f8f6f2;
+  border-radius: 6px;
+  user-select: none;
+  width: fit-content;
+}
+details.sample-collapse summary:hover { color: var(--red); }
+details.sample-collapse .quick-btns { margin: 10px 0 0; }
+details.advance-collapse { margin-top: 2px; }
+details.advance-collapse summary {
+  cursor: pointer;
+  font-size: 0.82em;
+  color: #888;
+  user-select: none;
+  padding: 2px 0;
+}
+details.advance-collapse summary:hover { color: var(--red); }
+
+/* ===== 預覽區標題 ===== */
+.preview-heading {
+  max-width: 794px;
+  margin: 28px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+.preview-heading h2 {
+  font-size: 1.15em;
+  color: var(--red);
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  letter-spacing: 0.05em;
+}
+.preview-heading p { font-size: 0.82em; color: #999; margin-top: 2px; }
+.preview-dash {
+  max-width: 794px;
+  margin: 14px auto 0;
+  border-top: 2px dashed var(--red-light);
+}
 
 /* ===== 導線樣式 (guide styles) ===== */
 /* 田字格 (四宮格): cross only, hide diagonals */
@@ -700,110 +765,140 @@ body {
 
 <!-- INPUT SECTION -->
 <div class="input-section screen-only" id="inputSection">
-  <label for="inputText">輸入中文字或一段文字</label>
+  <label for="inputText">✏️ 輸入中文字或一段文字</label>
   <textarea id="inputText" placeholder="例如：你好，我是香港人。今天天氣很好。">你好，我是香港人。今天天氣很好。</textarea>
-  <div class="quick-btns">
-    <button onclick="setInput('一二三四五六七八九十')">一～十</button>
-    <button onclick="setInput('人之初性本善')">三字經</button>
-    <button onclick="setInput('天平地平')">天地</button>
-    <button onclick="setInput('東西南北')">方向</button>
-    <button onclick="setInput('上下左右')">方位</button>
-    <button onclick="setInput('大中小')">大小</button>
-    <button onclick="setInput('春夏秋冬')">四季</button>
-    <button onclick="setInput('金木水火土')">五行</button>
-    <button onclick="setInput('馬牛羊鳥魚')">動物</button>
-    <button onclick="setInput('口手足心耳目')">身體</button>
-    <button onclick="setInput('你我他她')">人稱</button>
-    <button onclick="setInput('日月水火石')">日月水火</button>
-  </div>
+  <details class="sample-collapse">
+    <summary>🎲 常用範例</summary>
+    <div class="quick-btns">
+      <button onclick="setInput('一二三四五六七八九十')">一～十</button>
+      <button onclick="setInput('人之初性本善')">三字經</button>
+      <button onclick="setInput('天平地平')">天地</button>
+      <button onclick="setInput('東西南北')">方向</button>
+      <button onclick="setInput('上下左右')">方位</button>
+      <button onclick="setInput('大中小')">大小</button>
+      <button onclick="setInput('春夏秋冬')">四季</button>
+      <button onclick="setInput('金木水火土')">五行</button>
+      <button onclick="setInput('馬牛羊鳥魚')">動物</button>
+      <button onclick="setInput('口手足心耳目')">身體</button>
+      <button onclick="setInput('你我他她')">人稱</button>
+      <button onclick="setInput('日月水火石')">日月水火</button>
+    </div>
+  </details>
 
   <div class="options">
-    <div class="opt-group">
-      <label>每字練習格數</label>
-      <input type="number" id="optPractice" value="4" min="0" max="10">
-    </div>
-    <div class="opt-group">
-      <label>導線樣式</label>
-      <select id="optGuideStyle">
-        <option value="mizi" selected>米字格（十字+對角線）</option>
-        <option value="tian">田字格（十字）</option>
-        <option value="jiugong">九宮格（中宮）</option>
-        <option value="jingzi">井字格（3×3）</option>
-        <option value="dashed">虛線格</option>
-        <option value="blank">空白格</option>
-      </select>
-    </div>
-    <div class="opt-group">
-      <label>練習格大小</label>
-      <select id="optSize">
-        <option value="xs">特小 (56px)</option>
-        <option value="sm">小 (72px)</option>
-        <option value="md" selected>中 (96px)</option>
-        <option value="lg">大 (128px)</option>
-      </select>
-    </div>
-    <div class="opt-group">
-      <label>每行格數</label>
-      <select id="optPerRow">
-        <option value="auto" selected>自動</option>
-        <option value="4">4格</option>
-        <option value="6">6格</option>
-        <option value="8">8格</option>
-      </select>
-    </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optCanto" checked>
-        <label for="optCanto">顯示粵拼</label>
+    <div class="opt-section">
+      <h3>📐 版面</h3>
+      <div class="opt-grid">
+        <div class="opt-group">
+          <label>每字練習格數</label>
+          <input type="number" id="optPractice" value="4" min="0" max="10">
+        </div>
+        <div class="opt-group">
+          <label>導線樣式</label>
+          <select id="optGuideStyle">
+            <option value="mizi" selected>米字格（十字+對角線）</option>
+            <option value="tian">田字格（十字）</option>
+            <option value="jiugong">九宮格（中宮）</option>
+            <option value="jingzi">井字格（3×3）</option>
+            <option value="dashed">虛線格</option>
+            <option value="blank">空白格</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <label>練習格大小</label>
+          <select id="optSize">
+            <option value="xs">特小 (56px)</option>
+            <option value="sm">小 (72px)</option>
+            <option value="md" selected>中 (96px)</option>
+            <option value="lg">大 (128px)</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <label>每行格數</label>
+          <select id="optPerRow">
+            <option value="auto" selected>自動</option>
+            <option value="4">4格</option>
+            <option value="6">6格</option>
+            <option value="8">8格</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optPinyin" checked>
-        <label for="optPinyin">顯示普通話拼音</label>
+
+    <div class="opt-section">
+      <h3>📝 內容</h3>
+      <div class="opt-grid">
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optCanto" checked>
+            <label for="optCanto">顯示粵拼</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optPinyin" checked>
+            <label for="optPinyin">顯示拼音</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optGuide" checked>
+            <label for="optGuide">淺色範本指引</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optShowHeader" checked>
+            <label for="optShowHeader">顯示標題資訊</label>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optStrokes" checked>
-        <label for="optStrokes">顯示筆畫數</label>
-      </div>
-    </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optDedup">
-        <label for="optDedup">去重（只寫一次）</label>
-      </div>
-    </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optS2T">
-        <label for="optS2T">簡體輸入轉繁體</label>
-      </div>
-    </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optGuide" checked>
-        <label for="optGuide">淺色範本指引</label>
-      </div>
-    </div>
-    <div class="opt-group">
-      <div class="toggle-row">
-        <input type="checkbox" id="optShowHeader" checked>
-        <label for="optShowHeader">顯示標題 / 姓名 / 日期</label>
-      </div>
-    </div>
-    <div class="opt-group">
-      <label>練習紙標題</label>
-      <input type="text" id="optTitle" value="練習簿" placeholder="例如：中文科練習">
-    </div>
-    <div class="opt-group">
-      <label>姓名</label>
-      <input type="text" id="optName" value="" placeholder="同學姓名">
-    </div>
-    <div class="opt-group">
-      <label>日期</label>
-      <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
+
+    <div class="opt-section">
+      <h3>⚙️ 進階</h3>
+      <details class="advance-collapse">
+        <summary>進階選項（筆畫數 · 去重 · 簡體轉換 · 頁首文字）</summary>
+        <div class="opt-grid collapse-wrap">
+          <div class="opt-group">
+            <div class="toggle-row">
+              <input type="checkbox" id="optStrokes" checked>
+              <label for="optStrokes">顯示筆畫數</label>
+            </div>
+          </div>
+          <div class="opt-group">
+            <div class="toggle-row">
+              <input type="checkbox" id="optDedup">
+              <label for="optDedup">去重（只寫一次）</label>
+            </div>
+          </div>
+          <div class="opt-group">
+            <div class="toggle-row">
+              <input type="checkbox" id="optS2T">
+              <label for="optS2T">簡體輸入轉繁體</label>
+            </div>
+          </div>
+          <div class="opt-group">
+            <div class="toggle-row">
+              <label for="audioRate">朗讀語速</label>
+              <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
+                     style="width:80px;" title="語音語速">
+            </div>
+          </div>
+          <div class="opt-group">
+            <label>練習紙標題</label>
+            <input type="text" id="optTitle" value="練習簿" placeholder="例如：中文科練習">
+          </div>
+          <div class="opt-group">
+            <label>姓名</label>
+            <input type="text" id="optName" value="" placeholder="同學姓名">
+          </div>
+          <div class="opt-group">
+            <label>日期</label>
+            <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
+          </div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -812,17 +907,19 @@ body {
 
 <!-- PRINT/QUIZ TOOLBAR -->
 <div class="print-bar screen-only no-print" id="printBar">
-  <button onclick="printWorksheet()" title="列印練習紙">🖨️ 列印</button>
+  <button onclick="printWorksheet()" title="列印練習紙 (A4)">🖨️ 列印</button>
   <button id="btnQuizMode" onclick="toggleQuizMode()" title="默書版：隱藏讀音，只留練習格">✍️ 默書版</button>
-  <button id="btnReadAllCanto" onclick="readAllText('canto')" title="朗讀全文（粵語）">🔊 粵語</button>
-  <button id="btnReadAllMand" onclick="readAllText('mand')" title="朗讀全文（普通話）">🔊 普通話</button>
-  <span class="audio-speed-wrap no-print">
-    <label for="audioRate" title="語音朗讀語速">🐢</label>
-    <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
-           style="width:60px;" title="語音語速">
-    <label for="audioRate">🐇</label>
-  </span>
+  <span class="bar-sep" aria-hidden="true"></span>
+  <button id="btnReadAllCanto" onclick="readAllText('canto')" title="朗讀全文（粵語）">🔊 粵語朗讀</button>
+  <button id="btnReadAllMand" onclick="readAllText('mand')" title="朗讀全文（普通話）">🔊 普通話朗讀</button>
 </div>
+
+<!-- PREVIEW HEADING -->
+<div class="preview-heading screen-only no-print" id="previewHeading" style="display:none;">
+  <h2>📄 練習簿預覽</h2>
+  <p>按「🖨️ 列印」輸出 A4 · 可切換「默書版」隱藏答案</p>
+</div>
+<div class="preview-dash screen-only no-print" id="previewDash" style="display:none;"></div>
 
 <!-- WORKSHEET -->
 <div id="worksheet" style="display:none;">
@@ -1029,6 +1126,11 @@ function generate() {
   document.getElementById('printBar').classList.add('show');
   document.getElementById('worksheet').style.display = '';
   document.getElementById('emptyState').style.display = 'none';
+  // show preview heading and dash
+  const ph = document.getElementById('previewHeading');
+  const pd = document.getElementById('previewDash');
+  if (ph) ph.style.display = '';
+  if (pd) pd.style.display = '';
   document.getElementById('worksheet').scrollIntoView({behavior:'smooth'});
 }
 
@@ -1143,13 +1245,18 @@ function renderWorksheet() {
 
 function updateCellStyles() {
   const size = SIZE_PX[currentOptions.size] || SIZE_PX.md;
-  const fontMap = { [SIZE_PX.xs]: '40px', [SIZE_PX.sm]: '54px', [SIZE_PX.md]: '64px', [SIZE_PX.lg]: '88px' };
+  const fontMap = { [SIZE_PX.xs]: '40px', [SIZE_PX.sm]: '52px', [SIZE_PX.md]: '64px', [SIZE_PX.lg]: '88px' };
   const fontSize = fontMap[size] || '64px';
 
   document.querySelectorAll('.char-cell').forEach(el => {
     el.style.width = size + 'px';
     el.style.height = size + 'px';
     el.style.fontSize = fontSize;
+  });
+  // guide chars scale with the cell too
+  const guideSize = Math.round(size * 0.66) + 'px';
+  document.querySelectorAll('.practice-cell .guide-char').forEach(el => {
+    el.style.fontSize = guideSize;
   });
 }
 
