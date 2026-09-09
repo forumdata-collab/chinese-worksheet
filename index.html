@@ -252,12 +252,12 @@ body {
   cursor: pointer;
 }
 .char-cell {
-  width: 100%;
-  height: 100%;
+  width: var(--cell-practice, 96px);
+  height: var(--cell-practice, 96px);
   position: relative;
   border: 2px solid var(--red-grid);
   background: white;
-  font-size: 88px;
+  font-size: var(--cell-font, 58px);
   line-height: 1;
   display: flex;
   align-items: center;
@@ -388,7 +388,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 64px;
+  font-size: var(--cell-guide-font, 58px);
   line-height: 1;
   color: #F0E0D0;
   pointer-events: none;
@@ -618,6 +618,10 @@ body {
     padding: 0;
     max-width: none;
     background: white;
+    /* print sizing overrides screen px vars (JS sets --print-* from optPrintSize) */
+    --cell-practice: var(--print-cell-practice, 1.8cm) !important;
+    --cell-font: var(--print-cell-font, 1.05cm) !important;
+    --cell-guide-font: var(--print-cell-guide-font, 1.05cm) !important;
   }
   .char-card { page-break-inside: avoid; }
   .char-info { margin-bottom: 12px; }
@@ -815,12 +819,22 @@ details.advance-collapse summary:hover { color: var(--red); }
           </select>
         </div>
         <div class="opt-group">
-          <label>練習格大小</label>
+          <label>螢幕格大小</label>
           <select id="optSize">
             <option value="xs">特小 (56px)</option>
             <option value="sm">小 (72px)</option>
             <option value="md" selected>中 (96px)</option>
             <option value="lg">大 (128px)</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <label>印刷格大小</label>
+          <select id="optPrintSize">
+            <option value="auto">跟螢幕</option>
+            <option value="1.2cm">特細 1.2cm</option>
+            <option value="1.5cm">細 1.5cm</option>
+            <option value="1.8cm" selected>中 1.8cm</option>
+            <option value="2.2cm">大 2.2cm</option>
           </select>
         </div>
         <div class="opt-group">
@@ -1028,6 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (saved.size) document.getElementById('optSize').value = saved.size;
       if (saved.guideStyle) document.getElementById('optGuideStyle').value = saved.guideStyle;
       if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
+      if (saved.printSize) document.getElementById('optPrintSize').value = saved.printSize;
       document.getElementById('optShowHeader').checked = saved.showHeader !== false;
       document.getElementById('optCanto').checked = saved.canto !== false;
       document.getElementById('optPinyin').checked = saved.pinyin !== false;
@@ -1081,6 +1096,7 @@ function generate() {
       size: document.getElementById('optSize').value,
       guideStyle: document.getElementById('optGuideStyle').value,
       perRow: document.getElementById('optPerRow').value,
+      printSize: document.getElementById('optPrintSize').value,
       showHeader: document.getElementById('optShowHeader').checked,
       canto: document.getElementById('optCanto').checked,
       pinyin: document.getElementById('optPinyin').checked,
@@ -1122,6 +1138,7 @@ function generate() {
     size: document.getElementById('optSize').value,
     guideStyle: document.getElementById('optGuideStyle').value || 'mizi',
     perRow: document.getElementById('optPerRow').value || 'auto',
+    printSize: document.getElementById('optPrintSize').value || 'auto',
     showHeader: document.getElementById('optShowHeader').checked,
     canto: document.getElementById('optCanto').checked,
     pinyin: document.getElementById('optPinyin').checked,
@@ -1152,6 +1169,19 @@ function renderWorksheet() {
 
   // Set size variable (CSS var --cell-practice drives both char cell + practice cells)
   ws.style.setProperty('--cell-practice', (SIZE_PX[o.size] || 96) + 'px');
+
+  // Print sizing (cm) — used by @media print; 'auto' = follow screen (no override)
+  const ps = o.printSize && o.printSize !== 'auto' ? o.printSize : null;
+  if (ps) {
+    ws.style.setProperty('--print-cell-practice', ps);
+    // font ≈ 58% of cell for print
+    ws.style.setProperty('--print-cell-font', `calc(${ps} * 0.58)`);
+    ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * 0.58)`);
+  } else {
+    ws.style.removeProperty('--print-cell-practice');
+    ws.style.removeProperty('--print-cell-font');
+    ws.style.removeProperty('--print-cell-guide-font');
+  }
 
   // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
   ws.classList.remove('guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
@@ -1320,17 +1350,13 @@ function updateCellStyles() {
   // Font sizes capped so large grids give MORE breathing room, not bigger type
   const fontMap = { [SIZE_PX.xs]: '36px', [SIZE_PX.sm]: '46px', [SIZE_PX.md]: '58px', [SIZE_PX.lg]: '66px' };
   const fontSize = fontMap[size] || '58px';
-
-  document.querySelectorAll('.char-cell').forEach(el => {
-    el.style.width = size + 'px';
-    el.style.height = size + 'px';
-    el.style.fontSize = fontSize;
-  });
-  // guide chars scale with the cell too (capped)
   const guideSize = Math.min(Math.round(size * 0.6), 72) + 'px';
-  document.querySelectorAll('.practice-cell .guide-char').forEach(el => {
-    el.style.fontSize = guideSize;
-  });
+
+  // Set CSS vars on the worksheet — screen sizing (print overrides below)
+  const ws = document.getElementById('worksheet');
+  ws.style.setProperty('--cell-practice', size + 'px');
+  ws.style.setProperty('--cell-font', fontSize);
+  ws.style.setProperty('--cell-guide-font', guideSize);
 }
 
 // ===== QUIZ MODE =====
