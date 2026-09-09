@@ -6,7 +6,7 @@
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=optional" rel="stylesheet">
 <script src="data.js?v=1788925874"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
@@ -645,6 +645,13 @@ body {
   font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif TC", "Songti TC", "STSong", serif;
 }
 
+/* ===== OPTICAL NORMALIZATION (per-char ink balance) ===== */
+.char-glyph, .guide-glyph {
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform;
+}
+
 /* ===== 選項分組 (grouped options) ===== */
 .opt-section { margin-bottom: 14px; }
 .opt-section h3 {
@@ -1173,7 +1180,7 @@ function renderWorksheet() {
     // Char info row
     html += `<div class="char-info">`;
     html += `<div class="char-display" onclick="openStroke('${esc(ch)}')" title="點擊查看筆順">`;
-    html += `<div class="char-cell">${esc(ch)}</div>`;
+    html += `<div class="char-cell"><span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
     html += `</div>`;
     html += `<div class="char-details">`;
 
@@ -1225,7 +1232,7 @@ function renderWorksheet() {
       const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
       html += `<div class="practice-row"${perRowAttr}>`;
       for (let r = 0; r < o.practice; r++) {
-        const guideHtml = o.guide ? `<span class="guide-char">${esc(ch)}</span>` : '';
+        const guideHtml = o.guide ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>` : '';
         html += `<div class="practice-cell">`;
         html += guideHtml;
         html += `</div>`;
@@ -1244,6 +1251,68 @@ function renderWorksheet() {
     `筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向`;
 
   updateCellStyles();
+  normalizeGlyphs();
+}
+
+// ===== OPTICAL NORMALIZATION (balance per-char ink size) =====
+// Chinese glyphs vary in visual weight (你 < 好 < 一). Measure actual ink
+// bounding box per char and scale so all appear similar on the grid.
+const INK_CACHE = new Map();
+let INK_ERA = 0; // bumps when font changes → cache invalidation
+
+function measureInk(ch, font, size) {
+  const key = ch + '|' + size + '|' + INK_ERA;
+  if (INK_CACHE.has(key)) return INK_CACHE.get(key);
+  const pad = 4;
+  const c = document.createElement('canvas');
+  c.width = c.height = size * 2 + pad * 2;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.font = `${size}px ${font}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillText(ch, c.width / 2, c.height / 2);
+  const data = ctx.getImageData(0, 0, c.width, c.height).data;
+  let minX = c.width, minY = c.height, maxX = 0, maxY = 0;
+  for (let y = 0; y < c.height; y++) {
+    for (let x = 0; x < c.width; x++) {
+      if (data[(y * c.width + x) * 4 + 3] > 0) { // any alpha
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  const r = { w: maxX - minX + 1, h: maxY - minY + 1, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+  INK_CACHE.set(key, r);
+  return r;
+}
+
+function normalizeGlyphs() {
+  const glyphs = [...document.querySelectorAll('.char-glyph, .guide-glyph')];
+  if (!glyphs.length) return;
+  const chars = [...new Set(glyphs.map(g => g.dataset.ch))];
+  const sample = document.querySelector('.char-glyph');
+  const font = sample ? getComputedStyle(sample).fontFamily : 'serif';
+  const size = 64; // measurement font size — ratio is size-independent
+
+  // target: median ink size across the worksheet's characters
+  const ratios = chars.map(ch => {
+    const ink = measureInk(ch, font, size);
+    return Math.max(ink.w, ink.h) / size;
+  });
+  ratios.sort((a, b) => a - b);
+  const median = ratios[Math.floor(ratios.length / 2)] || 0.6;
+
+  chars.forEach(ch => {
+    const ink = measureInk(ch, font, size);
+    const ratio = Math.max(ink.w, ink.h) / size;
+    // scale = median/target ratio, clamped to sane bounds (0.7–1.35)
+    const scale = Math.min(Math.max(median / ratio, 0.7), 1.35);
+    glyphs.filter(g => g.dataset.ch === ch).forEach(g => {
+      g.style.transform = `scale(${scale.toFixed(3)})`;
+    });
+  });
 }
 
 function updateCellStyles() {
@@ -1591,6 +1660,15 @@ function showToast(msg) {
 if ('speechSynthesis' in window) {
   refreshVoiceCache();
   speechSynthesis.addEventListener('voiceschanged', refreshVoiceCache);
+}
+
+// Re-balance glyphs once the webfont actually finishes loading (font-display: optional
+// means it may arrive after first render; the scale factors change with the font).
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    INK_ERA++;
+    if (document.querySelector('.char-glyph')) normalizeGlyphs();
+  });
 }
 </script>
 
