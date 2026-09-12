@@ -4,17 +4,19 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 
 - **粵拼 (Jyutping) + 普通話拼音 (Pinyin)** pronunciations for every character
 - **Cantonese & Mandarin audio** via Web Speech API
-- **Animated stroke order + guided writing practice** (HanziWriter)
+- **Animated stroke order + guided writing practice** — following 香港小學學習字詞表 (HK EDB standard)
 - **A4 printable worksheets** with multiple grid styles
 
 ## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
-| 🖊️ Stroke order | Animated per-stroke playback + interactive 試寫 (draw-along quiz) |
+| 🖊️ Stroke order | Animated per-stroke playback + interactive 試寫 (draw-along quiz), **following the 香港小學學習字詞表 stroke-order standard** |
+| 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (3,776 chars) instead of a generic font |
+| 🔢 Stroke-order digits | Numbered strokes (1…n) overlaid on the first tracing cell — the strokeorder.com.tw look |
 | 🔊 Pronunciation | Jyutping (Cantonese) + Pinyin (Mandarin), with TTS audio for both |
 | 🗣️ Multiple readings | 又讀 (alternative readings) shown when a character is polyphonic |
-| 📄 Print-focused | Dedicated A4 CSS output; 默書版 (dictation) hides answers |
+| 📄 Print-focused | Dedicated A4 CSS output with **82% character-to-cell ratio** (copybook look); 默書版 (dictation) hides answers |
 | 🔲 6 grid styles | 米字格 · 田字格 · 九宮格 · 井字格 · 虛線格 · 空白格 |
 | 📏 Flexible layout | 4 grid sizes (56–128 px), 4–8 cells per row, per-row count |
 | 🔤 Smart input | Simplified Chinese → Traditional conversion, dedup option |
@@ -26,6 +28,12 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 - **5,509 common Traditional Chinese characters**, each with Jyutping, Pinyin, stroke count, simplified form
 - **518 polyphonic groups** with alternate readings
 - Sources: [開放粵語字典](https://kaifangcidian.com) (CC-BY 3.0), pypinyin, Unicode Unihan (kTotalStrokes), OpenCC
+
+### Hong Kong standard (香港標準)
+
+- **Stroke order** follows 香港教育局《香港小學學習字詞表》— derived from the official EDB stroke-order animations (`edbchinese.hk`), covering 3,776 characters (523 of which differ from the generic 通用筆順 order)
+- **Glyph forms** use the official 教育局 standard outlines (e.g. 「舟」's open top-right corner, which differs from the Taiwan-style font form)
+- Characters outside the lexicon fall back to the bundled font + generic stroke order
 
 ## 🚀 Quick start
 
@@ -48,6 +56,9 @@ Or open `index.html` directly in a browser.
 chinese-worksheet/
 ├── index.html          # Single-page app (UI + logic + styles)
 ├── data.js             # Character database (window.CHAR_DB, ~287 KB)
+├── hk_order.js         # HK stroke-order permutation table (window.HK_ORDER, 523 chars)
+├── glyphs/             # HK standard glyph outlines + centrelines (3,776 chars, on-demand)
+├── fonts/              # Self-hosted LXGW WenKai TC CJK subsets
 └── LICENSE             # MIT
 ```
 
@@ -58,7 +69,9 @@ chinese-worksheet/
   - `jy2` / `py2` — alternative readings
   - `s` — stroke count (from Unihan kTotalStrokes)
   - `si` — simplified form (via OpenCC)
-- **Stroke animation** relies on the [HanziWriter](https://hanziwriter.org) CDN + hanzi-writer-data (loaded on demand)
+- **HK stroke order** (`hk_order.js`) is a per-character permutation applied over [HanziWriter](https://hanziwriter.org) stroke data; the animation and quiz both use it
+- **HK glyphs** (`glyphs/`) are vector outlines extracted from the official EDB stroke animations, rendered as inline SVG in every cell (and used by the animation modal); fetched per-character on demand
+- **Stroke numbers** are placed at each stroke's centreline midpoint (from the glyph data), so they stay on the ink in every media and size
 - **Audio** uses the browser's Web Speech API (`zh-HK` / `zh-CN` voices) with graceful fallback and a soft warning when the exact dialect voice is unavailable
 - **Print** is `@media print` CSS — the on-screen editor is hidden, only the worksheet (A4) is printed
 
