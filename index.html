@@ -1123,35 +1123,42 @@ function parseInput(text) {
 }
 
 // ===== GENERATE WORKSHEET =====
+// Single source of truth for the option controls (used by localStorage + render).
+function readOptions() {
+  const $ = id => document.getElementById(id);
+  return {
+    practice: $('optPractice').value,
+    size: $('optSize').value,
+    guideStyle: $('optGuideStyle').value,
+    perRow: $('optPerRow').value,
+    printSize: $('optPrintSize').value,
+    showHeader: $('optShowHeader').checked,
+    canto: $('optCanto').checked,
+    pinyin: $('optPinyin').checked,
+    strokes: $('optStrokes').checked,
+    guide: $('optGuide').checked,
+    strokeNum: $('optStrokeNum').checked,
+    dedup: $('optDedup').checked,
+    title: $('optTitle').value,
+    name: $('optName').value,
+    date: $('optDate').value,
+    s2t: $('optS2T').checked,
+    quizMode: quizMode
+  };
+}
+
 function generate() {
+  const opts = readOptions();
   // save options to localStorage
   try {
-    localStorage.setItem('chinese-ws-settings', JSON.stringify({
-      practice: document.getElementById('optPractice').value,
-      size: document.getElementById('optSize').value,
-      guideStyle: document.getElementById('optGuideStyle').value,
-      perRow: document.getElementById('optPerRow').value,
-      printSize: document.getElementById('optPrintSize').value,
-      showHeader: document.getElementById('optShowHeader').checked,
-      canto: document.getElementById('optCanto').checked,
-      pinyin: document.getElementById('optPinyin').checked,
-      strokes: document.getElementById('optStrokes').checked,
-      guide: document.getElementById('optGuide').checked,
-      strokeNum: document.getElementById('optStrokeNum').checked,
-      dedup: document.getElementById('optDedup').checked,
-      title: document.getElementById('optTitle').value,
-      name: document.getElementById('optName').value,
-      date: document.getElementById('optDate').value,
-      s2t: document.getElementById('optS2T').checked,
-      quizMode: quizMode
-    }));
+    localStorage.setItem('chinese-ws-settings', JSON.stringify(opts));
   } catch(e) {}
 
   let raw = document.getElementById('inputText').value.trim();
   if (!raw) { showToast('請輸入中文字'); return; }
 
   // simplified -> traditional if enabled
-  if (document.getElementById('optS2T').checked) {
+  if (opts.s2t) {
     raw = toTraditional(raw);
   }
   document.getElementById('inputText').value = raw;
@@ -1159,8 +1166,7 @@ function generate() {
   let chars = parseInput(raw);
   if (chars.length === 0) { showToast('未找到中文字'); return; }
 
-  const dedup = document.getElementById('optDedup').checked;
-  if (dedup) {
+  if (opts.dedup) {
     const seen = new Set();
     chars = chars.filter(c => {
       if (seen.has(c)) return false;
@@ -1172,23 +1178,23 @@ function generate() {
   currentChars = chars;
   // quizMode is preserved across regenerations (persisted in localStorage)
   currentOptions = {
-    practice: parseInt(document.getElementById('optPractice').value) || 0,
-    size: document.getElementById('optSize').value,
-    guideStyle: document.getElementById('optGuideStyle').value || 'mizi',
-    perRow: document.getElementById('optPerRow').value || 'auto',
-    printSize: document.getElementById('optPrintSize').value || 'auto',
-    showHeader: document.getElementById('optShowHeader').checked,
-    canto: document.getElementById('optCanto').checked,
-    pinyin: document.getElementById('optPinyin').checked,
-    strokes: document.getElementById('optStrokes').checked,
-    guide: document.getElementById('optGuide').checked,
-    strokeNum: document.getElementById('optStrokeNum').checked,
-    title: document.getElementById('optTitle').value || '練習簿',
-    name: document.getElementById('optName').value,
-    date: document.getElementById('optDate').value,
-    dedup: document.getElementById('optDedup').checked,
-    s2t: document.getElementById('optS2T').checked,
-    quizMode: quizMode,
+    practice: parseInt(opts.practice) || 0,
+    size: opts.size,
+    guideStyle: opts.guideStyle || 'mizi',
+    perRow: opts.perRow || 'auto',
+    printSize: opts.printSize || 'auto',
+    showHeader: opts.showHeader,
+    canto: opts.canto,
+    pinyin: opts.pinyin,
+    strokes: opts.strokes,
+    guide: opts.guide,
+    strokeNum: opts.strokeNum,
+    dedup: opts.dedup,
+    title: opts.title || '練習簿',
+    name: opts.name,
+    date: opts.date,
+    s2t: opts.s2t,
+    quizMode: opts.quizMode,
   };
 
   renderWorksheet();
@@ -1389,23 +1395,6 @@ async function overlayStrokeNum(cell) {
   // Number anchor = arc-length midpoint of the stroke's MEDIAN (true centreline).
   // HW `strokes` are closed ink contours — their geometric midpoint can land on a
   // stroke tip, so the centreline (medians, already reordered to HK order) is used.
-  function medianMid(m) {
-    let total = 0;
-    const segs = [];
-    for (let k = 1; k < m.length; k++) {
-      const L = Math.hypot(m[k][0] - m[k - 1][0], m[k][1] - m[k - 1][1]);
-      segs.push(L); total += L;
-    }
-    let acc = 0;
-    for (let k = 0; k < segs.length; k++) {
-      if (acc + segs[k] >= total / 2) {
-        const t = (total / 2 - acc) / (segs[k] || 1);
-        return { x: m[k][0] + (m[k + 1][0] - m[k][0]) * t, y: m[k][1] + (m[k + 1][1] - m[k][1]) * t };
-      }
-      acc += segs[k];
-    }
-    return { x: m[0][0], y: m[0][1] };
-  }
   for (let si = 0; si < data.strokes.length; si++) {
     const d = data.strokes[si];
     const p = document.createElementNS(NS, 'path');
@@ -1415,7 +1404,7 @@ async function overlayStrokeNum(cell) {
     hwX1 = Math.max(hwX1, b.x + b.width); hwY1 = Math.max(hwY1, b.y + b.height);
     const med = data.medians && data.medians[si];
     if (med && med.length > 1) {
-      medians.push(medianMid(med));
+      medians.push(medianMidPt(med));
     } else {
       try {
         const len = p.getTotalLength();
@@ -1979,8 +1968,10 @@ function toTraditional(input) {
       if (ph) { out += ph; i += 2; continue; }
     }
     const ch = chars[i];
-    // 2) already a traditional/shared character → keep as-is (面/皇后/后 stay)
-    if (window.CHAR_DB[ch]) { out += ch; i++; continue; }
+    // 2) already a traditional/shared character → keep as-is (面/皇后/后 stay).
+    //    Exception: 么 is the simplified form of 麼 and is only in CHAR_DB via a
+    //    variant reading — it must always convert (什么→什麼, 么→麼).
+    if (window.CHAR_DB[ch] && ch !== '么') { out += ch; i++; continue; }
     // 3) unambiguous single-char mapping
     const cands = SIM2T[ch];
     if (cands && cands.length === 1) { out += cands[0]; i++; continue; }
