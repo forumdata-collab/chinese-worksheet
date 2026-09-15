@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.8] - 2026-09-16
+
+Reported as「兒 第一筆遺失；又/離 殘缺；你 第2筆直線過長」。全量重跑 parser + 重建 glyph，根因係兩個 parser 缺陷 + 一批 stale glyph：
+
+### Fixed
+- **9-arg `setTransform` 忽略 `regX/regY`**（你 等 27 字）：EDB 動畫偶用 `setTransform(x, y, sx, sy, rot, skx, sky, regX, regY)`，舊 parser 只讀頭兩個數 → shape 位置錯 273+ 單位。你 第2筆（亻豎）因此向下移 273 單位，睇落「直線過長」。修法：`_shape_origin()` 計 `x − regX·sx, y − regY·sy`。
+- **多 shape final state 只取一個**（又/離/曙）：chain 最後一個 state 可能含**兩個 shape 合組一筆**（又 st1 = `[shape_10, shape_9]`，離 st8 = `[shape_33, shape_32]`），舊 parser 每 chain 只揀一個 → 又/離 殘缺。修法：`find_chains()` 記錄 final state 全部 name，`picked` 變 list-of-lists，`group_to_svg()` 合併。
+- **Stale glyphs**（兒/兔/兗/兜/兢）：deployed glyph 係舊 parse 產物（兒 st1 得 25×40 碎片，正確 257×211）。全量重跑後 32 字重建（27 parser-fixed + 5 stale），全庫 4,493 字 fresh-parse 與 deployed 逐 path 比對 **0 stale**。
+
+### Changed
+- `tools/edb_convert.py`：`_shape_origin()`、`find_chains()` 新增 `final` 欄位、`stroke_bbox()`/`group_to_svg()`。
+- `hk_order.js` 重生成（仍 671 overrides；你/兒/又/離 恢復 identity）。
+- `glyphs/*.json?v=11 → ?v=12`。
+
 ## [1.2.7] - 2026-09-15
 
 Reported as「你，離，兒 仍然有顯示問題」。經量度後，計數／筆順次序／數字所屬筆畫全部正確，但發現兩個真缺陷：
