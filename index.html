@@ -1326,7 +1326,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=4`)
+  const p = fetch(`glyphs/${hex}.json?v=5`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
