@@ -91,6 +91,21 @@ chinese-worksheet/
 
 `data.js` was generated from upstream sources. To rebuild it (requires Python + `jyutping`, `pypinyin`, `OpenCC`, `cjkradlib` and a Unihan download), see the generation pipeline documented in the repo history.
 
+## 🐛 Debugging the glyph / stroke-order / number layers
+
+The glyph pipeline (EDB animation → outline → centreline → stroke numbers) has a history of
+subtle data bugs — missing strokes, misplaced numbers, stale glyph geometry. When a character
+renders wrong, work through [DEBUG.md](DEBUG.md):
+
+- **Symptom → root-cause table** — which layer to suspect first (missing stroke, shifted stroke, floating digit…)
+- **Diagnosis flow** — 4 steps, each with a script:
+  1. `python3 tools/sanity_parser.py` — parser vs deployed stroke-count consistency
+  2. `python3 tools/sanity_geom.py` — full-chain geometry comparison (catches *stale* glyphs the count check misses)
+  3. `node tools/sanity_numbers.js` — digit collision + anchor-on-own-stroke check
+  4. Browser visual check with headless Chromium (⚠️ don't trust vision on glyph shapes)
+- **Known parser pitfalls** — 9-arg `setTransform` regX/regY, multi-shape stroke finals, label-counting traps
+- **Rebuild-only-changed flow** — regenerate just the affected glyphs, not all 4,493
+
 ## 📜 License
 
 MIT © 2026 [forumdata-collab](https://github.com/forumdata-collab). Chinese pronunciation data from [開放粵語字典](https://kaifangcidian.com) is CC-BY 3.0.
