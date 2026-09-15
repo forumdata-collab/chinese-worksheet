@@ -78,7 +78,14 @@ def find_showall(js):
 
 
 def find_chains(js):
-    """[{delay, names}] for every animated stroke-progress chain.
+    """[{delay, final, names}] for every animated stroke-progress chain.
+
+    `final` = the names in the LAST state — the completed stroke.  A chain's
+    final state may hold MULTIPLE shapes that together form ONE stroke
+    (又 id=462: state ends [shape_10, shape_9]; 離 id=4428: [shape_33, shape_32])
+    — earlier states are partial reveals of the same stroke, only the last
+    state's shapes matter for geometry.  `names` keeps the flattened list so
+    the same-delay merge below can compare chain lengths.
 
     NOTE: keep this on the proven regex — a plain-string variant that anchored on
     '.to({state:[]})' silently dropped chains whose first state is non-empty
@@ -93,7 +100,8 @@ def find_chains(js):
         names = []
         for chunk, _ in steps:
             names.extend(re.findall(r'this\.(\w+)', chunk))
-        chains.append({'delay': int(steps[0][1]), 'names': names})
+        final = re.findall(r'this\.(\w+)', steps[-1][0])
+        chains.append({'delay': int(steps[0][1]), 'final': final, 'names': names})
     return chains
 
 
@@ -114,7 +122,7 @@ def find_offset_chains(js):
             wp = body.find(marker)
             wq = body.find(')', wp)
             try:
-                out.append({'delay': int(body[wp + len(marker):wq]), 'names': [name]})
+                out.append({'delay': int(body[wp + len(marker):wq]), 'final': [name], 'names': [name]})
             except ValueError:
                 pass
         pos = end + 2
@@ -140,16 +148,31 @@ def label_count(js):
     return n
 
 
+def _shape_origin(shape):
+    """Effective path origin after setTransform (CreateJS: translate(x,y) then
+    rotate/skew/scale then translate(-regX,-regY)).  EDB uses 2-arg setTransform
+    (x,y) or 9-arg (x,y,sx,sy,rot,skx,sky,regX,regY); rotation/skew are always 0
+    in the 9-arg forms we have seen, so origin = (x - regX*sx, y - regY*sy)."""
+    if 'x' not in shape:
+        return 0.0, 0.0
+    sx = shape.get('sx', 1.0)
+    sy = shape.get('sy', 1.0)
+    rx = shape.get('regX', 0.0)
+    ry = shape.get('regY', 0.0)
+    return shape['x'] - rx * sx, shape['y'] - ry * sy
+
+
 def bbox(shape):
     if not shape or 'x' not in shape:
         return None
+    ox, oy = _shape_origin(shape)
     xs, ys = [], []
     for cmd in decode_createjs_path(shape['path']):
         if cmd[0] == 'Z':
             continue
         for i in range(1, len(cmd), 2):
-            xs.append(shape['x'] + cmd[i])
-            ys.append(shape['y'] + cmd[i + 1])
+            xs.append(ox + cmd[i] * shape.get('sx', 1.0))
+            ys.append(oy + cmd[i + 1] * shape.get('sy', 1.0))
     return (min(xs), min(ys), max(xs), max(ys)) if xs else None
 
 
@@ -164,6 +187,14 @@ def parse_edb_js(path):
         if m.group(1) in shapes:
             shapes[m.group(1)]['x'] = vals[0]
             shapes[m.group(1)]['y'] = vals[1]
+            if len(vals) >= 9:
+                shapes[m.group(1)]['sx'] = vals[2]
+                shapes[m.group(1)]['sy'] = vals[3]
+                shapes[m.group(1)]['regX'] = vals[7]
+                shapes[m.group(1)]['regY'] = vals[8]
+            elif len(vals) >= 4:
+                shapes[m.group(1)]['sx'] = vals[2]
+                shapes[m.group(1)]['sy'] = vals[3]
 
     label_n = label_count(js)
     fin_names = find_showall(js)
@@ -188,19 +219,26 @@ def parse_edb_js(path):
         else:
             merged.append(c)
 
-    picked = []
+    picked = []      # list of lists: one stroke = all ink shapes in the chain's FINAL state
     seen = set()
     for c in merged:
-        chosen = None
-        for name in reversed(c['names']):
+        finals = []
+        for name in c['final']:
             s = shapes.get(name)
-            if s and is_ink(s.get('color', '')):
-                chosen = name
-                break
-        if chosen is None or chosen in seen:
+            if s and is_ink(s.get('color', '')) and name not in seen:
+                finals.append(name)
+        if not finals:
+            # chain whose final state carries no new ink — duplicated timeline or
+            # label tween already consumed; fall back to any ink name not yet used
+            for name in reversed(c['names']):
+                s = shapes.get(name)
+                if s and is_ink(s.get('color', '')) and name not in seen:
+                    finals.append(name)
+                    break
+        if not finals:
             continue
-        seen.add(chosen)
-        picked.append(chosen)
+        seen.update(finals)
+        picked.append(finals)
 
     # Trim over-counting only when BOTH independent counts agree on fewer strokes
     # (EDB label + Unihan kTotalStrokes via CHAR_DB).  The label alone is unsafe: it
@@ -219,8 +257,8 @@ def parse_edb_js(path):
     # (名/印/韋… list 2 shapes for 6+ strokes) — those keep the animation geometry.
     if fin_names and len(fin_names) == len(picked):
         pairs = []
-        for i, name in enumerate(picked):
-            cb = bbox(shapes.get(name))
+        for i, names in enumerate(picked):
+            cb = stroke_bbox(names, shapes)
             if not cb:
                 continue
             for j, fname in enumerate(fin_names):
@@ -234,20 +272,38 @@ def parse_edb_js(path):
                 continue
             assign[i] = j
             taken.add(j)
-        picked = [fin_names[assign[i]] if i in assign else n for i, n in enumerate(picked)]
+        picked = [[fin_names[assign[i]]] if i in assign else n for i, n in enumerate(picked)]
     # else: no usable final set — 14 chars (名/印/韋…) have a "show-all"-looking block
     # that lists 2 shapes for 6+ strokes, so keep the animation geometry untouched.
 
     strokes = []
-    for name in picked:
-        s = shapes.get(name)
-        if not s:
-            continue
-        strokes.append({'x': s.get('x', 0), 'y': s.get('y', 0), 'path': s['path']})
+    for names in picked:
+        g = []
+        for name in names:
+            s = shapes.get(name)
+            if not s:
+                continue
+            g.append({'x': s.get('x', 0), 'y': s.get('y', 0), 'path': s['path'],
+                      'sx': s.get('sx', 1.0), 'sy': s.get('sy', 1.0),
+                      'regX': s.get('regX', 0.0), 'regY': s.get('regY', 0.0)})
+        if g:
+            strokes.append(g)
     return strokes, label_n, len(fin_names)
 
 
+def stroke_bbox(names, shapes):
+    """Union bbox over a stroke's shapes (a stroke can be several shapes)."""
+    boxes = [bbox(shapes.get(n)) for n in names]
+    boxes = [b for b in boxes if b]
+    if not boxes:
+        return None
+    return (min(b[0] for b in boxes), min(b[1] for b in boxes),
+            max(b[2] for b in boxes), max(b[3] for b in boxes))
+
+
 def to_svg(shape):
+    ox, oy = _shape_origin(shape)
+    sx, sy = shape.get('sx', 1.0), shape.get('sy', 1.0)
     parts = []
     for cmd in decode_createjs_path(shape['path']):
         if cmd[0] == 'Z':
@@ -255,9 +311,14 @@ def to_svg(shape):
             continue
         coords = []
         for ci, v in enumerate(cmd[1:]):
-            coords.append(round((shape['x'] if ci % 2 == 0 else shape['y']) + v, 1))
+            coords.append(round((ox if ci % 2 == 0 else oy) + v * (sx if ci % 2 == 0 else sy), 1))
         parts.append(cmd[0] + ','.join(str(c) for c in coords))
     return ' '.join(parts)
+
+
+def group_to_svg(group):
+    """Serialize one stroke (one or more shapes) to a single SVG path."""
+    return ' '.join(to_svg(s) for s in group)
 
 
 if __name__ == '__main__':
@@ -273,7 +334,7 @@ if __name__ == '__main__':
             if not strokes:
                 errors.append((ch, idv, 'no strokes'))
                 continue
-            out[ch] = [to_svg(s) for s in strokes]
+            out[ch] = [group_to_svg(s) for s in strokes]
             if n_fin and n_fin != len(strokes):
                 swapped_chars.append((ch, idv, n_fin, len(strokes)))
         except Exception as e:
