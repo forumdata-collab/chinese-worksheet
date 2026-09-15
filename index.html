@@ -1158,9 +1158,21 @@ function setInput(text) {
   document.getElementById('inputText').value = text;
 }
 
-// parse input into sentences (split by 。！？, keep CJK + those terminators)
+// ===== PUNCTUATION (標點全形直出) =====
+// Full-width punctuation kept as cells in the worksheet; half-width input is
+// converted to full-width so the symbol occupies one grid cell.
+const PUNCT_FULL = '，。！？、；：「」『』（）《》〈〉【】〔〕…—–·％；０-９';  // ０-９ placeholder not used
+const PUNCT_SET = new Set('，。！？、；：「」『』（）《》〈〉【】〔〕…—–·%');
+const HALF2FULL = {',': '，', '.': '。', '!': '！', '?': '？', ':': '：', ';': '；',
+                   '(': '（', ')': '）', '%': '％', '-': '—', '"': '"', "'": "'"};
+function normalizePunct(text) {
+  return text.replace(/[,.:;!?()%'"\-]/g, m => HALF2FULL[m] || m);
+}
+function isPunct(ch) { return PUNCT_SET.has(ch); }
+
+// parse input into sentences (split by 。！？, keep CJK + full-width punct as cells)
 function parseSentences(text) {
-  const keep = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。！？]/g;
+  const keep = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF，。！？、；：「」『』（）《》〈〉【】〔〕…—–·]/g;
   const cleaned = (text.match(keep) || []).join('');
   const out = [];
   let cur = [];
@@ -1177,8 +1189,8 @@ function parseSentences(text) {
 
 // ===== CHARACTER PARSING =====
 function parseInput(text) {
-  // Keep only CJK chars + common punctuation
-  const regex = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/gu;
+  // Keep CJK chars + full-width punctuation (each symbol = one cell)
+  const regex = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF，。！？、；：「」『』（）《》〈〉【】〔〕…—–·]/gu;
   return (text.match(regex) || []);
 }
 
@@ -1227,6 +1239,9 @@ function generate() {
 
   let raw = document.getElementById('inputText').value.trim();
   if (!raw) { showToast('請輸入中文字'); return; }
+
+  // half-width punctuation → full-width (標點佔一格)
+  raw = normalizePunct(raw);
 
   // simplified -> traditional if enabled
   if (opts.s2t) {
@@ -1585,7 +1600,7 @@ function renderWorksheet() {
 
     // Char info row
     html += `<div class="char-info">`;
-    html += `<div class="char-display" onclick="openStroke('${esc(ch)}')" title="點擊查看筆順">`;
+    html += `<div class="char-display"${isPunct(ch) ? '' : ` onclick="openStroke('${esc(ch)}')" title="點擊查看筆順"`}>`;
     html += `<div class="char-cell">${guideSvg()}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
     html += `</div>`;
     html += `<div class="char-details">`;
@@ -1622,13 +1637,15 @@ function renderWorksheet() {
       html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
     }
 
-    // Action bar (screen only)
-    html += `<div class="action-bar no-print">`;
-    html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
-    html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
-    html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
-    html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
-    html += `</div>`;
+    // Action bar (screen only) — 標點無筆順資料，唔顯示按鈕
+    if (!isPunct(ch)) {
+      html += `<div class="action-bar no-print">`;
+      html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
+      html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
+      html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
+      html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
+      html += `</div>`;
+    }
 
     html += `</div>`; // .char-details
     html += `</div>`; // .char-info
@@ -1638,7 +1655,7 @@ function renderWorksheet() {
       const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
       html += `<div class="practice-row"${perRowAttr}>`;
       for (let r = 0; r < o.practice; r++) {
-        const isNumCell = (r === 0 && o.guide && o.strokeNum);
+        const isNumCell = (r === 0 && o.guide && o.strokeNum && !isPunct(ch));
         const guideHtml = o.guide ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>` : '';
         html += `<div class="practice-cell${isNumCell ? ' stroke-num-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
         html += guideSvg();
@@ -1759,6 +1776,7 @@ function normalizeGlyphs() {
   glyphs.forEach(g => {
     const ch = g.dataset.ch;
     if (!ch || seen.has(ch)) return;
+    if (isPunct(ch)) return;   // 標點：保持字體原本大小與位置（唔做光學放大）
     seen.add(ch);
     const ink = measureInk(ch, font, size);
     const ratio = Math.max(ink.w, ink.h) / size; // ink per font-size unit
