@@ -1028,7 +1028,8 @@ details.advance-collapse summary:hover { color: var(--red); }
   <div id="wsContent"></div>
   <div class="ws-footer" id="wsFooter">
     資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>
-    筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向
+    字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net<br>
+    列印建議使用A4直向 · 本工具為教育用途，與香港教育局無從屬關係
   </div>
   <div class="footer-links no-print">
     <a href="https://ko-fi.com/forumdata" target="_blank" rel="noopener" style="color:#f59e0b;text-decoration:none;font-weight:600;">☕ 請我飲咖啡</a>
@@ -1978,7 +1979,8 @@ function setWsFooter(o) {
   if (o.layout !== 'word' && currentSentences.length) parts.push(`${currentSentences.length} 句`);
   document.getElementById('wsFooter').innerHTML =
     `${parts.join(' · ')} · 資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>` +
-    `筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向`;
+    `字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net<br>` +
+    `列印建議使用A4直向 · 本工具為教育用途，與香港教育局無從屬關係`;
 }
 
 /**
