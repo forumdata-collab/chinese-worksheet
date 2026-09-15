@@ -7,6 +7,7 @@
 <link href="fonts/lxgw.css" rel="stylesheet">
 <script src="data.js?v=1788925874"></script>
 <script src="hk_order.js?v=2"></script>
+<script src="stroke_seq.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
 <style>
@@ -451,6 +452,13 @@ body {
 /* 未收錄於《香港小學學習字詞表》的字：筆順／試寫沒有資料，灰掉避免用戶撳入去見空白 */
 .action-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #f7f6f4; }
 .action-btn:disabled:hover { background: #f7f6f4; color: #888; border-color: #e4e2de; }
+
+/* 未收錄字：漢典「笔顺编号」逐筆類型次序（只有次序、無字形） */
+.stroke-seq { margin: 2px 0 0; color: #666; font-size: 0.92em; line-height: 1.5; }
+.stroke-seq.small { font-size: 0.82em; }
+.stroke-seq .seq-names { letter-spacing: 1px; color: #444; word-break: break-all; }
+.stroke-seq .seq-count { color: #999; margin-left: 2px; }
+.stroke-seq .seq-src { display: block; color: #aaa; font-size: 0.82em; letter-spacing: 0; }
 
 /* ===== MODAL ===== */
 .modal-overlay {
@@ -2116,15 +2124,35 @@ function showStrokeUnavailable(ch, modalId = 'strokeModal', targetId = 'stroke-t
   const target = document.getElementById(targetId);
   target.innerHTML =
     `<div style="font-size:110px;font-family:var(--cell-guide-font,serif);line-height:1.1;">${esc(ch)}</div>` +
-    `<p style="margin-top:14px;color:#8a8a8a;font-size:14px;line-height:1.6;">` +
-    `此字未收錄於《香港小學學習字詞表》，暫無官方筆順資料。<br>` +
-    `示範字仍可作字形參考，練習格可正常列印。</p>`;
+    strokeSeqHtml(ch) +
+    `<p style="margin-top:12px;color:#8a8a8a;font-size:13px;line-height:1.6;">` +
+    `未收錄於《香港小學學習字詞表》，暫無官方筆順字形（示範字仍可作字形參考，練習格可正常列印）。</p>`;
   document.querySelectorAll(`#${modalId} button, #${modalId} input`).forEach(el => {
     if (el.classList.contains('modal-close')) return;            // × 一定要撳得
     if (/關閉|close/i.test(el.textContent)) return;
     if (el.id === 'strokeSpeed') return;
     el.disabled = true;
   });
+}
+
+// ===== 未收錄字的「次序」資料 =====
+// 漢典 zdic.net「笔顺编号」= 逐筆類型次序（1橫 2豎 3撇 4點 5折），長度 = 官方筆畫數
+// （in-lexicon 嘅字已同 CHAR_DB 筆畫數對過，0 不符）。只有次序、無字形，所以只可以
+// 顯示文字，唔可以畫筆順動畫。
+function strokeSeqInfo(ch) {
+  const rec = (window.STROKE_SEQ || {})[ch];
+  if (!rec) return null;
+  return { code: rec[0], names: rec[1], count: rec[0].length };
+}
+
+function strokeSeqHtml(ch, opts) {
+  const s = strokeSeqInfo(ch);
+  if (!s) return '';
+  const small = (opts && opts.small);
+  return `<p class="stroke-seq${small ? ' small' : ''}" title="資料來源：漢典 zdic.net「笔顺编号」(${s.code})">` +
+    `筆順次序：<span class="seq-names">${s.names}</span>` +
+    `<span class="seq-count">（共 ${s.count} 筆）</span>` +
+    `<span class="seq-src">次序來源：漢典 zdic.net</span></p>`;
 }
 
 // 未收錄字的卡片：筆順／試寫按鈕變灰並說明，避免用戶撳入去見到空白
@@ -2137,11 +2165,23 @@ async function markNoStrokeData(root) {
       if (/筆順|試寫/.test(b.textContent)) {
         b.disabled = true;
         b.removeAttribute('onclick');
-        b.title = '此字未收錄於《香港小學學習字詞表》，暫無筆順資料';
+        b.title = '未收錄於《香港小學學習字詞表》，暫無筆順字形資料';
       }
     });
     const disp = card.querySelector('.char-display');
     if (disp) { disp.removeAttribute('onclick'); disp.removeAttribute('title'); }
+    // 次序資料還是有的 → 寫入卡片
+    const seq = strokeSeqInfo(ch);
+    const details = card.querySelector('.char-details');
+    if (seq && details && !details.querySelector('.stroke-seq')) {
+      let meta = details.querySelector('.meta-row');
+      if (!meta) {
+        meta = document.createElement('div');
+        meta.className = 'meta-row';
+        details.insertBefore(meta, details.querySelector('.action-bar') || null);
+      }
+      meta.insertAdjacentHTML('beforeend', strokeSeqHtml(ch, { small: true }));
+    }
   }));
 }
 

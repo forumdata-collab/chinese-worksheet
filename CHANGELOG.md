@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.3] - 2026-09-15
+
+### Added
+- **未收錄字的筆順「次序」顯示**：197 個既無 EDB 字形、亦無 HanziWriter 資料的字（搵/磡/柺/祂/蟶/蜆/囍 + 粵語字 咗/喺/佢/冇/咁/哋/攞/冧…），現於卡片顯示逐筆次序，例如 咗 → 「筆順次序：豎折橫橫撇橫豎橫（共 8 筆）」，並標明來源。彈窗同樣顯示，方便對照。
+  - 資料：`stroke_seq.js`（`window.STROKE_SEQ`，197 字）＝ 漢典 zdic.net「笔顺编号」（1橫 2豎 3撇 4點 5折）。
+  - 驗證：197 個編號長度與 CHAR_DB 筆畫數 **0 不符**。
+- `docs/stroke-data-notes.md`：筆順資料來源調查、各來源覆蓋率，以及暫緩嘅「部件推導字形」實驗結果（見下）。
+
+### Notes
+- **部件推導字形實驗唔達標，唔出街**：用同部首／同聲符 EDB 字轉移部件形，盲測 70 個有官方真值嘅字 → 筆畫數正確僅 36%、墨跡 IoU 平均 0.41、筆順 identity 2/17。根因：部件在合體字內會變形（手→扌 4→3 畫、水→氵、心→忄），而把模板字切回部件本身就需要該份未知分解。詳見 `docs/stroke-data-notes.md`。
+
 ## [1.2.2] - 2026-09-15
 
 ### Added
