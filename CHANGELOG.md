@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.1] - 2026-09-15
+
+### Fixed
+- **字形取錯（311 字的「最終字形」問題，例：個）**：EDB 每個字的動畫檔有兩組 shapes — 逐格顯示的漸進 sub-shape（`shape`…`shape_34`）同動畫結尾「整字」的官方最終 shapes（`shape_35`…）。舊 parser 用漸進版，而漸進版的中間 state 不等於最終字形：**個** 第 10 筆取到 x 260-791（由「人」跨到「固」底下，看上去像一條連住兩邊的底線），官方最終為 x 458-877（只在固內）。現改用 show-all 區塊的官方幾何 — 該區塊順序**不可直接信**（147/296 字的順序列唔符筆順，例：什），故保留動畫 chain 的筆順、只用全域最優 bbox 配對換上最終形狀。
+- **漏一筆（例：三 只有 2 畫）**：筆畫數標籤有兩種格式，除 `to({text:"N"},0)` 外另有 state-based `p:{text:"N"}`（三 用後者）→ 舊碼讀到 "2" 便 trim 走第 3 筆。同時修正「同 delay 合併」會把數字標籤 tween（name 較多）當成筆畫 chain 而吞掉真筆畫。
+- **非教育局字的筆順數字上下鏡像**：HanziWriter 的 stroke／median 為 y-up，描紅數字層卻直接畫入 SVG 的 y-down 空間（少了一次翻轉）。以墨跡行剖面相關量度：**對齊 0.357 vs 翻轉 0.622**（噠）→ 數字全部落在錯誤筆畫上。影響所有非教育局字形字（粵語字 嘅/咁/呢/睇 等）。
+- **筆順數字互相重疊**：新增沿筆畫中心線的避撞放置（`placeNumberLabels`）— 每個數字先在自己筆畫的中線上試 15 個位置，全撞才垂直筆畫方向側移。修正前：噠 11/12 重疊 33×33px、4/5、10/11、10/12、6/8；進 6/7。實測 38 字（個/三/進/噠/嘅/十/土/香/鄭/雅/說…）墨跡框重疊 = 0。
+
+### Changed
+- 全部 4,493 個字形重建（build → flip → reframe），`glyphs/` cache-busting `?v=7 → ?v=8`。
+
 ## [1.2.0] - 2026-09-15
 
 ### Added

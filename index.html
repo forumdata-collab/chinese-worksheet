@@ -1341,15 +1341,15 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=7`)
+  const p = fetch(`glyphs/${hex}.json?v=8`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
   return p;
 }
 
-// arc-length midpoint of a polyline [[x,y]…]
-function medianMidPt(m) {
+// arc-length point at fraction f (0..1) along a polyline [[x,y]…]
+function medianPtAt(m, f) {
   if (!m || !m.length) return null;
   if (m.length === 1) return { x: m[0][0], y: m[0][1] };
   let total = 0;
@@ -1358,19 +1358,92 @@ function medianMidPt(m) {
     const L = Math.hypot(m[k][0] - m[k - 1][0], m[k][1] - m[k - 1][1]);
     segs.push(L); total += L;
   }
+  if (!total) return { x: m[0][0], y: m[0][1] };
+  const want = total * f;
   let acc = 0;
   for (let k = 0; k < segs.length; k++) {
-    if (acc + segs[k] >= total / 2) {
-      const t = (total / 2 - acc) / (segs[k] || 1);
+    if (acc + segs[k] >= want) {
+      const t = (want - acc) / (segs[k] || 1);
       return { x: m[k][0] + (m[k + 1][0] - m[k][0]) * t, y: m[k][1] + (m[k + 1][1] - m[k][1]) * t };
     }
     acc += segs[k];
   }
-  return { x: m[0][0], y: m[0][1] };
+  return { x: m[m.length - 1][0], y: m[m.length - 1][1] };
+}
+
+// Stroke numbers, placed ON their own stroke but kept apart from each other.
+// Each number tries several arc-length positions of its own median — so it can never
+// drift off the stroke it labels — and takes the first slot that does not overlap an
+// already-placed number; if every slot collides, the least-overlapping one wins.
+// Without this, characters whose strokes cross at their midpoints (十-shaped parts,
+// 噠 strokes 4/5 and 11/12 …) print two numbers on top of each other.
+// flipC mirrors stored y-up data into the SVG's y-down space: y_display = flipC - y.
+function placeNumberLabels(polys, fontSize, flipC) {
+  const placed = [];
+  const FRACTIONS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92];
+  // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
+  // above its baseline, plus a small breathing gap. Using the full em box made the
+  // solver think two labels 90 units apart still collided and settle for a needless
+  // overlap (個 strokes 5/6).
+  const gap = fontSize * 0.05;
+  polys.forEach((m, i) => {
+    const label = String(i + 1);
+    let best = null, bestOv = Infinity;
+    for (const f of FRACTIONS) {
+      const pt = medianPtAt(m, f);
+      if (!pt) continue;
+      const cx = pt.x, cy = flipC - pt.y;
+      const bw = fontSize * 0.55 * label.length;
+      const bx0 = cx - bw / 2 - gap, bx1 = cx + bw / 2 + gap;
+      // Digits sit ON the text baseline, which the renderer lifts 0.18em above cy,
+      // and their ink reaches ~0.72em above that baseline — so the box is NOT centred
+      // on cy. Modelling it as centred left 進's 6/7 overlapping by 68x16 units.
+      const by0 = cy - fontSize * 0.90 - gap, by1 = cy - fontSize * 0.18 + gap;
+      let ov = 0;
+      for (const p of placed) {
+        const ox = Math.min(bx1, p.bx1) - Math.max(bx0, p.bx0);
+        const oy = Math.min(by1, p.by1) - Math.max(by0, p.by0);
+        if (ox > 0 && oy > 0) ov += ox * oy;
+      }
+      if (ov < bestOv) { bestOv = ov; best = { label, cx, cy, bx0, bx1, by0, by1 }; }
+      if (ov === 0) break;
+    }
+    // Last resort: a stroke can be too short to hold all its own labels apart (進's
+    // stroke 7 shares one vertical line with 5 and 6). Step SIDEWAYS off the stroke —
+    // perpendicular to its local direction — keeping the number beside its own stroke.
+    if (best && bestOv > 0) {
+      const a = medianPtAt(m, 0.46), b = medianPtAt(m, 0.54);
+      let nx = 1, ny = 0;
+      if (a && b) {
+        const dx = b.x - a.x, dy = -(b.y - a.y);      // display space (y flipped)
+        const L = Math.hypot(dx, dy);
+        if (L) { nx = -dy / L; ny = dx / L; }
+      }
+      for (const k of [0.6, 0.9, 1.2, -0.6, -0.9, -1.2]) {
+        const cx2 = best.cx + nx * fontSize * k, cy2 = best.cy + ny * fontSize * k;
+        const bw2 = fontSize * 0.55 * label.length;
+        const bx2 = [cx2 - bw2 / 2 - gap, cx2 + bw2 / 2 + gap];
+        const by2 = [cy2 - fontSize * 0.90 - gap, cy2 - fontSize * 0.18 + gap];
+        let ov2 = 0;
+        for (const p of placed) {
+          const ox = Math.min(bx2[1], p.bx1) - Math.max(bx2[0], p.bx0);
+          const oy = Math.min(by2[1], p.by1) - Math.max(by2[0], p.by0);
+          if (ox > 0 && oy > 0) ov2 += ox * oy;
+        }
+        if (ov2 < bestOv) {
+          bestOv = ov2;
+          best = { label, cx: cx2, cy: cy2, bx0: bx2[0], bx1: bx2[1], by0: by2[0], by1: by2[1] };
+        }
+        if (ov2 === 0) break;
+      }
+    }
+    if (best) placed.push(best);
+  });
+  return placed;
 }
 
 // Build the display SVG for one glyph record. Ink ≈ 62% of the box (matches the
-// old font glyph look). Numbers (optional) sit at each median's midpoint.
+// old font glyph look). Numbers (optional) sit on each stroke's centreline.
 function hkGlyphSvg(rec, opts) {
   const NS = 'http://www.w3.org/2000/svg';
   const wantNum = !!(opts && opts.numbers);
@@ -1413,14 +1486,12 @@ function hkGlyphSvg(rec, opts) {
 
   if (wantNum && rec.m) {
     const fs = box * 0.14;
-    rec.m.forEach((m, i) => {
-      const mid = medianMidPt(m);
-      if (!mid) return;
+    placeNumberLabels(rec.m, fs, C).forEach(p => {
       const t = document.createElementNS(NS, 'text');
-      t.setAttribute('x', mid.x.toFixed(1));
-      t.setAttribute('y', (C - mid.y - fs * 0.18).toFixed(1));
+      t.setAttribute('x', p.cx.toFixed(1));
+      t.setAttribute('y', (p.cy - fs * 0.18).toFixed(1));
       t.setAttribute('font-size', fs.toFixed(1));
-      t.textContent = String(i + 1);
+      t.textContent = p.label;
       svg.appendChild(t);
     });
   }
@@ -1484,10 +1555,10 @@ async function overlayStrokeNum(cell) {
   probe.style.cssText = 'position:absolute;left:-9999px;overflow:hidden';
   document.body.appendChild(probe);
   let hwX0 = Infinity, hwY0 = Infinity, hwX1 = -Infinity, hwY1 = -Infinity;
-  const medians = [];
-  // Number anchor = arc-length midpoint of the stroke's MEDIAN (true centreline).
-  // HW `strokes` are closed ink contours — their geometric midpoint can land on a
-  // stroke tip, so the centreline (medians, already reordered to HK order) is used.
+  const medPolys = [];
+  // Number anchor = a point on the stroke's MEDIAN (true centreline). HW `strokes` are
+  // closed ink contours — their geometric midpoint can land on a stroke tip, so the
+  // centreline (medians, already reordered to HK order) is used instead.
   for (let si = 0; si < data.strokes.length; si++) {
     const d = data.strokes[si];
     const p = document.createElementNS(NS, 'path');
@@ -1497,15 +1568,16 @@ async function overlayStrokeNum(cell) {
     hwX1 = Math.max(hwX1, b.x + b.width); hwY1 = Math.max(hwY1, b.y + b.height);
     const med = data.medians && data.medians[si];
     if (med && med.length > 1) {
-      medians.push(medianMidPt(med));
+      medPolys.push(med);
     } else {
+      let pt;
       try {
         const len = p.getTotalLength();
-        const pt = p.getPointAtLength(len * 0.5);
-        medians.push({ x: pt.x, y: pt.y });
+        pt = p.getPointAtLength(len * 0.5);
       } catch (e) {
-        medians.push({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
+        pt = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
       }
+      medPolys.push([[pt.x, pt.y], [pt.x, pt.y]]);
     }
   }
   probe.remove();
@@ -1522,12 +1594,18 @@ async function overlayStrokeNum(cell) {
   svg.setAttribute('aria-hidden', 'true');
 
   const numFontSize = Math.max(40, Math.min(80, hwH * 0.13));
-  medians.forEach((m, i) => {
+  // HanziWriter ships y-UP data while this overlay draws into the SVG's y-down space,
+  // so the whole number layer used to come out vertically MIRRORED against the font
+  // glyph (measured: row-profile correlation 0.357 aligned vs 0.622 flipped, 噠) —
+  // numbers landed on the wrong strokes. Mirror about the ink bbox, exactly like the
+  // HK-glyph path does with C = y0 + y1.
+  const flipC = hwY0 + hwY1;
+  placeNumberLabels(medPolys, numFontSize, flipC).forEach(p => {
     const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', String(m.x.toFixed(1)));
-    t.setAttribute('y', String((m.y - numFontSize * 0.18).toFixed(1)));
-    t.setAttribute('font-size', String(numFontSize.toFixed(1)));
-    t.textContent = String(i + 1);
+    t.setAttribute('x', p.cx.toFixed(1));
+    t.setAttribute('y', (p.cy - numFontSize * 0.18).toFixed(1));
+    t.setAttribute('font-size', numFontSize.toFixed(1));
+    t.textContent = p.label;
     svg.appendChild(t);
   });
 
