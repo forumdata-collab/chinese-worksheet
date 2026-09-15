@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.5] - 2026-09-15
+
+### Fixed
+- **描紅數字跌落空白位（用戶報「兒」顯示錯誤）**：數字原本放在筆畫中心線的弧長中點，但短／幼筆畫的中點可能落在墨跡之外（兒的第 1 筆只有約 25 單位闊，數字 1 就飄在空白處），加上避撞用的側移亦可能把數字推到鄰筆之上。
+  - 現在每個數字候選位置都要通過 **`path.isPointInFill()`** 驗證（必須落在自己那筆的墨跡內），否則重罰；仍會在多個候選中取重疊最少者。
+  - ⚠️ 關鍵陷阱：**`isPointInFill()` 對未插入 DOM 的節點永遠回 `false`**（已實測，detached=false / attached=true）。由於數字本來在 `hkGlyphSvg()` 內、SVG 尚未 append 時計算，這個檢查會靜默失效。已改為 `addGlyphNumbers(svg)` 在 `installHKGlyphs()` **append 之後**才計算數字。
+  - 驗證（live，用 `isPointInFill` 逐字檢查）：花/兒/先/個/進/香/鄭/雅/說 **全部 0 個數字偏離自己的筆畫**（修前 兒 #1、進 #7 偏離）。
+
+### Added
+- **無筆順字形字（STROKE_SEQ 197 字）的描紅格顯示次序文字**：這批字沒有任何筆畫輪廓，無法畫數字，所以改為在**第一個描紅格內**顯示漢典「笔顺编号」的逐筆類型次序（例：咗 → 豎折橫橫撇橫豎橫），螢幕與列印皆可，並附來源 tooltip；這些格不再標記為 `stroke-num-cell`。
+
 ## [1.2.4] - 2026-09-15
 
 ### Fixed

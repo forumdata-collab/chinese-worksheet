@@ -460,6 +460,19 @@ body {
 .stroke-seq .seq-count { color: #999; margin-left: 2px; }
 .stroke-seq .seq-src { display: block; color: #aaa; font-size: 0.82em; letter-spacing: 0; }
 
+/* 描紅格內的筆順次序文字（無筆順字形時替代數字標示） */
+.seq-overlay-cell { position: relative; }
+.seq-overlay {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  text-align: center; font-size: 0.7em; line-height: 1.2;
+  color: #b08a8a; pointer-events: none; z-index: 5;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 0 2px;
+}
+@media print {
+  .seq-overlay { color: #c0a0a0; font-size: 0.65em; }
+}
+
 /* ===== MODAL ===== */
 .modal-overlay {
   display: none;
@@ -1352,7 +1365,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=9`)
+  const p = fetch(`glyphs/${hex}.json?v=10`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
@@ -1389,7 +1402,11 @@ function medianPtAt(m, f) {
 // Without this, characters whose strokes cross at their midpoints (十-shaped parts,
 // 噠 strokes 4/5 and 11/12 …) print two numbers on top of each other.
 // flipC mirrors stored y-up data into the SVG's y-down space: y_display = flipC - y.
-function placeNumberLabels(polys, fontSize, flipC) {
+// insideFn(i, cx, cy) is optional: it must report whether the display-space point
+// actually lies in stroke i's ink.  A plain arc-length midpoint can fall OUTSIDE a
+// short/thin stroke (兒's first stroke is only ~25 units wide, so its number floated
+// in blank space), and candidates that miss their own stroke are penalised hard.
+function placeNumberLabels(polys, fontSize, flipC, insideFn) {
   const placed = [];
   const FRACTIONS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
@@ -1397,6 +1414,7 @@ function placeNumberLabels(polys, fontSize, flipC) {
   // solver think two labels 90 units apart still collided and settle for a needless
   // overlap (個 strokes 5/6).
   const gap = fontSize * 0.05;
+  const OFF_STROKE_PENALTY = fontSize * fontSize * 4;   // dominates any overlap term
   polys.forEach((m, i) => {
     const label = String(i + 1);
     let best = null, bestOv = Infinity;
@@ -1415,6 +1433,11 @@ function placeNumberLabels(polys, fontSize, flipC) {
         const ox = Math.min(bx1, p.bx1) - Math.max(bx0, p.bx0);
         const oy = Math.min(by1, p.by1) - Math.max(by0, p.by0);
         if (ox > 0 && oy > 0) ov += ox * oy;
+      }
+      if (insideFn) {
+        let onStroke = true;
+        try { onStroke = insideFn(i, cx, cy); } catch (e) { onStroke = true; }
+        if (!onStroke) ov += OFF_STROKE_PENALTY;
       }
       if (ov < bestOv) { bestOv = ov; best = { label, cx, cy, bx0, bx1, by0, by1 }; }
       if (ov === 0) break;
@@ -1440,6 +1463,11 @@ function placeNumberLabels(polys, fontSize, flipC) {
           const ox = Math.min(bx2[1], p.bx1) - Math.max(bx2[0], p.bx0);
           const oy = Math.min(by2[1], p.by1) - Math.max(by2[0], p.by0);
           if (ox > 0 && oy > 0) ov2 += ox * oy;
+        }
+        if (insideFn) {
+          let onStroke = true;
+          try { onStroke = insideFn(i, cx2, cy2); } catch (e) { onStroke = true; }
+          if (!onStroke) ov2 += OFF_STROKE_PENALTY;
         }
         if (ov2 < bestOv) {
           bestOv = ov2;
@@ -1488,25 +1516,41 @@ function hkGlyphSvg(rec, opts) {
   const C = y0 + y1;
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('transform', `translate(0,${C.toFixed(1)}) scale(1,-1)`);
+  const strokeEls = [];
   for (const d of rec.s) {
     const p = document.createElementNS(NS, 'path');
     p.setAttribute('d', d);
     g.appendChild(p);
+    strokeEls.push(p);
   }
   svg.appendChild(g);
 
-  if (wantNum && rec.m) {
-    const fs = box * 0.14;
-    placeNumberLabels(rec.m, fs, C).forEach(p => {
-      const t = document.createElementNS(NS, 'text');
-      t.setAttribute('x', p.cx.toFixed(1));
-      t.setAttribute('y', (p.cy - fs * 0.18).toFixed(1));
-      t.setAttribute('font-size', fs.toFixed(1));
-      t.textContent = p.label;
-      svg.appendChild(t);
-    });
-  }
+  // numbers are placed later, once this SVG is in the document — see addGlyphNumbers
+  svg._glyphMeta = { fs: box * 0.14, C, strokeEls, medians: rec.m };
   return svg;
+}
+
+// Place the stroke numbers. MUST run after the SVG is attached to the document:
+// isPointInFill() returns false for detached nodes (verified), which would silently
+// disable the "stay inside your own stroke" test and let labels float in blank space.
+function addGlyphNumbers(svg) {
+  const meta = svg && svg._glyphMeta;
+  if (!meta || !meta.medians || !meta.medians.length) return;
+  const { fs, C, strokeEls, medians } = meta;
+  const NS = 'http://www.w3.org/2000/svg';
+  const insideFn = (i, cx, cy) => {
+    const el = strokeEls[i];
+    if (!el) return true;
+    try { return el.isPointInFill(new DOMPoint(cx, C - cy)); } catch (e) { return true; }
+  };
+  placeNumberLabels(medians, fs, C, insideFn).forEach(p => {
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', p.cx.toFixed(1));
+    t.setAttribute('y', (p.cy - fs * 0.18).toFixed(1));
+    t.setAttribute('font-size', fs.toFixed(1));
+    t.textContent = p.label;
+    svg.appendChild(t);
+  });
 }
 
 // Install HK glyphs into .char-glyph / .guide-glyph spans (font glyph = fallback).
@@ -1530,6 +1574,7 @@ async function installHKGlyphs(root) {
     el.textContent = '';
     el.style.transform = '';           // font-based optical normalisation not needed
     el.appendChild(svg);
+    if (withNum) addGlyphNumbers(svg);  // after attach, so isPointInFill() works
     handled.add(el.dataset.ch);
   });
   return handled;
@@ -1744,11 +1789,19 @@ function renderWorksheet() {
       const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
       html += `<div class="practice-row"${perRowAttr}>`;
       for (let r = 0; r < o.practice; r++) {
-        const isNumCell = (r === 0 && o.guide && o.strokeNum && !isPunct(ch));
+        // chars with no outlines at all (STROKE_SEQ) can't carry numbers: inside the
+        // tracing cell show the 筆順次序 text instead of leaving the cell bare
+        const hasSeq = !!strokeSeqInfo(ch);
+        const isNumCell = (r === 0 && o.guide && o.strokeNum && !isPunct(ch) && !hasSeq);
+        const seqInfo = (r === 0 && o.guide && !isPunct(ch) && hasSeq) ? strokeSeqInfo(ch) : null;
+        const seqOverlay = seqInfo
+          ? `<div class="seq-overlay" title="筆順次序來源：漢典 zdic.net">${seqInfo.names}</div>`
+          : '';
         const guideHtml = o.guide ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>` : '';
-        html += `<div class="practice-cell${isNumCell ? ' stroke-num-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
+        html += `<div class="practice-cell${isNumCell ? ' stroke-num-cell' : ''}${seqInfo ? ' seq-overlay-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
         html += guideSvg();
         html += guideHtml;
+        html += seqOverlay;
         html += `</div>`;
       }
       html += `</div>`;
@@ -1773,10 +1826,16 @@ function renderWorksheet() {
             ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>`
             : '';
           // stroke numbers sit on the tracing (first) row, same as word practice cells
-          const isNumCell = (hasGuide && o.strokeNum);
-          html += `<div class="sentence-cell${isNumCell ? ' stroke-num-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
+          const hasSeqS = !!strokeSeqInfo(ch);
+          const isNumCell = (hasGuide && o.strokeNum && !hasSeqS);
+          const seqInfoS = (hasGuide && !isPunct(ch) && hasSeqS) ? strokeSeqInfo(ch) : null;
+          const seqOverlayS = seqInfoS
+            ? `<div class="seq-overlay" title="筆順次序來源：漢典 zdic.net">${seqInfoS.names}</div>`
+            : '';
+          html += `<div class="sentence-cell${isNumCell ? ' stroke-num-cell' : ''}${seqInfoS ? ' seq-overlay-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
           html += guideSvg();
           html += guideHtml;
+          html += seqOverlayS;
           html += `</div>`;
         });
         html += `</div>`;
