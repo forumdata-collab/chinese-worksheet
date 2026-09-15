@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.6] - 2026-09-15
+
+### Changed (refactor, no user-visible change except where noted)
+- **`renderWorksheet` 170 → 57 行**：抽出 `charCardHtml` / `sentenceSectionHtml` / `setWsFooter` / `installGlyphLayer`。
+- **消滅重複碼**：描紅格（字卡 vs 句格）本來有兩段近乎一樣的 11 行，而且標點規則唔一致 — 句格會將「。」標成有筆順數字嘅格。現在統一由 `traceCellHtml(ch, cellClass, opts)` 產生；**修正**：句格標點唔再被當成筆順格（本版唯一輸出差異）。
+- **參數/資料整理**：`glyphFrame(rec)` 統一 {box, C, fs, viewBox}（原本三處各自計）；`placeNumberLabels(medians, frame, insideFn)`、`hkGlyphSvg(rec)` — 全部函數 ≤3 個參數。
+- **移除死碼**：`zhVoiceSummary`、`hkGlyphSvg` 的 `opts.numbers`、3 個重複嘅 `const NS`（提升為 module 常數）。
+- **資料管線入版控**：所有 parser / build / flip / reframe script 由 `/tmp` 移入 `tools/`（`CW_WORK` 可指定工作目錄），並附 `tools/README.md` 記錄流程與陷阱。此前所有 parser 修正只存在 /tmp，無法重現亦無測試。
+
+### Added
+- **Sanity testing（`tools/`）**：三個獨立檢查，每個都對應今日真出過嘅 bug —
+  `sanity_data.py`（4,493 glyph：JSON/中線/方向/筆畫數/表一致性）、`sanity_parser.py`（重新解析 EDB 動畫並要求已出貨 glyph 可重現）、`sanity_numbers.js`（54,474 個數字：碰撞 + 錨點是否落喺自己筆畫內）。
+- `docs/code-review.md`：12 項 code smell 嘅審查結果（已修 / 接受 / 不存在）＋刻意唔做嘅部分。
+
+### Fixed
+- **`導` 15→16 畫、`巍` 20→21 畫**：早前 label 計數 bug（將重複 timeline 嘅號碼 double count，再用「安全網」剪走真筆畫）令呢兩字少了一筆。label 改為取動畫顯示嘅**最大**號碼後，全量重新解析：4,491 字完全不變，只有呢兩字修正。
+- `sanity_parser` 因此新增「已出貨 glyph 必須能由 parser 重現」嘅檢查 — 呢個缺口就係由佢捉出嚟。
+
+
 ## [1.2.5] - 2026-09-15
 
 ### Fixed

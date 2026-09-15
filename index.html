@@ -1106,6 +1106,7 @@ let currentStrokeChar = '';
 let quizMode = false;
 
 // Shared size config: px values (data clump fix — single source of truth)
+const NS = 'http://www.w3.org/2000/svg';
 const SIZE_PX = { xs: 56, sm: 72, md: 96, lg: 128 };
 // 字與框比例：字形墨跡佔格 82%（螢幕與列印一致）
 const GLYPH_RATIO = 0.82;
@@ -1365,7 +1366,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=10`)
+  const p = fetch(`glyphs/${hex}.json?v=11`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
@@ -1406,7 +1407,8 @@ function medianPtAt(m, f) {
 // actually lies in stroke i's ink.  A plain arc-length midpoint can fall OUTSIDE a
 // short/thin stroke (兒's first stroke is only ~25 units wide, so its number floated
 // in blank space), and candidates that miss their own stroke are penalised hard.
-function placeNumberLabels(polys, fontSize, flipC, insideFn) {
+function placeNumberLabels(medians, frame, insideFn) {
+  const { fs: fontSize, C: flipC } = frame;   // glyph geometry travels as one frame
   const placed = [];
   const FRACTIONS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
@@ -1415,7 +1417,7 @@ function placeNumberLabels(polys, fontSize, flipC, insideFn) {
   // overlap (個 strokes 5/6).
   const gap = fontSize * 0.05;
   const OFF_STROKE_PENALTY = fontSize * fontSize * 4;   // dominates any overlap term
-  polys.forEach((m, i) => {
+  medians.forEach((m, i) => {
     const label = String(i + 1);
     let best = null, bestOv = Infinity;
     for (const f of FRACTIONS) {
@@ -1481,17 +1483,18 @@ function placeNumberLabels(polys, fontSize, flipC, insideFn) {
   return placed;
 }
 
-// Build the display SVG for one glyph record. Ink ≈ 62% of the box (matches the
-// old font glyph look). Numbers (optional) sit on each stroke's centreline.
-function hkGlyphSvg(rec, opts) {
-  const NS = 'http://www.w3.org/2000/svg';
-  const wantNum = !!(opts && opts.numbers);
+/**
+ * Ink bounding box of a glyph's stroke paths. getBBox() only works on rendered
+ * geometry, so the paths are measured inside an off-screen probe SVG that is removed
+ * again straight away. Returns null for a degenerate (empty) record.
+ */
+function glyphInkBBox(paths) {
   const probe = document.createElementNS(NS, 'svg');
   probe.setAttribute('width', '0'); probe.setAttribute('height', '0');
   probe.style.cssText = 'position:absolute;left:-9999px;overflow:hidden';
   document.body.appendChild(probe);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const d of rec.s) {
+  for (const d of paths) {
     const p = document.createElementNS(NS, 'path');
     p.setAttribute('d', d); probe.appendChild(p);
     const b = p.getBBox();
@@ -1500,22 +1503,42 @@ function hkGlyphSvg(rec, opts) {
   }
   probe.remove();
   if (!isFinite(x0) || x1 <= x0 || y1 <= y0) return null;
+  return { x0, y0, x1, y1 };
+}
 
-  const maxd = Math.max(x1 - x0, y1 - y0);
-  // viewBox == ink bbox → 墨跡佔滿 SVG 盒；盒 = 1em = GLYPH_RATIO × 格 → 字佔格 82%
-  const box = maxd;
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+/**
+ * Display frame of one glyph record — everything downstream needs, in one object.
+ * Stored space is y-UP, so `C` is the flip axis that turns the display y-down again.
+ * The stroke-number font size is 14% of the ink box (unchanged ratio).
+ */
+function glyphFrame(rec) {
+  const b = glyphInkBBox(rec.s);
+  if (!b) return null;
+  const box = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+  const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+  return {
+    ...b, box, cx, cy,
+    C: b.y0 + b.y1,
+    fs: box * 0.14,
+    viewBox: `${(cx - box / 2).toFixed(1)} ${(cy - box / 2).toFixed(1)} `
+           + `${box.toFixed(1)} ${box.toFixed(1)}`,
+  };
+}
+
+// Build the display SVG for one glyph record. Ink is ~62% of the box (matches the old
+// font glyph look). Stroke numbers are added afterwards by addGlyphNumbers().
+function hkGlyphSvg(rec) {
+  const frame = glyphFrame(rec);
+  if (!frame) return null;
 
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'hk-glyph-svg');
-  svg.setAttribute('viewBox', `${(cx - box / 2).toFixed(1)} ${(cy - box / 2).toFixed(1)} ${box.toFixed(1)} ${box.toFixed(1)}`);
+  svg.setAttribute('viewBox', frame.viewBox);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   svg.setAttribute('aria-hidden', 'true');
 
-  // stored space is y-up; C = flip axis so display == original EDB y-down
-  const C = y0 + y1;
   const g = document.createElementNS(NS, 'g');
-  g.setAttribute('transform', `translate(0,${C.toFixed(1)}) scale(1,-1)`);
+  g.setAttribute('transform', `translate(0,${frame.C.toFixed(1)}) scale(1,-1)`);
   const strokeEls = [];
   for (const d of rec.s) {
     const p = document.createElementNS(NS, 'path');
@@ -1526,9 +1549,10 @@ function hkGlyphSvg(rec, opts) {
   svg.appendChild(g);
 
   // numbers are placed later, once this SVG is in the document — see addGlyphNumbers
-  svg._glyphMeta = { fs: box * 0.14, C, strokeEls, medians: rec.m };
+  svg._glyphMeta = { ...frame, strokeEls, medians: rec.m };
   return svg;
 }
+
 
 // Place the stroke numbers. MUST run after the SVG is attached to the document:
 // isPointInFill() returns false for detached nodes (verified), which would silently
@@ -1537,13 +1561,12 @@ function addGlyphNumbers(svg) {
   const meta = svg && svg._glyphMeta;
   if (!meta || !meta.medians || !meta.medians.length) return;
   const { fs, C, strokeEls, medians } = meta;
-  const NS = 'http://www.w3.org/2000/svg';
   const insideFn = (i, cx, cy) => {
     const el = strokeEls[i];
     if (!el) return true;
     try { return el.isPointInFill(new DOMPoint(cx, C - cy)); } catch (e) { return true; }
   };
-  placeNumberLabels(medians, fs, C, insideFn).forEach(p => {
+  placeNumberLabels(medians, { fs, C }, insideFn).forEach(p => {
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', p.cx.toFixed(1));
     t.setAttribute('y', (p.cy - fs * 0.18).toFixed(1));
@@ -1569,7 +1592,7 @@ async function installHKGlyphs(root) {
     const rec = recs.get(el.dataset.ch);
     if (!rec) return;
     const withNum = el.classList.contains('guide-glyph') && !!el.closest('.stroke-num-cell');
-    const svg = hkGlyphSvg(rec, { numbers: withNum });
+    const svg = hkGlyphSvg(rec);
     if (!svg) return;
     el.textContent = '';
     el.style.transform = '';           // font-based optical normalisation not needed
@@ -1600,7 +1623,6 @@ async function overlayStrokeNum(cell) {
   const data = await _hwCharData(ch);
   if (!data || !data.strokes || !data.strokes.length) return;
 
-  const NS = 'http://www.w3.org/2000/svg';
   const glyph = cell.querySelector('.guide-glyph');
   if (!glyph) return;
 
@@ -1656,7 +1678,7 @@ async function overlayStrokeNum(cell) {
   // numbers landed on the wrong strokes. Mirror about the ink bbox, exactly like the
   // HK-glyph path does with C = y0 + y1.
   const flipC = hwY0 + hwY1;
-  placeNumberLabels(medPolys, numFontSize, flipC).forEach(p => {
+  placeNumberLabels(medPolys, { fs: numFontSize, C: flipC }).forEach(p => {
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', p.cx.toFixed(1));
     t.setAttribute('y', (p.cy - numFontSize * 0.18).toFixed(1));
@@ -1682,6 +1704,171 @@ function guideSvg() {
     `<line class="g-v3b" x1="66.7" y1="0" x2="66.7" y2="100"/>` +
     `</svg>`;
 }
+
+function seqOverlayHtml(seq) {
+  // Characters with no outlines at all (STROKE_SEQ) can't show stroke numbers, so their
+  // tracing cell carries the 筆順次序 text instead.
+  return seq
+    ? `<div class="seq-overlay" title="筆順次序來源：漢典 zdic.net">${seq.names}</div>`
+    : '';
+}
+
+/**
+ * One tracing cell: the guide layer + the guide character, decorated with either the
+ * stroke numbers (EDB glyph / HanziWriter overlay, driven later by `data-ch`) or the
+ * 筆順次序 text for characters that have no outlines.
+ *
+ * `cellClass` is the layout's own cell class (practice-cell / sentence-cell).
+ */
+function traceCellHtml(ch, cellClass, opts) {
+  const seq = (opts.guide && opts.strokeNum) ? strokeSeqInfo(ch) : null;
+  const numCell = !!(opts.guide && opts.strokeNum && !isPunct(ch) && !seq);
+  return `<div class="${cellClass}${numCell ? ' stroke-num-cell' : ''}${seq ? ' seq-overlay-cell' : ''}"`
+    + (numCell ? ` data-ch="${esc(ch)}"` : '')
+    + `>`
+    + guideSvg()
+    + (opts.guide
+        ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>`
+        : '')
+    + seqOverlayHtml(seq)
+    + `</div>`;
+}
+
+/**
+ * One character card: the character, its readings and meta line, and the practice grid
+ * underneath. Screen-only action buttons live here too.
+ */
+function charCardHtml(ch, o) {
+  let html = '';
+  const d = window.CHAR_DB[ch] || {};
+  const cName = o.quizMode ? 'quiz-mode' : '';
+  html += `<div class="char-card ${cName}" data-char="${esc(ch)}">`;
+
+  // Char info row
+  html += `<div class="char-info">`;
+  html += `<div class="char-display"${isPunct(ch) ? '' : ` onclick="openStroke('${esc(ch)}')" title="點擊查看筆順"`}>`;
+  html += `<div class="char-cell">${guideSvg()}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
+  html += `</div>`;
+  html += `<div class="char-details">`;
+
+  // Canto reading
+  if (o.canto && d.jy) {
+    html += `<div class="reading-row">`;
+    html += `<span class="reading-label canto">粵拼</span>`;
+    html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
+    if (d.jy2 && d.jy2.length) {
+      html += `<span class="reading-alt">又讀：${d.jy2.map(jyutpingHtml).join('、')}</span>`;
+    }
+    html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
+    html += `</div>`;
+  }
+
+  // Mandarin reading
+  if (o.pinyin && d.py) {
+    html += `<div class="reading-row">`;
+    html += `<span class="reading-label">拼音</span>`;
+    html += `<span class="reading-value">${esc(d.py)}</span>`;
+    if (d.py2 && d.py2.length) {
+      html += `<span class="reading-alt">又讀：${esc(d.py2.join('、'))}</span>`;
+    }
+    html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
+    html += `</div>`;
+  }
+
+  // Meta info
+  let metaParts = [];
+  if (o.strokes && d.s) metaParts.push(`✏️ ${d.s}畫`);
+  if (d.si) metaParts.push(`簡體：${esc(d.si)}`);
+  if (metaParts.length) {
+    html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
+  }
+
+  // Action bar (screen only) — 標點無筆順資料，唔顯示按鈕
+  if (!isPunct(ch)) {
+    html += `<div class="action-bar no-print">`;
+    html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
+    html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
+    html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
+    html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
+    html += `</div>`;
+  }
+
+  html += `</div>`; // .char-details
+  html += `</div>`; // .char-info
+
+  // Practice grids
+  if (o.practice > 0) {
+    const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
+    html += `<div class="practice-row"${perRowAttr}>`;
+    for (let r = 0; r < o.practice; r++) {
+      html += traceCellHtml(ch, 'practice-cell',
+        { guide: !!o.guide, strokeNum: r === 0 && !!o.strokeNum });
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`; // .char-card
+  return html;
+}
+
+/** \u6574\u53e5\u7df4\u7fd2 section: each sentence repeated `sentenceTimes` times, first row traced. */
+function sentenceSectionHtml(o) {
+  if (o.layout === 'word' || !currentSentences.length) return '';
+  let html = '';
+  html += `<div class="sentence-section">`;
+  currentSentences.forEach(sChars => {
+    const sText = sChars.join('');
+    html += `<div class="sentence-block">`;
+    html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
+    for (let t = 0; t < o.sentenceTimes; t++) {
+      const hasGuide = (t === 0 && o.guide);
+      html += `<div class="sentence-row">`;
+      sChars.forEach(ch => {
+        // stroke numbers sit on the tracing (first) row, same as word practice cells
+        html += traceCellHtml(ch, 'sentence-cell',
+          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum });
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+/** Footer line: character / sentence counts plus the data-source credits. */
+function setWsFooter(o) {
+  const parts = [];
+  if (o.layout !== 'sentence' && currentChars.length) parts.push(`共 ${currentChars.length} 個字`);
+  if (o.layout !== 'word' && currentSentences.length) parts.push(`${currentSentences.length} 句`);
+  document.getElementById('wsFooter').innerHTML =
+    `${parts.join(' · ')} · 資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>` +
+    `筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向`;
+}
+
+/**
+ * Glyph + stroke-number layer, installed once the markup exists (async):
+ *  1) EDB (HK) outlines replace the font glyph in every cell; each character's first
+ *     tracing cell also gets its stroke numbers.
+ *  2) Characters missing from EDB fall back to HanziWriter data + HK stroke order.
+ *  3) Characters with neither source get \u7b46\u9806/\u8a66\u5beb greyed out.
+ */
+async function installGlyphLayer(content) {
+  await new Promise(r => setTimeout(r, 80));
+  let handled = new Set();
+  try {
+    handled = await installHKGlyphs(content);
+  } catch (e) { /* fall through to font glyphs */ }
+  // Fire all cells in parallel: the lazy CJK font subsets then load
+  // concurrently instead of one cell serial-blocking the rest.
+  content.querySelectorAll('.stroke-num-cell').forEach(cell => {
+    if (handled.has(cell.dataset.ch)) return;
+    overlayStrokeNum(cell).catch(() => { /* skip broken cell */ });
+  });
+  // 未收錄字（無教育局字形又無 HanziWriter 資料）→ 灰掉筆順／試寫
+  markNoStrokeData(content).catch(() => { /* non-fatal */ });
+}
+
 
 function renderWorksheet() {
   const o = currentOptions;
@@ -1727,155 +1914,19 @@ function renderWorksheet() {
   // Content
   let html = '';
   if (o.layout !== 'sentence') {
-    currentChars.forEach((ch, i) => {
-    const d = window.CHAR_DB[ch] || {};
-    const cName = o.quizMode ? 'quiz-mode' : '';
-    html += `<div class="char-card ${cName}" data-char="${esc(ch)}">`;
-
-    // Char info row
-    html += `<div class="char-info">`;
-    html += `<div class="char-display"${isPunct(ch) ? '' : ` onclick="openStroke('${esc(ch)}')" title="點擊查看筆順"`}>`;
-    html += `<div class="char-cell">${guideSvg()}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
-    html += `</div>`;
-    html += `<div class="char-details">`;
-
-    // Canto reading
-    if (o.canto && d.jy) {
-      html += `<div class="reading-row">`;
-      html += `<span class="reading-label canto">粵拼</span>`;
-      html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
-      if (d.jy2 && d.jy2.length) {
-        html += `<span class="reading-alt">又讀：${d.jy2.map(jyutpingHtml).join('、')}</span>`;
-      }
-      html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
-      html += `</div>`;
-    }
-
-    // Mandarin reading
-    if (o.pinyin && d.py) {
-      html += `<div class="reading-row">`;
-      html += `<span class="reading-label">拼音</span>`;
-      html += `<span class="reading-value">${esc(d.py)}</span>`;
-      if (d.py2 && d.py2.length) {
-        html += `<span class="reading-alt">又讀：${esc(d.py2.join('、'))}</span>`;
-      }
-      html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
-      html += `</div>`;
-    }
-
-    // Meta info
-    let metaParts = [];
-    if (o.strokes && d.s) metaParts.push(`✏️ ${d.s}畫`);
-    if (d.si) metaParts.push(`簡體：${esc(d.si)}`);
-    if (metaParts.length) {
-      html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
-    }
-
-    // Action bar (screen only) — 標點無筆順資料，唔顯示按鈕
-    if (!isPunct(ch)) {
-      html += `<div class="action-bar no-print">`;
-      html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
-      html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
-      html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
-      html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
-      html += `</div>`;
-    }
-
-    html += `</div>`; // .char-details
-    html += `</div>`; // .char-info
-
-    // Practice grids
-    if (o.practice > 0) {
-      const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
-      html += `<div class="practice-row"${perRowAttr}>`;
-      for (let r = 0; r < o.practice; r++) {
-        // chars with no outlines at all (STROKE_SEQ) can't carry numbers: inside the
-        // tracing cell show the 筆順次序 text instead of leaving the cell bare
-        const hasSeq = !!strokeSeqInfo(ch);
-        const isNumCell = (r === 0 && o.guide && o.strokeNum && !isPunct(ch) && !hasSeq);
-        const seqInfo = (r === 0 && o.guide && !isPunct(ch) && hasSeq) ? strokeSeqInfo(ch) : null;
-        const seqOverlay = seqInfo
-          ? `<div class="seq-overlay" title="筆順次序來源：漢典 zdic.net">${seqInfo.names}</div>`
-          : '';
-        const guideHtml = o.guide ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>` : '';
-        html += `<div class="practice-cell${isNumCell ? ' stroke-num-cell' : ''}${seqInfo ? ' seq-overlay-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
-        html += guideSvg();
-        html += guideHtml;
-        html += seqOverlay;
-        html += `</div>`;
-      }
-      html += `</div>`;
-    }
-
-    html += `</div>`; // .char-card
-  });
+    currentChars.forEach(ch => { html += charCardHtml(ch, o); });
   }
 
   // Sentence copybook section (整句練習)
-  if (o.layout !== 'word' && currentSentences.length) {
-    html += `<div class="sentence-section">`;
-    currentSentences.forEach(sChars => {
-      const sText = sChars.join('');
-      html += `<div class="sentence-block">`;
-      html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
-      for (let t = 0; t < o.sentenceTimes; t++) {
-        const hasGuide = (t === 0 && o.guide);
-        html += `<div class="sentence-row">`;
-        sChars.forEach(ch => {
-          const guideHtml = hasGuide
-            ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>`
-            : '';
-          // stroke numbers sit on the tracing (first) row, same as word practice cells
-          const hasSeqS = !!strokeSeqInfo(ch);
-          const isNumCell = (hasGuide && o.strokeNum && !hasSeqS);
-          const seqInfoS = (hasGuide && !isPunct(ch) && hasSeqS) ? strokeSeqInfo(ch) : null;
-          const seqOverlayS = seqInfoS
-            ? `<div class="seq-overlay" title="筆順次序來源：漢典 zdic.net">${seqInfoS.names}</div>`
-            : '';
-          html += `<div class="sentence-cell${isNumCell ? ' stroke-num-cell' : ''}${seqInfoS ? ' seq-overlay-cell' : ''}"${isNumCell ? ` data-ch="${esc(ch)}"` : ''}>`;
-          html += guideSvg();
-          html += guideHtml;
-          html += seqOverlayS;
-          html += `</div>`;
-        });
-        html += `</div>`;
-      }
-      html += `</div>`;
-    });
-    html += `</div>`;
-  }
+  html += sentenceSectionHtml(o);
 
   content.innerHTML = html;
 
-  // footer char count + sentence count
-  const parts = [];
-  if (o.layout !== 'sentence' && currentChars.length) parts.push(`共 ${currentChars.length} 個字`);
-  if (o.layout !== 'word' && currentSentences.length) parts.push(`${currentSentences.length} 句`);
-  document.getElementById('wsFooter').innerHTML =
-    `${parts.join(' · ')} · 資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>` +
-    `筆順動畫：HanziWriter（hanziwriter.org）· 列印建議使用A4直向`;
-
+  setWsFooter(o);
   updateCellStyles();
   normalizeGlyphs();
 
-  // ===== 香港字形 + 筆順數字 (async) =====
-  // 1) 教育局標準字形（香港寫法）換入每個示範/描紅格，第一格加筆順數字。
-  // 2) 字詞表未收錄嘅字 → 保持字體字形，數字用 HanziWriter 資料 + 香港次序。
-  (async () => {
-    await new Promise(r => setTimeout(r, 80));
-    let handled = new Set();
-    try {
-      handled = await installHKGlyphs(content);
-    } catch (e) { /* fall through to font glyphs */ }
-    // Fire all cells in parallel: the lazy CJK font subsets then load
-    // concurrently instead of one cell serial-blocking the rest.
-    content.querySelectorAll('.stroke-num-cell').forEach(cell => {
-      if (handled.has(cell.dataset.ch)) return;
-      overlayStrokeNum(cell).catch(() => { /* skip broken cell */ });
-    });
-    // 未收錄字（無教育局字形又無 HanziWriter 資料）→ 灰掉筆順／試寫
-    markNoStrokeData(content).catch(() => { /* non-fatal */ });
-  })();
+  installGlyphLayer(content);
 }
 
 // ===== OPTICAL NORMALIZATION (balance per-char ink size) =====
@@ -2034,11 +2085,6 @@ function pickVoice(tags, voices) {
   if (zh) return zh;
   // 5. any voice at all — better some sound than none
   return voices[0] || null;
-}
-
-function zhVoiceSummary(voices) {
-  return voices.filter(v => v.lang.startsWith('zh'))
-    .map(v => `${v.lang}（${v.name}）`).join('、');
 }
 
 /** Fire-and-forget: if voices aren't loaded yet, retry after voiceschanged. */
