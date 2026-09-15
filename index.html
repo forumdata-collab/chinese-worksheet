@@ -448,6 +448,9 @@ body {
 .action-btn.btn-canto:hover { background: var(--red); color: white; }
 .action-btn.btn-mand { border-color: #b8d4e8; color: var(--blue); background: #f0f6fb; }
 .action-btn.btn-mand:hover { background: var(--blue); color: white; }
+/* 未收錄於《香港小學學習字詞表》的字：筆順／試寫沒有資料，灰掉避免用戶撳入去見空白 */
+.action-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #f7f6f4; }
+.action-btn:disabled:hover { background: #f7f6f4; color: #888; border-color: #e4e2de; }
 
 /* ===== MODAL ===== */
 .modal-overlay {
@@ -1803,6 +1806,8 @@ function renderWorksheet() {
       if (handled.has(cell.dataset.ch)) return;
       overlayStrokeNum(cell).catch(() => { /* skip broken cell */ });
     });
+    // 未收錄字（無教育局字形又無 HanziWriter 資料）→ 灰掉筆順／試寫
+    markNoStrokeData(content).catch(() => { /* non-fatal */ });
   })();
 }
 
@@ -2056,29 +2061,90 @@ function hanziWriterOpts(extra = {}) {
 }
 
 function openStroke(ch) {
+  if (isPunct(ch)) return;
+  strokeUnavailable(ch).then(missing => {
+  if (missing) return showStrokeUnavailable(ch);
   currentStrokeChar = ch;
   document.getElementById('strokeModalTitle').textContent = `筆順：${ch}`;
   openModal('strokeModal');
+  // a previous 「未收錄」 char may have left the controls disabled
+  document.querySelectorAll('#strokeModal button, #strokeModal input').forEach(el => { el.disabled = false; });
 
-  const target = document.getElementById('stroke-target');
-  target.innerHTML = '';
+    const target = document.getElementById('stroke-target');
+    target.innerHTML = '';
 
-  try {
-    strokeWriter = HanziWriter.create(target, ch, hanziWriterOpts({
-      showCharacter: true,
-      strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
-      strokeColor: '#33302A',
-    }));
-    strokeWriter.animateCharacter();
-  } catch(e) {
-    target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
-  }
+    try {
+      strokeWriter = HanziWriter.create(target, ch, hanziWriterOpts({
+        showCharacter: true,
+        strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
+        strokeColor: '#33302A',
+      }));
+      strokeWriter.animateCharacter();
+    } catch(e) {
+      target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
+    }
 
-  // Bind speed change
-  document.getElementById('strokeSpeed').oninput = function() {
-    document.getElementById('speedVal').textContent = this.value + 'x';
-  };
+    // Bind speed change
+    document.getElementById('strokeSpeed').oninput = function() {
+      document.getElementById('speedVal').textContent = this.value + 'x';
+    };
+  });
 }
+
+// ===== 未收錄字的優雅降級 =====
+// 少數字（粵語字 咗/喺/佢/冇/咁/哋/攞/冧 …）既不在《香港小學學習字詞表》，
+// HanziWriter 亦無資料 → 開彈窗只會見到空白動畫同無作用的播放鍵。改為明確告知。
+async function strokeUnavailable(ch) {
+  if (isPunct(ch)) return true;
+  try {
+    const rec = await hkGlyph(ch);
+    if (rec && rec.s && rec.s.length) return false;
+  } catch (e) { /* fall through */ }
+  try {
+    const d = await HanziWriter.loadCharacterData(ch);
+    return !(d && d.strokes && d.strokes.length);
+  } catch (e) {
+    return true;
+  }
+}
+
+function showStrokeUnavailable(ch, modalId = 'strokeModal', targetId = 'stroke-target') {
+  const isQuiz = modalId === 'quizModal';
+  document.getElementById(isQuiz ? 'quizModalTitle' : 'strokeModalTitle').textContent =
+    `${isQuiz ? '試寫' : '筆順'}：${ch}`;
+  openModal(modalId);
+  const target = document.getElementById(targetId);
+  target.innerHTML =
+    `<div style="font-size:110px;font-family:var(--cell-guide-font,serif);line-height:1.1;">${esc(ch)}</div>` +
+    `<p style="margin-top:14px;color:#8a8a8a;font-size:14px;line-height:1.6;">` +
+    `此字未收錄於《香港小學學習字詞表》，暫無官方筆順資料。<br>` +
+    `示範字仍可作字形參考，練習格可正常列印。</p>`;
+  document.querySelectorAll(`#${modalId} button, #${modalId} input`).forEach(el => {
+    if (el.classList.contains('modal-close')) return;            // × 一定要撳得
+    if (/關閉|close/i.test(el.textContent)) return;
+    if (el.id === 'strokeSpeed') return;
+    el.disabled = true;
+  });
+}
+
+// 未收錄字的卡片：筆順／試寫按鈕變灰並說明，避免用戶撳入去見到空白
+async function markNoStrokeData(root) {
+  const cards = [...root.querySelectorAll('.char-card[data-char]')];
+  await Promise.all(cards.map(async card => {
+    const ch = card.dataset.char;
+    if (!(await strokeUnavailable(ch))) return;
+    card.querySelectorAll('.action-btn').forEach(b => {
+      if (/筆順|試寫/.test(b.textContent)) {
+        b.disabled = true;
+        b.removeAttribute('onclick');
+        b.title = '此字未收錄於《香港小學學習字詞表》，暫無筆順資料';
+      }
+    });
+    const disp = card.querySelector('.char-display');
+    if (disp) { disp.removeAttribute('onclick'); disp.removeAttribute('title'); }
+  }));
+}
+
 
 function strokeReplay() {
   if (strokeWriter) {
@@ -2096,10 +2162,15 @@ function strokeStep() {
 
 // ===== QUIZ MODAL =====
 function openQuiz(ch) {
-  currentStrokeChar = ch;
-  document.getElementById('quizModalTitle').textContent = `試寫：${ch}`;
-  openModal('quizModal');
-  startQuiz();
+  if (isPunct(ch)) return;
+  strokeUnavailable(ch).then(missing => {
+    if (missing) return showStrokeUnavailable(ch, 'quizModal', 'quiz-target');
+    currentStrokeChar = ch;
+    document.getElementById('quizModalTitle').textContent = `試寫：${ch}`;
+    openModal('quizModal');
+    document.querySelectorAll('#quizModal button, #quizModal input').forEach(el => { el.disabled = false; });
+    startQuiz();
+  });
 }
 
 function startQuiz() {
