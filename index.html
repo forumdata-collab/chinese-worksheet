@@ -1441,6 +1441,22 @@ function placeNumberLabels(medians, frame, hooks) {
         if (s && s > 0) size = s;
       } catch (e) { /* keep the global size */ }
     }
+    // A stroke can have a degenerate centreline — 孿's stroke 17 is a single point — and
+    // then no candidate exists and the stroke ends up with NO number at all. Anchor such
+    // strokes on a point taken from their own ink instead.
+    if (!m || m.length < 2) {
+      let p = null;
+      try { p = inkPointFn ? inkPointFn(i) : (m && m[0] ? { x: m[0][0], y: m[0][1] } : null); } catch (e) { p = null; }
+      if (p) {
+        const cx = p.x, cy = flipC - p.y;
+        const bw = size * 0.55 * label.length;
+        placed.push({ label, cx, cy,
+                      bx0: cx - bw / 2 - gap, bx1: cx + bw / 2 + gap,
+                      by0: cy - size * 0.90 - gap, by1: cy - size * 0.18 + gap,
+                      fs: size });
+      }
+      return;
+    }
     let best = null, bestOv = Infinity, bestOff = false;
     for (const f of FRACTIONS) {
       const pt = medianPtAt(m, f);

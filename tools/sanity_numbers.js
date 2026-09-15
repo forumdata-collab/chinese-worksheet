@@ -111,7 +111,13 @@ function checkGlyph(file, rec, opts) {
   let mild = 0;
   const { box, C } = glyphBBox(rec);
   if (!(box > 0)) { problems.push('degenerate bbox'); return { problems }; }
-  const medians = (rec.m || []).filter(m => m && m.length > 1);
+  // NB: keep degenerate (single-point) medians — the app anchors those on their own ink
+  const medians = (rec.m || []);
+  if (medians.some(m => !m || !m.length)) {
+    problems.push('median array missing entries');
+    return { problems };
+  }
+  const degenerate = medians.filter(m => m.length < 2).length;
   if (medians.length !== rec.s.length) {
     problems.push(`median/stroke count mismatch (${medians.length} vs ${rec.s.length})`);
     return { problems };
@@ -159,6 +165,7 @@ function checkGlyph(file, rec, opts) {
   if (placed.length !== rec.s.length) {
     problems.push(`placed ${placed.length} labels for ${rec.s.length} strokes`);
   }
+
   // 1) labels must not overlap each other
   for (let a = 0; a < placed.length; a++) {
     for (let b = a + 1; b < placed.length; b++) {
@@ -194,12 +201,12 @@ function checkGlyph(file, rec, opts) {
       offList.push(`${p.label}@${Math.round(p.cx)},${Math.round(p.cy)}`);
     }
   });
-  return { problems, fs, box, mild, offStroke, offList };
+  return { problems, fs, box, mild, offStroke, offList, degenerate };
 }
 
 function main() {
   const files = fs.readdirSync(GLYPH_DIR).filter(f => f.endsWith('.json')).sort();
-  let checked = 0, bad = [], mildTotal = 0, labelTotal = 0, offStrokeTotal = 0;
+  let checked = 0, bad = [], mildTotal = 0, labelTotal = 0, offStrokeTotal = 0, degenerateTotal = 0;
   const offGlyphs = [];
   const offenders = [];
   for (const f of files) {
@@ -210,6 +217,7 @@ function main() {
     checked++;
     mildTotal += r.mild || 0;
     offStrokeTotal += r.offStroke || 0;
+    degenerateTotal += r.degenerate || 0;
     if (r.offStroke) offGlyphs.push([f, r.offList]);
     labelTotal += (rec.s || []).length;
     if (r.problems && r.problems.length) {
@@ -220,6 +228,7 @@ function main() {
   console.log('sanity_numbers: %d glyphs / %d digits checked', checked, labelTotal);
   console.log('  sub-45%% box overlaps (tolerated: the solver box is ~15%% wider than the ink): %d', mildTotal);
   console.log('  digits whose anchor missed its own stroke (approx. test): %d', offStrokeTotal);
+  console.log('  strokes with a degenerate centreline (anchored on their own ink): %d', degenerateTotal);
   for (const [f, lst] of offGlyphs) console.log('     %s: %s', f, lst.join(' '));
   if (!bad.length) {
     console.log('  OK — no collisions, every label sits inside its own stroke');
