@@ -12,7 +12,7 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | Feature | Description |
 |---------|-------------|
 | 🖊️ Stroke order | Animated per-stroke playback + interactive 試寫 (draw-along quiz), **following the 香港小學學習字詞表 stroke-order standard** |
-| 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (4,491 chars) instead of a generic font |
+| 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (4,493 chars) instead of a generic font |
 | 🔢 Stroke-order digits | Numbered strokes (1…n) overlaid on the first tracing cell — the strokeorder.com.tw look |
 | 📝 練習模式 (3 modes) | 每字練習 (default) · 每字 + 整句 · 整句練習 — sentence copybook adds a 描紅 model row plus N blank rows (次數 adjustable) |
 | ❕ 標點全形直出 | Punctuation occupies its own grid cell like a character; half-width `, . ! ?` auto-convert to full-width `，。！？` |
@@ -33,9 +33,10 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 
 ### Hong Kong standard (香港標準)
 
-- **Stroke order** follows 香港教育局《香港小學學習字詞表》— derived from the official EDB stroke-order animations (`edbchinese.hk`), covering 4,491 characters (671 of which differ from the generic 通用筆順 order)
+- **Stroke order** follows 香港教育局《香港小學學習字詞表》— derived from the official EDB stroke-order animations (`edbchinese.hk`), covering 4,493 characters (671 of which differ from the generic 通用筆順 order)
 - **Glyph forms** use the official 教育局 standard outlines (e.g. 「舟」's open top-right corner, which differs from the Taiwan-style font form)
 - Characters outside the lexicon fall back to the bundled font + generic stroke order
+  (their stroke-order digits are placed with the same collision-aware solver, so they stay on the right stroke)
 
 ## 🚀 Quick start
 
@@ -59,7 +60,7 @@ chinese-worksheet/
 ├── index.html          # Single-page app (UI + logic + styles)
 ├── data.js             # Character database (window.CHAR_DB, ~287 KB)
 ├── hk_order.js         # HK stroke-order permutation table (window.HK_ORDER, 671 chars)
-├── glyphs/             # HK standard glyph outlines + centrelines (4,491 chars, on-demand)
+├── glyphs/             # HK standard glyph outlines + centrelines (4,493 chars, on-demand)
 ├── fonts/              # Self-hosted LXGW WenKai TC CJK subsets
 └── LICENSE             # MIT
 ```
