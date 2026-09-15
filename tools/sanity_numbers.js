@@ -137,7 +137,24 @@ function checkGlyph(file, rec, opts) {
     }
     return null;
   };
-  const placed = placeNumberLabels(medians, { fs, C }, insideFn, inkPointFn);
+  // mirror of the shipped size cap: a digit must not dwarf its stroke's thickness
+  const polyThick = (i) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [px, py] of polys[i]) {
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px);
+      y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    return Math.max(Math.min(x1 - x0, y1 - y0), 1);
+  };
+  const hooks = {
+    inside: insideFn,
+    inkPoint: inkPointFn,
+    size: (i, digitCount) => {
+      const thick = polyThick(i);
+      return Math.max(Math.min(fs, 1.8 * thick, 2.36 * thick / Math.max(digitCount, 1)), fs * 0.45);
+    },
+  };
+  const placed = placeNumberLabels(medians, { fs, C }, hooks);
 
   if (placed.length !== rec.s.length) {
     problems.push(`placed ${placed.length} labels for ${rec.s.length} strokes`);

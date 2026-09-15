@@ -1409,8 +1409,12 @@ function medianPtAt(m, f) {
 // actually lies in stroke i's ink.  A plain arc-length midpoint can fall OUTSIDE a
 // short/thin stroke (兒's first stroke is only ~25 units wide, so its number floated
 // in blank space), and candidates that miss their own stroke are penalised hard.
-function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
+function placeNumberLabels(medians, frame, hooks) {
   const { fs: fontSize, C: flipC } = frame;   // glyph geometry travels as one frame
+  hooks = hooks || {};
+  const insideFn = hooks.inside;              // is this point in MY stroke's ink?
+  const inkPointFn = hooks.inkPoint;          // a point certainly in MY stroke's ink
+  const otherFn = hooks.others;               // is this point in ANOTHER stroke's ink?
   const placed = [];
   const FRACTIONS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
@@ -1419,19 +1423,35 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
   // overlap (個 strokes 5/6).
   const gap = fontSize * 0.05;
   const OFF_STROKE_PENALTY = fontSize * fontSize * 4;   // dominates any overlap term
+  // Where strokes cross, a digit can sit exactly on the crossing point — on its own
+  // stroke, but also on a neighbour's ink (喻 8/10, 勤 9/10). Prefer elsewhere on the
+  // stroke: this penalty is far below OFF_STROKE_PENALTY, so leaving the stroke still
+  // loses, but a quieter spot on it wins.
+  const CROSS_PENALTY = fontSize * fontSize * 0.5;
   medians.forEach((m, i) => {
     const label = String(i + 1);
+    // A digit must not dwarf the stroke it labels: on a thin/short stroke the global size
+    // looks like a misplaced number (兒 #1 sits on a 25x40 stroke, 離 #8 on 55x40) rather
+    // than a label. hooks.size(i) caps it to the stroke's own thickness; the floor keeps
+    // it legible.
+    let size = fontSize;
+    if (hooks.size) {
+      try {
+        const s = hooks.size(i, label.length);
+        if (s && s > 0) size = s;
+      } catch (e) { /* keep the global size */ }
+    }
     let best = null, bestOv = Infinity, bestOff = false;
     for (const f of FRACTIONS) {
       const pt = medianPtAt(m, f);
       if (!pt) continue;
       const cx = pt.x, cy = flipC - pt.y;
-      const bw = fontSize * 0.55 * label.length;
+      const bw = size * 0.55 * label.length;
       const bx0 = cx - bw / 2 - gap, bx1 = cx + bw / 2 + gap;
       // Digits sit ON the text baseline, which the renderer lifts 0.18em above cy,
       // and their ink reaches ~0.72em above that baseline — so the box is NOT centred
       // on cy. Modelling it as centred left 進's 6/7 overlapping by 68x16 units.
-      const by0 = cy - fontSize * 0.90 - gap, by1 = cy - fontSize * 0.18 + gap;
+      const by0 = cy - size * 0.90 - gap, by1 = cy - size * 0.18 + gap;
       let ov = 0;
       for (const p of placed) {
         const ox = Math.min(bx1, p.bx1) - Math.max(bx0, p.bx0);
@@ -1443,10 +1463,15 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
         try { onStroke = insideFn(i, cx, cy); } catch (e) { onStroke = true; }
         if (!onStroke) ov += OFF_STROKE_PENALTY;
       }
+      if (otherFn) {
+        let onOther = false;
+        try { onOther = otherFn(i, cx, cy); } catch (e) { onOther = false; }
+        if (onOther) ov += CROSS_PENALTY;
+      }
       if (ov < bestOv) {
         bestOv = ov;
         bestOff = !!(insideFn && ov >= OFF_STROKE_PENALTY);
-        best = { label, cx, cy, bx0, bx1, by0, by1 };
+        best = { label, cx, cy, bx0, bx1, by0, by1, fs: size };
       }
       if (ov === 0) break;
     }
@@ -1461,11 +1486,11 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
         const L = Math.hypot(dx, dy);
         if (L) { nx = -dy / L; ny = dx / L; }
       }
-      for (const k of [0.6, 0.9, 1.2, -0.6, -0.9, -1.2]) {
-        const cx2 = best.cx + nx * fontSize * k, cy2 = best.cy + ny * fontSize * k;
-        const bw2 = fontSize * 0.55 * label.length;
+      for (const k of [0.6, 0.9, 1.2, 1.5, 1.8, -0.6, -0.9, -1.2, -1.5, -1.8]) {
+        const cx2 = best.cx + nx * size * k, cy2 = best.cy + ny * size * k;
+        const bw2 = size * 0.55 * label.length;
         const bx2 = [cx2 - bw2 / 2 - gap, cx2 + bw2 / 2 + gap];
-        const by2 = [cy2 - fontSize * 0.90 - gap, cy2 - fontSize * 0.18 + gap];
+        const by2 = [cy2 - size * 0.90 - gap, cy2 - size * 0.18 + gap];
         let ov2 = 0;
         for (const p of placed) {
           const ox = Math.min(bx2[1], p.bx1) - Math.max(bx2[0], p.bx0);
@@ -1480,7 +1505,7 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
         if (ov2 < bestOv) {
           bestOv = ov2;
           bestOff = !!(insideFn && ov2 >= OFF_STROKE_PENALTY);
-          best = { label, cx: cx2, cy: cy2, bx0: bx2[0], bx1: bx2[1], by0: by2[0], by1: by2[1] };
+          best = { label, cx: cx2, cy: cy2, bx0: bx2[0], bx1: bx2[1], by0: by2[0], by1: by2[1], fs: size };
         }
         if (ov2 === 0) break;
       }
@@ -1495,9 +1520,9 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
       try { p = inkPointFn(i); } catch (e) { p = null; }
       if (p) {
         const cx3 = p.x, cy3 = flipC - p.y;
-        const bw3 = fontSize * 0.55 * label.length;
+        const bw3 = size * 0.55 * label.length;
         const bx3 = [cx3 - bw3 / 2 - gap, cx3 + bw3 / 2 + gap];
-        const by3 = [cy3 - fontSize * 0.90 - gap, cy3 - fontSize * 0.18 + gap];
+        const by3 = [cy3 - size * 0.90 - gap, cy3 - size * 0.18 + gap];
         let ov3 = 0;
         for (const q of placed) {
           const ox = Math.min(bx3[1], q.bx1) - Math.max(bx3[0], q.bx0);
@@ -1505,7 +1530,7 @@ function placeNumberLabels(medians, frame, insideFn, inkPointFn) {
           if (ox > 0 && oy > 0) ov3 += ox * oy;
         }
         // staying on the labelled stroke always beats floating off it
-        best = { label, cx: cx3, cy: cy3, bx0: bx3[0], bx1: bx3[1], by0: by3[0], by1: by3[1] };
+        best = { label, cx: cx3, cy: cy3, bx0: bx3[0], bx1: bx3[1], by0: by3[0], by1: by3[1], fs: size };
       }
     }
     if (best) placed.push(best);
@@ -1613,11 +1638,38 @@ function addGlyphNumbers(svg) {
     }
     return null;
   };
-  placeNumberLabels(medians, { fs, C }, insideFn, inkPointFn).forEach(p => {
+  const hooks = {
+    inside: insideFn,
+    inkPoint: inkPointFn,
+    // Cap a digit to its stroke's own thickness — a number wider than the stroke it
+    // labels reads as misplaced rather than as a label (兒's first stroke is 25x40 units
+    // against a 114-unit digit). Floor at 45 % of the global size to stay legible.
+    size: (i, digitCount) => {
+      const el = strokeEls[i];
+      if (!el) return fs;
+      let b;
+      try { b = el.getBBox(); } catch (e) { return fs; }
+      const thick = Math.min(b.width, b.height);
+      if (!(thick > 0)) return fs;
+      const byHeight = 1.8 * thick;                    // digit ink ~0.72 em tall
+      const byWidth = 2.36 * thick / Math.max(digitCount, 1);   // ~0.55 em per digit
+      return Math.max(Math.min(fs, byHeight, byWidth), fs * 0.45);
+    },
+    // digits must not sit on a crossing neighbour's ink either
+    others: (i, cx, cy) => {
+      for (let k = 0; k < strokeEls.length; k++) {
+        if (k === i) continue;
+        try { if (strokeEls[k].isPointInFill(new DOMPoint(cx, C - cy))) return true; } catch (e) { /* skip */ }
+      }
+      return false;
+    },
+  };
+  placeNumberLabels(medians, { fs, C }, hooks).forEach(p => {
+    const sz = p.fs || fs;
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', p.cx.toFixed(1));
-    t.setAttribute('y', (p.cy - fs * 0.18).toFixed(1));
-    t.setAttribute('font-size', fs.toFixed(1));
+    t.setAttribute('y', (p.cy - sz * 0.18).toFixed(1));
+    t.setAttribute('font-size', sz.toFixed(1));
     t.textContent = p.label;
     svg.appendChild(t);
   });
