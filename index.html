@@ -1352,7 +1352,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=8`)
+  const p = fetch(`glyphs/${hex}.json?v=9`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
@@ -2087,7 +2087,10 @@ function openStroke(ch) {
         strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
         strokeColor: '#33302A',
       }));
-      strokeWriter.animateCharacter();
+      // if the data turns out to be missing/offline after all, degrade instead of
+      // leaving a blank animation with dead controls
+      const p = strokeWriter.animateCharacter();
+      if (p && p.catch) p.catch(() => showStrokeUnavailable(ch));
     } catch(e) {
       target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
     }
@@ -2102,17 +2105,25 @@ function openStroke(ch) {
 // ===== 未收錄字的優雅降級 =====
 // 少數字（粵語字 咗/喺/佢/冇/咁/哋/攞/冧 …）既不在《香港小學學習字詞表》，
 // HanziWriter 亦無資料 → 開彈窗只會見到空白動畫同無作用的播放鍵。改為明確告知。
+//
+// ⚠️ 判斷必須以離線建好的 STROKE_SEQ（= 建資料時已確定全無筆順字形嘅字）為第一準則：
+// 早期版本只靠 fetch，任何一次網絡失敗都會把「其實有筆順」的字誤灰（用戶報告
+// 「有些有筆順卻灰了」）。網絡錯誤一律當「有」→ 唔灰，交由彈窗自己優雅降級。
 async function strokeUnavailable(ch) {
   if (isPunct(ch)) return true;
+  if ((window.STROKE_SEQ || {})[ch]) return true;      // 離線已確定：EDB 同 HanziWriter 都無
   try {
     const rec = await hkGlyph(ch);
-    if (rec && rec.s && rec.s.length) return false;
-  } catch (e) { /* fall through */ }
+    if (rec && rec.s && rec.s.length) return false;    // 有教育局字形
+  } catch (e) {
+    return false;                                      // 網絡問題 → 唔好誤灰
+  }
   try {
     const d = await HanziWriter.loadCharacterData(ch);
-    return !(d && d.strokes && d.strokes.length);
+    if (d && d.strokes && d.strokes.length) return false;
+    return true;                                       // 答得成但係空 → 真係冇
   } catch (e) {
-    return true;
+    return false;                                      // 抓取失敗 → 唔好誤灰
   }
 }
 
