@@ -1416,18 +1416,31 @@ function placeNumberLabels(medians, frame, hooks) {
   const inkPointFn = hooks.inkPoint;          // a point certainly in MY stroke's ink
   const otherFn = hooks.others;               // is this point in ANOTHER stroke's ink?
   const placed = [];
-  const FRACTIONS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92];
+  // Dense characters (鬱, 鸚, 鹽 … 15+ crossing strokes) can leave no clean spot at full
+  // size, so the search walks 23 positions along the stroke at decreasing sizes and stops
+  // at the first size that fits without a pile-up. Shrinking beats both overlapping and
+  // leaving the labelled stroke.
+  const FRACTIONS = [0.5, 0.46, 0.54, 0.42, 0.58, 0.38, 0.62, 0.34, 0.66, 0.3, 0.7,
+                     0.26, 0.74, 0.22, 0.78, 0.18, 0.82, 0.14, 0.86, 0.1, 0.9, 0.06, 0.94];
+  const SIZE_SCALES = [1, 0.85, 0.72, 0.6, 0.5, 0.42];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
   // above its baseline, plus a small breathing gap. Using the full em box made the
   // solver think two labels 90 units apart still collided and settle for a needless
   // overlap (個 strokes 5/6).
   const gap = fontSize * 0.05;
-  const OFF_STROKE_PENALTY = fontSize * fontSize * 4;   // dominates any overlap term
+  // Penalties are FRACTIONS OF ONE DIGIT'S AREA, matching how a collision actually shows
+  // (two small digits stacked are as unreadable as two big ones, but an absolute-area
+  // objective rated them as an improvement and shrank its way into the problem).
+  const OFF_STROKE_PENALTY = 4;      // leaving the labelled stroke loses to any overlap
   // Where strokes cross, a digit can sit exactly on the crossing point — on its own
   // stroke, but also on a neighbour's ink (喻 8/10, 勤 9/10). Prefer elsewhere on the
   // stroke: this penalty is far below OFF_STROKE_PENALTY, so leaving the stroke still
   // loses, but a quieter spot on it wins.
-  const CROSS_PENALTY = fontSize * fontSize * 0.5;
+  const CROSS_PENALTY = 0.5;
+  // NOTE: relaxing the penalty for sidestepping off the stroke was tried and reverted —
+  // it clears the pile-ups but leaves digits floating beside their stroke (暗/靜/髏/璽),
+  // which is the defect the numbers layer exists to avoid. Dense characters instead shrink
+  // further (SIZE_SCALES) so a clean on-stroke spot is more likely to exist.
   medians.forEach((m, i) => {
     const label = String(i + 1);
     // A digit must not dwarf the stroke it labels: on a thin/short stroke the global size
@@ -1458,21 +1471,24 @@ function placeNumberLabels(medians, frame, hooks) {
       return;
     }
     let best = null, bestOv = Infinity, bestOff = false;
+    scales: for (const scale of SIZE_SCALES) {
+    const sizeS = Math.max(size * scale, fontSize * 0.3);
     for (const f of FRACTIONS) {
       const pt = medianPtAt(m, f);
       if (!pt) continue;
       const cx = pt.x, cy = flipC - pt.y;
-      const bw = size * 0.55 * label.length;
+      const bw = sizeS * 0.55 * label.length;
       const bx0 = cx - bw / 2 - gap, bx1 = cx + bw / 2 + gap;
       // Digits sit ON the text baseline, which the renderer lifts 0.18em above cy,
       // and their ink reaches ~0.72em above that baseline — so the box is NOT centred
       // on cy. Modelling it as centred left 進's 6/7 overlapping by 68x16 units.
-      const by0 = cy - size * 0.90 - gap, by1 = cy - size * 0.18 + gap;
+      const by0 = cy - sizeS * 0.90 - gap, by1 = cy - sizeS * 0.18 + gap;
+      const area = Math.max((bx1 - bx0) * (by1 - by0), 1e-6);
       let ov = 0;
       for (const p of placed) {
         const ox = Math.min(bx1, p.bx1) - Math.max(bx0, p.bx0);
         const oy = Math.min(by1, p.by1) - Math.max(by0, p.by0);
-        if (ox > 0 && oy > 0) ov += ox * oy;
+        if (ox > 0 && oy > 0) ov += (ox * oy) / area;
       }
       if (insideFn) {
         let onStroke = true;
@@ -1487,9 +1503,11 @@ function placeNumberLabels(medians, frame, hooks) {
       if (ov < bestOv) {
         bestOv = ov;
         bestOff = !!(insideFn && ov >= OFF_STROKE_PENALTY);
-        best = { label, cx, cy, bx0, bx1, by0, by1, fs: size };
+        best = { label, cx, cy, bx0, bx1, by0, by1, fs: sizeS };
       }
-      if (ov === 0) break;
+      if (ov === 0) break scales;      // clean spot at this size — keep the largest
+    }
+    if (bestOv === 0) break;           // nothing smaller will beat a clean fit
     }
     // Last resort: a stroke can be too short to hold all its own labels apart (進's
     // stroke 7 shares one vertical line with 5 and 6). Step SIDEWAYS off the stroke —
@@ -1507,16 +1525,17 @@ function placeNumberLabels(medians, frame, hooks) {
         const bw2 = size * 0.55 * label.length;
         const bx2 = [cx2 - bw2 / 2 - gap, cx2 + bw2 / 2 + gap];
         const by2 = [cy2 - size * 0.90 - gap, cy2 - size * 0.18 + gap];
+        const area2 = Math.max((bx2[1] - bx2[0]) * (by2[1] - by2[0]), 1e-6);
         let ov2 = 0;
         for (const p of placed) {
           const ox = Math.min(bx2[1], p.bx1) - Math.max(bx2[0], p.bx0);
           const oy = Math.min(by2[1], p.by1) - Math.max(by2[0], p.by0);
-          if (ox > 0 && oy > 0) ov2 += ox * oy;
+          if (ox > 0 && oy > 0) ov2 += (ox * oy) / area2;
         }
         if (insideFn) {
           let onStroke = true;
           try { onStroke = insideFn(i, cx2, cy2); } catch (e) { onStroke = true; }
-          if (!onStroke) ov2 += OFF_STROKE_PENALTY;
+          if (!onStroke) ov2 += OFF_STROKE_PENALTY;  // staying on the stroke wins
         }
         if (ov2 < bestOv) {
           bestOv = ov2;
@@ -1539,11 +1558,12 @@ function placeNumberLabels(medians, frame, hooks) {
         const bw3 = size * 0.55 * label.length;
         const bx3 = [cx3 - bw3 / 2 - gap, cx3 + bw3 / 2 + gap];
         const by3 = [cy3 - size * 0.90 - gap, cy3 - size * 0.18 + gap];
+        const area3 = Math.max((bx3[1] - bx3[0]) * (by3[1] - by3[0]), 1e-6);
         let ov3 = 0;
         for (const q of placed) {
           const ox = Math.min(bx3[1], q.bx1) - Math.max(bx3[0], q.bx0);
           const oy = Math.min(by3[1], q.by1) - Math.max(by3[0], q.by0);
-          if (ox > 0 && oy > 0) ov3 += ox * oy;
+          if (ox > 0 && oy > 0) ov3 += (ox * oy) / area3;
         }
         // staying on the labelled stroke always beats floating off it
         best = { label, cx: cx3, cy: cy3, bx0: bx3[0], bx1: bx3[1], by0: by3[0], by1: by3[1], fs: size };

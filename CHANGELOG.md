@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.7] - 2026-09-15
+
+Reported as「你，離，兒 仍然有顯示問題」。經量度後，計數／筆順次序／數字所屬筆畫全部正確，但發現兩個真缺陷：
+
+### Fixed
+- **數字大過筆畫本身**（兒、離、你）：用 canvas `measureText` 量數字**真實墨跡**（`getBBox()` 係 em box，會遮蓋此問題）—— 數字墨跡 ÷ 筆畫厚度：兒 **2.15**、離 **1.51**（基準 先 = 0.77）。數字比佢標示嘅筆畫大成兩倍 → 睇落似「擺錯位」。現在每個數字按筆畫厚度設上限（1.8× 厚度；雙位數 2.36×/位），下限 45% 保可讀性。修後：兒 1.46、離 1.31、你 1.11、先 **0.77 不變**。
+- **`孿` 22 筆只顯示 21 個數字**：第 17 筆中線退化成單點 `[[698.9, 460.6]]` → 所有候選回 null → 該筆冇任何數字。現在退化中線改用「保証喺自己墨跡內」嘅點做錨（全庫 7 筆屬此類，全部已補上數字）。
+- **交叉筆畫上嘅數字碰撞**：數字若同時落在**鄰筆墨跡**上會被輕懲（低於 off-stroke 懲罰），並加寬側移範圍（±1.8em）。清除了 進 6/7（19%）、離 3/4、10/11、17/18 等碰撞。
+
+### Changed
+- `placeNumberLabels(medians, frame, hooks)`：原本嘅 `insideFn`/`inkPointFn` 加上 `size(i, digitCount)` 收成一個 `hooks` 物件（參數維持 3 個）。
+- **測試用真墨跡量度**：`tools/sanity_numbers.js` 嘅碰撞判準改用實測數字墨跡尺寸（0.48em/位 寬、0.70em 高，來自 live 頁面 canvas 量度），取代原本偏大約 15% 嘅保守盒 —— 呢個偏差就係之前 ~2,000 個假警報嘅來源。同時輸出違規清單到 `/tmp/cw_offenders.json` 以便瀏覽器複核。
+
+### Verified (live, 部署後)
+`孿`=22 筆/22 數字、`你`=7/7、`離`=19/19、`兒`=8/8，全部 **0 個數字偏離自己筆畫**（逐個 `isPointInFill` 檢查），且 canvas 實測**無 >10% 墨跡重疊**。
+
+
 ## [1.2.6] - 2026-09-15
 
 ### Changed (refactor, no user-visible change except where noted)

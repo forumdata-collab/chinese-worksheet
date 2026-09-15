@@ -23,7 +23,7 @@ node    tools/sanity_numbers.js    # stroke-number layer: collisions + digits of
 | --- | --- |
 | `sanity_data.py` | double-flipped glyphs (stored y-down → upside-down 先), a glyph losing a stroke (山 2 of 3), `m` drifting out of step with `s` (numbers on the wrong strokes), stale `hk_order.js` / `stroke_seq.js` tables |
 | `sanity_parser.py` | the number-label tween winning the same-delay merge (山 2/3, 先 5/6), an unread label encoding, and **shipped glyphs that no longer reproduce from the parser** — it found 導/巍 this way |
-| `sanity_numbers.js` | digit collisions (噠 11/12) and digits whose anchor falls outside their own stroke, floating in blank space (兒 #1) |
+| `sanity_numbers.js` | digit collisions (噠 11/12, 進 6/7), digits whose anchor falls outside their own stroke (兒 #1 in blank space, 靜 #14 on the wrong stroke), digits that dwarf their stroke (兒 #1 at 2.15× its stroke's thickness) and strokes that lost their number entirely (孿's degenerate centreline). Collisions are measured against the **real digit ink** (0.48 em per digit wide, 0.70 em tall — measured from the live page with canvas `measureText`), not the solver's padded box, which is ~15 % larger and used to raise ~2,000 false alarms. Offenders are also written to `/tmp/cw_offenders.json` for a browser cross-check. |
 
 Exit code 0 = pass. `--verbose` on the Python checks lists every offending character.
 

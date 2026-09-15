@@ -95,6 +95,14 @@ function polygonOf(d, perSeg = 14) {
   return pts;
 }
 
+// Digit ink metrics measured from the shipping page (canvas measureText, Helvetica Neue /
+// Arial bold, the font the numbers actually use): a one-digit number inks 0.48 em wide and
+// 0.70 em tall above its baseline; two-digit numbers ~1.02 em wide. The solver's collision
+// box is 0.55 em/digit plus a gap, so comparing against the REAL ink removes its built-in
+// false alarms.
+const DIGIT_INK_W = (n) => (n === 1 ? 0.48 : 0.48 * n + 0.06 * (n - 1));
+const DIGIT_INK_H = 0.70;
+
 function insidePolygon(poly, pt) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -167,23 +175,26 @@ function checkGlyph(file, rec, opts) {
   }
 
   // 1) labels must not overlap each other
+  // 1) digits must not pile up. Compare their REAL ink boxes (0.48 em per digit wide,
+  //    0.70 em tall, sitting on the baseline the renderer uses) instead of the solver's
+  //    padded collision box — that box is ~15 % larger and produced false alarms.
+  const inkBox = (p) => {
+    const sz = p.fs || fs;
+    const w = DIGIT_INK_W(String(p.label).length) * sz;
+    const base = p.cy - sz * 0.18;
+    return { x0: p.cx - w / 2, x1: p.cx + w / 2, y0: base - DIGIT_INK_H * sz, y1: base };
+  };
+  const boxes = placed.map(inkBox);
   for (let a = 0; a < placed.length; a++) {
     for (let b = a + 1; b < placed.length; b++) {
-      const p = placed[a], q = placed[b];
-      const ox = Math.min(p.bx1, q.bx1) - Math.max(p.bx0, q.bx0);
-      const oy = Math.min(p.by1, q.by1) - Math.max(p.by0, q.by0);
+      const p = boxes[a], q = boxes[b];
+      const ox = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0);
+      const oy = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
       if (ox > 0 && oy > 0) {
-        // the solver's box is deliberately conservative (~15% bigger than the glyph ink
-        // plus a gap), so only a substantial overlap is a real collision
-        const area = ox * oy;
-        const smaller = Math.min((p.bx1 - p.bx0) * (p.by1 - p.by0),
-                                 (q.bx1 - q.bx0) * (q.by1 - q.by0));
-        const frac = area / Math.max(smaller, 1e-6);
-        // >45 % of a digit box hidden behind another digit means a visible pile-up (the
-        // shipped 噠 11/12 bug was ~80 %); below that the conservative box is just
-        // brushing, not the ink.
-        if (frac > 0.45) {
-          problems.push(`labels ${p.label}/${q.label} overlap ${Math.round(ox)}x${Math.round(oy)} (${Math.round(frac * 100)}% of the smaller)`);
+        const frac = (ox * oy) /
+          Math.min((p.x1 - p.x0) * (p.y1 - p.y0), (q.x1 - q.x0) * (q.y1 - q.y0));
+        if (frac > 0.20) {
+          problems.push(`digit ink ${placed[a].label}/${placed[b].label} overlap ${Math.round(frac * 100)}%`);
         } else {
           mild++;
         }
@@ -226,7 +237,12 @@ function main() {
     }
   }
   console.log('sanity_numbers: %d glyphs / %d digits checked', checked, labelTotal);
-  console.log('  sub-45%% box overlaps (tolerated: the solver box is ~15%% wider than the ink): %d', mildTotal);
+  console.log('  sub-20%% ink overlaps (brushing, expected): %d', mildTotal);
+  try {
+    require('fs').writeFileSync('/tmp/cw_offenders.json',
+      JSON.stringify(bad.map(([f]) => f), null, 0));
+    console.log('  offender list written to /tmp/cw_offenders.json');
+  } catch (e) { /* non-fatal */ }
   console.log('  digits whose anchor missed its own stroke (approx. test): %d', offStrokeTotal);
   console.log('  strokes with a degenerate centreline (anchored on their own ink): %d', degenerateTotal);
   for (const [f, lst] of offGlyphs) console.log('     %s: %s', f, lst.join(' '));
