@@ -37,6 +37,9 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 - **Glyph forms** use the official 教育局 standard outlines (e.g. 「舟」's open top-right corner, which differs from the Taiwan-style font form)
 - Characters outside the lexicon fall back to the bundled font + generic stroke order
   (their stroke-order digits are placed with the same collision-aware solver, so they stay on the right stroke)
+- **197 characters are in neither source** (搵/磡/祂/蜆/蟶/囍 and Cantonese 咗/喺/佢/冇/咁/哋/攞/冧 …). For those the
+  per-stroke ORDER is shown as text from zdic.net's 笔顺编号 (e.g. 咗 → 豎折橫橫撇橫豎橫, 共 8 筆) while
+  筆順/試寫 stay disabled — there are no outlines to animate. See `docs/stroke-data-notes.md`.
 
 ## 🚀 Quick start
 
