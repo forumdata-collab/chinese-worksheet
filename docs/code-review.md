@@ -37,9 +37,19 @@ python3 tools/sanity_parser.py     # re-parse EDB animations; shipped glyphs mus
 node    tools/sanity_numbers.js    # 54,474 digits: collisions + anchors off their own stroke
 ```
 
-Current state: `sanity_data` OK, `sanity_parser` OK, `sanity_numbers` reports 3 of 54,474
-digits marginally outside their stroke under an **approximate** sampled-polygon test (the
-browser's `isPointInFill()` is authoritative and reports 0 for the sampled characters).
+Current state (end of 2026-09-15, after the number-layer fixes):
+
+| check | result |
+| --- | --- |
+| `sanity_data` | OK — 4,493 glyphs self-consistent, upright, medians aligned |
+| `sanity_parser` | OK — shipped glyphs reproduce from the EDB animations |
+| `sanity_numbers` | 54,474 digits: **0 off their own stroke**; 7 degenerate-centreline strokes now labelled; **25 glyphs** flagged for ink overlap, of which a browser pass confirmed **23 real (0.51 %)**, all 15–29 stroke characters |
+
+The population screen is deliberately cross-checked in a browser because the Node
+simulation approximates `isPointInFill()` with a sampled polygon: of the 196 glyphs it
+flagged before the fix, 169 were confirmed real. Numbers are compared against the digit's
+**real ink** (0.48 em/digit wide, 0.70 em tall, measured from the live page with canvas
+`measureText`) rather than the solver's padded box, which is ~15 % larger.
 
 Value already demonstrated: `sanity_parser` found `導` (15→16) and `巍` (20→21) where an earlier
 label-count bug had silently trimmed a real stroke, and the whole 4,491 remaining glyphs proved
