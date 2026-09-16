@@ -19,7 +19,7 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | 🔊 Pronunciation | Jyutping (Cantonese) + Pinyin (Mandarin), with TTS audio for both |
 | 🗣️ Multiple readings | 又讀 (alternative readings) shown when a character is polyphonic |
 | 📄 Print-focused | Dedicated A4 CSS output with **82% character-to-cell ratio** (copybook look); 默書版 (dictation) hides answers |
-| 🔲 6 grid styles | 米字格 · 田字格 · 九宮格 · 井字格 · 虛線格 · 空白格 |
+| 🔲 6 grid styles | 米字格 · 田字格 · 新九宮格（22:56:22 中宮放大）· 井字格 · 虛線格 · 空白格 |
 | 📏 Flexible layout | 4 grid sizes (56–128 px), 4–8 cells per row, per-row count |
 | 🎲 常用範例 | **32 組** presets |
 | 🔤 Smart input | Simplified Chinese → Traditional conversion, dedup option |

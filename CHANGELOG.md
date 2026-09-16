@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.10] - 2026-09-16
+
+### Added
+- **頁首筆順口訣選項**（`optRhyme`，內容區）：勾選後列印頁首顯示 8 種基本筆畫（橫豎撇點捺挑鈎折）+ 7 條筆順歌（先橫後直/先撇後捺/從上到下/從外到內/從左到右/進屋關門/先寫中央），每條附例字。筆順歌 7 條首加數字 1–7 排序。
+- **新九宮格導線樣式**（`jiugong` 重設計）：由均等 3×3 改為 **22%/78% 非等分結字輔助格** — 中宮放大至 56%（寬大長方形，定位字心）、上下邊格扁平（規範捺撇提豎縱向伸展）、左右邊格狹長（規範偏旁開合）、四角最小（留白控制）。紅色雙線 `--red-grid`、`stroke-width:1.6`。與井字格（33.3/66.7 均等）清晰區分。
+
+### Changed
+- `index.html`：`guideSvg()` 新增 `g-hn3a/b`、`g-vn3a/b`（22%/78% 分割線）；`.guide-jiugong` 改用新線並設紅色粗度；`.cell-guides .g-center` 預設 `display:none`（井字格唔會漏出中宮框）。
+- 導線選項 label：`九宮格（中宮）` → `新九宮格（3×3）`。
+
 ## [1.2.9] - 2026-09-16
 
 Reported as「凹/凸 缺右下角 + 凹 上下倒轉 + 凸 筆順動畫由下而上」。三個獨立 root cause：
