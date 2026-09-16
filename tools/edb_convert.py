@@ -197,6 +197,18 @@ def parse_edb_js(path):
                 shapes[m.group(1)]['sy'] = vals[3]
 
     label_n = label_count(js)
+    # label transition times: the label is shown at wait(24), then every
+    # wait(24) advances to the next number.  Chains whose delay falls between
+    # two label ticks belong to the SAME stroke (second-segment reveal) and
+    # must be merged into it, not dropped (凹 id=320 / 凸 id=322 lost their
+    # final right-side stroke to a blind trim).
+    label_times = [24]
+    for mm in re.finditer(r'wait\((\d+)\)\.to\(\{_off:false\},0\)(.*?)\);', js):
+        acc = 24
+        for w in re.finditer(r'wait\((\d+)\)\.to\(\{text:', mm.group(2)):
+            acc += int(w.group(1))
+            label_times.append(acc)
+        break
     fin_names = find_showall(js)
 
     chains = find_chains(js) + find_offset_chains(js)
@@ -247,7 +259,34 @@ def parse_edb_js(path):
     jid_files = re.findall(r'(\d+)\.js$', path)
     jid_num = int(jid_files[0]) if jid_files else 0
     if label_n and db_counts.get(jid_num, 0) == label_n and len(picked) > label_n:
-        picked = picked[:label_n]
+        # Do NOT blind-trim to the first N chains: a chain starting between two
+        # label ticks is the SECOND SEGMENT of the previous stroke, not a new
+        # stroke (凹 id=320: chains at delay 36 & 105 sit inside label windows;
+        # the old picked[:5] dropped 底橫 shape_7 + 右下 shape_4 -> missing
+        # lower-right corner).  Group chains by which label window they start
+        # in, merging every chain that starts before the next label tick into
+        # the current stroke.
+        if len(label_times) > 1:
+            groups = []
+            for c in merged:
+                if c['delay'] >= label_times[-1]:
+                    g = len(label_times) - 1
+                else:
+                    g = 0
+                    for t in label_times[1:]:
+                        if c['delay'] < t:
+                            break
+                        g += 1
+                while len(groups) <= g:
+                    groups.append([])
+                groups[g].extend(c.get('final', []))
+            groups = [list(dict.fromkeys(g)) for g in groups if g]
+            if len(groups) == label_n:
+                picked = groups
+            else:
+                picked = picked[:label_n]
+        else:
+            picked = picked[:label_n]
 
     # ---- prefer the official final geometry --------------------------------
     # The show-all list is NOT reliably in stroke order (147/296 chars differ — e.g.

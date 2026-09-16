@@ -22,7 +22,7 @@
 
 ```
 EDB 動畫 JS (edbchinese.hk)
-   │  tools/edb_convert.py  (parser, v13)
+   │  tools/edb_convert.py  (parser, v14)
    ▼
 edb_svg_strokes.json        ← 逐字 {strokes: [path…]}，EDB 1080-space y-down
    │  tools/build_glyphs.py + flip_glyphs.py + reframe_glyphs.py
@@ -79,7 +79,7 @@ cd ~/chinese-worksheet && python3 -m http.server 8891
 
 ---
 
-## 4. Parser 已知陷阱（edb_convert.py，v13）
+## 4. Parser 已知陷阱（edb_convert.py，v14）
 
 1. **9-arg `setTransform(x,y,sx,sy,rot,skx,sky,regX,regY)`**：最後兩個係 registration point，
    有效位置 = `(x − regX·sx, y − regY·sy)`。只讀頭兩個會令 shape 偏移（你 案例 +273）。
@@ -95,6 +95,15 @@ cd ~/chinese-worksheet && python3 -m http.server 8891
 5. **同 delay 合併會吞真筆畫**：合併前先剔除含 `text*` name 嘅 chain（數字標籤 tween）。
 6. **show-all block 唔係筆順**：順序沿用動畫 chain，只係用 bbox 配對換上最終 shape；
    `len(fin) != len(picked)` 就完全唔替換（名/印/韋 假陽性）。
+7. **chain 數 > label 數時 blind trim 砍錯筆（v14）**：凹(320) 7 chain / 5 label，
+   舊 `picked[:5]` 砍走 delay 105+120（底橫 shape_7 + 右下 shape_4）→ 缺右下角。
+   修法：用 **label timing window** 分組 — chain delay 落入邊個 label 區間就併入邊筆
+   （label 1-5 喺 24/48/72/96/120ms；chain 36 同 105 喺區間內 = 同一筆第二段，合併唔好砍）。
+   影響：凹/凸 兩字幾何改變，其餘 4491 字不變（diff edb_svg_strokes.json 驗證）。
+8. **median 方向錯 → 動畫由下而上（v14）**：build_glyphs orient 邏輯對多段 chain 判斷錯起筆點。
+   修法：直接反轉 glyph JSON 嘅 `rec.m[i]`（HanziWriter 沿 median[0]→[-1] 畫）。
+   驗證：stored y-up 空間 **start_y > end_y = 由上而下 ✓**；動畫方向錯唔會影響字形/數字，
+   只影響筆順動畫起筆位置。
 
 **改完 parser 必做**：
 ```bash
@@ -169,7 +178,7 @@ git add -A && git commit -m "..." && git push origin main
 
 | 檔案 | 用途 |
 | --- | --- |
-| `tools/edb_convert.py` | EDB 動畫 parser（v13；regX/regY + multi-shape final） |
+| `tools/edb_convert.py` | EDB 動畫 parser（v14；regX/regY + multi-shape final + label-window 分組） |
 | `tools/sanity_parser.py` | parser vs deployed 筆畫數一致性 |
 | `tools/sanity_geom.py` | **幾何**一致性：fresh parse 全鏈路 vs deployed 逐 path（stale glyph 檢測） |
 | `tools/sanity_data.py` | glyph JSON 完整性 + medians 對齊 + y-up 方向 |
