@@ -223,6 +223,7 @@ body {
   color: var(--red);
   font-family: "Noto Serif TC", "Songti TC", "STSong", serif;
   letter-spacing: 0.1em;
+  line-height: 1.3;
 }
 .ws-meta {
   display: flex;
@@ -375,6 +376,16 @@ body {
   font-family: "Helvetica Neue", Arial, sans-serif;
   text-anchor: middle;
   dominant-baseline: central;
+}
+/* Hover 放大筆順數字（僅螢幕；@media print 不受影響，因 transform 由 hover 觸發） */
+.stroke-num-cell { transition: background 0.15s; }
+/* 只放大數字 text（transform-box: fill-box 令每個數字圍繞自己中心縮放），字形不動 */
+.stroke-num-cell:hover .hk-glyph-svg text,
+.stroke-num-cell:hover .stroke-num-svg text {
+  transform: scale(1.35);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.15s ease;
 }
 
 /* ===== SENTENCE COPYBOOK (整句練習) ===== */
@@ -558,6 +569,25 @@ body {
 }
 #quiz-target svg { width: 100% !important; height: 100% !important; }
 
+/* ===== A4 PRINT PREVIEW ===== */
+#a4PreviewOverlay .modal { max-width: 560px; }
+.a4-preview-frame {
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.25);
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+.a4-preview-frame .ws-body-clone { padding: 0; }
+#a4PreviewInfo {
+  font-size: 0.8em;
+  color: #888;
+  margin: 10px 0 2px;
+  text-align: center;
+}
+#a4PreviewWarn { color: #C0392B; font-size: 0.78em; margin-top: 6px; }
+.a4-preview-actions { display: flex; justify-content: center; gap: 10px; }
+
 /* ===== FOOTER LINKS ===== */
 .footer-links {
   text-align: center;
@@ -635,6 +665,9 @@ body {
   .char-info { gap: 10px; }
   .reading-value { font-size: 1em; }
   .ws-meta { gap: 16px; font-size: 0.82em; }
+  /* 手機 footer 收緊：3 行 credit 喺細屏唔好迫埋 */
+  .ws-footer { font-size: 0.62em; line-height: 1.55; padding-top: 10px; margin-top: 20px; }
+  .footer-links { flex-wrap: wrap; font-size: 0.78em; gap: 6px; }
 }
 
 /* ===== PRINT ===== */
@@ -676,6 +709,9 @@ body {
   .char-card { page-break-inside: avoid; }
   .char-info { margin-bottom: 12px; }
   .ws-header { margin-bottom: 16px; padding-bottom: 12px; }
+  /* 列印 header 美化：3px double 太粗，改 0.5pt 幼線 */
+  .ws-header { border-bottom: 0.5pt solid var(--red); }
+  .ws-title { font-size: 1.35em; letter-spacing: 0.08em; }
   .practice-row { gap: 0; }
   .sentence-row { gap: 0; }
   /* sentence cells follow --cell-practice (cm) too, rows wrap naturally */
@@ -1006,6 +1042,7 @@ details.advance-collapse summary:hover { color: var(--red); }
 <!-- PRINT/QUIZ TOOLBAR -->
 <div class="print-bar screen-only no-print" id="printBar">
   <button onclick="printWorksheet()" title="列印練習紙 (A4)">🖨️ 列印</button>
+  <button onclick="openA4Preview()" title="列印前先睇 A4 版面效果">📐 A4 預覽</button>
   <button id="btnQuizMode" onclick="toggleQuizMode()" title="默書版：隱藏讀音，只留練習格">✍️ 默書版</button>
   <span class="bar-sep" aria-hidden="true"></span>
   <button id="btnReadAllCanto" onclick="readAllText('canto')" title="朗讀全文（粵語）">🔊 粵語朗讀</button>
@@ -1018,6 +1055,25 @@ details.advance-collapse summary:hover { color: var(--red); }
   <p>按「🖨️ 列印」輸出 A4 · 可切換「默書版」隱藏答案</p>
 </div>
 <div class="preview-dash screen-only no-print" id="previewDash" style="display:none;"></div>
+
+<!-- A4 PRINT PREVIEW MODAL -->
+<div class="modal-overlay" id="a4PreviewOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📄 A4 列印預覽</h3>
+      <button class="modal-close" onclick="closeA4Preview()" aria-label="關閉">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="a4PreviewInfo"></p>
+      <div id="a4PreviewWarn"></div>
+      <div class="a4-preview-frame" id="a4PreviewFrame"></div>
+    </div>
+    <div class="modal-controls a4-preview-actions">
+      <button onclick="printWorksheet()">🖨️ 直接列印</button>
+      <button class="primary" onclick="closeA4Preview()">完成</button>
+    </div>
+  </div>
+</div>
 
 <!-- WORKSHEET -->
 <div id="worksheet" style="display:none;">
@@ -2156,6 +2212,67 @@ function toggleQuizMode() {
 // ===== PRINT =====
 function printWorksheet() {
   window.print();
+}
+
+// ===== A4 PRINT PREVIEW =====
+// Clone the worksheet and scale it so one screen shows how page 1 fits on A4.
+// The clone re-applies the print CSS vars (cm sizes) so 排版所見即所得.
+function openA4Preview() {
+  const ws = document.getElementById('worksheet');
+  const overlay = document.getElementById('a4PreviewOverlay');
+  const frame = document.getElementById('a4PreviewFrame');
+  const info = document.getElementById('a4PreviewInfo');
+  const warn = document.getElementById('a4PreviewWarn');
+  const o = currentOptions || {};
+
+  // —— info line + per-row warning ——
+  let perRowNote = '';
+  if (o.perRow && o.perRow !== 'auto') {
+    perRowNote = ` ⚠️ 每行 ${o.perRow} 格 + 印刷格 ${o.printSize === 'auto' ? '自動' : o.printSize}：列印時格仔跟隨
+      A4 寬度自動換行，實際每行格數可能同螢幕預覽唔同（flex 覆蓋 width）。`;
+  }
+  info.textContent = `排版：${o.layout === 'sentence' ? '整句' : o.layout === 'word+sentence' ? '每字+整句' : '每字'}
+    · 印刷格：${o.printSize === 'auto' ? '自動（' + (o.size || '中') + '屏）' : o.printSize}
+    · 導線：${o.guideStyle || '米字格'} · 字數：${(currentChars || []).length}`;
+  warn.textContent = perRowNote;
+
+  // —— build a print-styled clone: same vars @media print would set ——
+  let ps;
+  if (o.printSize && o.printSize !== 'auto') {
+    ps = o.printSize;
+  } else {
+    const cm = ((SIZE_PX[o.size] || 96) / 96) * 2.54;
+    ps = Math.min(Math.max(cm, 1.5), 2.6).toFixed(2) + 'cm';
+  }
+  const clone = ws.cloneNode(true);
+  clone.style.position = 'relative';
+  clone.style.margin = '0';
+  clone.style.width = '794px';          // A4 width @96dpi (screen px)
+  clone.style.maxWidth = 'none';
+  clone.style.boxShadow = 'none';
+  clone.style.padding = '45px';         // ≈ 12mm @96dpi
+  clone.style.setProperty('--cell-practice', ps);
+  clone.style.setProperty('--cell-font', `calc(${ps} * ${GLYPH_RATIO})`);
+  clone.style.setProperty('--cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
+  // strip screen-only / interactive bits
+  clone.querySelectorAll('.screen-only, .no-print').forEach(el => el.remove());
+  frame.innerHTML = '';
+  frame.appendChild(clone);
+
+  // scale to fit the modal: A4 at 96dpi = 794px wide → show at 44% (≈350px)
+  const SCALE = 0.44;
+  frame.style.width = Math.round(794 * SCALE) + 'px';
+  frame.style.height = Math.round(1123 * SCALE) + 'px';   // A4 aspect, first page
+  clone.style.transform = `scale(${SCALE})`;
+  clone.style.transformOrigin = 'top left';
+
+  overlay.style.display = 'flex';
+  overlay.classList.add('show');
+}
+function closeA4Preview() {
+  const overlay = document.getElementById('a4PreviewOverlay');
+  overlay.style.display = 'none';
+  overlay.classList.remove('show');
 }
 
 // ===== AUDIO =====
