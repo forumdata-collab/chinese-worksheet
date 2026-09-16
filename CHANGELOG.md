@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.9] - 2026-09-16
+
+Reported as「凹/凸 缺右下角 + 凹 上下倒轉 + 凸 筆順動畫由下而上」。三個獨立 root cause：
+
+### Fixed
+- **chain 數 > label 數時 blind trim 砍錯筆**（凹/凸 缺右下）：凹(EDB 320) 7 個動畫 chain 但官方 5 筆，舊 `picked[:5]` 直接砍走 delay 105+120（底橫 + 右下大塊）→ 右下角成筆消失。修法：`tools/edb_convert.py` 用 **label timing window 分組** — chain delay 落入邊個 label 區間（24/48/72/96/120ms）就併入邊一筆，同一筆嘅第二段 reveal（chain 36/105）合併而唔係當獨立 chain 砍走。全庫 diff：只有 凹/凸 兩字幾何改變，其餘 4,491 字不變。
+- **flip 進度檔 hex 寫錯 → 凹 上下倒轉**：rebuild 凹(51f9) 時移除 progress 誤用 `533d.json` → `flip_glyphs.py` 跳過 → y-down 未反轉就 deploy。修法：補跑 flip+reframe，並喺 DEBUG.md 記低「`glyph_build_done.json` 用字元、`glyph_flip_done/reframe_done` 用檔名」嘅陷阱。
+- **median 方向錯 → 凸 筆順動畫由下而上**：`build_glyphs.py` orient 邏輯對多段 chain 判斷錯起筆點。修法：直接反轉 `glyphs/51f8.json` 同 `glyphs/51f9.json` 相關筆畫嘅 `rec.m[i]`（HanziWriter 沿 median[0]→[-1] 起筆）。驗證：stored y-up 空間 start_y > end_y = 由上而下。
+
+### Changed
+- `tools/edb_convert.py`：label timing window 分組取代 blind trim（v14）。
+- `glyphs/51f8.json`（凸）、`glyphs/51f9.json`（凹）：flip 修正 + median 方向反轉。
+- `index.html`：`glyphs/*.json?v=12 → ?v=13`。
+- 常用範例由 12 組增至 **32 組**（新增 家人/日子/衣物/水果/用具/叫聲/反義/百千/樹木/彩色，全部組間零重複；五行 → 金銀銅鐵錫、時間 → 早午晚夜 避重複）。
+- 描紅字色 `#F5D5D0 → #F9E8E5`（更淺）。
+
 ## [1.2.8] - 2026-09-16
 
 Reported as「兒 第一筆遺失；又/離 殘缺；你 第2筆直線過長」。全量重跑 parser + 重建 glyph，根因係兩個 parser 缺陷 + 一批 stale glyph：

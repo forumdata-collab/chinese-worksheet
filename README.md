@@ -21,7 +21,9 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | 📄 Print-focused | Dedicated A4 CSS output with **82% character-to-cell ratio** (copybook look); 默書版 (dictation) hides answers |
 | 🔲 6 grid styles | 米字格 · 田字格 · 九宮格 · 井字格 · 虛線格 · 空白格 |
 | 📏 Flexible layout | 4 grid sizes (56–128 px), 4–8 cells per row, per-row count |
+| 🎲 常用範例 | **32 組** presets |
 | 🔤 Smart input | Simplified Chinese → Traditional conversion, dedup option |
+| 🎨 淺色描紅 | Tracing 描紅字 `#F9E8E5`（淺粉，打印同步調淡） |
 | 👤 Worksheet meta | Title / student name / date fields; header toggle |
 | 📱 Responsive | Works on phone, tablet and desktop; settings persist in localStorage |
 
