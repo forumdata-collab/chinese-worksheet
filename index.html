@@ -235,6 +235,18 @@ body {
 }
 .ws-meta span { border-bottom: 1px solid #999; padding-bottom: 2px; min-width: 100px; display: inline-block; }
 
+/* ===== 頁首筆順口訣 (optRhyme) — 純文字，print 一定出到 ===== */
+.ws-rhyme { display: none; margin: 10px auto 0; max-width: 640px;
+  font-size: 0.78em; line-height: 1.85; color: #444; text-align: center; }
+.ws-rhyme.show { display: block; }
+.ws-rhyme .strokes { font-size: 0.95em; color: #555; }
+.ws-rhyme .strokes b { color: var(--red); }
+.ws-rhyme .rhyme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px;
+  text-align: left; margin-top: 4px; }
+.ws-rhyme .rhyme-item b { color: var(--red); font-weight: 700; }
+.ws-rhyme .rhyme-item .ex { color: #888; font-size: 0.92em; }
+@media print { .ws-rhyme { font-size: 0.72em; line-height: 1.7; } }
+
 /* ===== CHARACTER CARD ===== */
 .char-card {
   margin-bottom: 22px;
@@ -1006,6 +1018,12 @@ details.advance-collapse summary:hover { color: var(--red); }
             <label for="optShowHeader">顯示標題資訊</label>
           </div>
         </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optRhyme">
+            <label for="optRhyme">頁首筆順口訣</label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1100,6 +1118,7 @@ details.advance-collapse summary:hover { color: var(--red); }
   <div class="ws-header">
     <div class="ws-title" id="wsTitle"></div>
     <div class="ws-meta" id="wsMeta"></div>
+    <div class="ws-rhyme" id="wsRhyme"></div>
   </div>
   <div id="wsContent"></div>
   <div class="ws-footer" id="wsFooter">
@@ -1208,6 +1227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       document.getElementById('optShowHeader').checked = saved.showHeader !== false;
+      document.getElementById('optRhyme').checked = saved.rhyme === true;
       document.getElementById('optCanto').checked = saved.canto !== false;
       document.getElementById('optPinyin').checked = saved.pinyin !== false;
       document.getElementById('optStrokes').checked = saved.strokes !== false;
@@ -1316,6 +1336,7 @@ function readOptions() {
     perRow: $('optPerRow').value,
     printSize: $('optPrintSize').value,
     showHeader: $('optShowHeader').checked,
+    rhyme: $('optRhyme').checked,
     canto: $('optCanto').checked,
     pinyin: $('optPinyin').checked,
     strokes: $('optStrokes').checked,
@@ -1377,6 +1398,7 @@ function generate() {
     perRow: opts.perRow || 'auto',
     printSize: opts.printSize || 'auto',
     showHeader: opts.showHeader,
+    rhyme: opts.rhyme,
     canto: opts.canto,
     pinyin: opts.pinyin,
     strokes: opts.strokes,
@@ -2123,6 +2145,28 @@ function renderWorksheet() {
   if (o.name) metaHtml += `<span>姓名：${esc(o.name)}</span>`;
   if (o.date) metaHtml += `<span>日期：${esc(o.date)}</span>`;
   document.getElementById('wsMeta').innerHTML = metaHtml;
+
+  // 頁首筆順口訣 (optRhyme)
+  const rhymeEl = document.getElementById('wsRhyme');
+  if (rhymeEl) {
+    if (o.rhyme) {
+      rhymeEl.classList.add('show');
+      rhymeEl.innerHTML =
+        '<div class="strokes">現代漢字基本筆畫共有8種：<b>橫(一)</b> <b>豎(丨)</b> <b>撇(丿)</b> <b>點(丶)</b> <b>捺(㇏)</b> <b>挑(㇀)</b> <b>鈎(亅)</b> <b>折(乛)</b></div>' +
+        '<div class="rhyme-grid">' +
+        '<div class="rhyme-item"><b>先橫後直</b>要分清 <span class="ex">[ 十 ]</span></div>' +
+        '<div class="rhyme-item"><b>先撇後捺</b>要分明 <span class="ex">[ 人 ]</span></div>' +
+        '<div class="rhyme-item"><b>從上到下</b>心中記 <span class="ex">[ 三 ]</span></div>' +
+        '<div class="rhyme-item"><b>從外到內</b>字成形 <span class="ex">[ 月 ]</span></div>' +
+        '<div class="rhyme-item"><b>從左到右</b>才順手 <span class="ex">[ 便 ]</span></div>' +
+        '<div class="rhyme-item"><b>進屋關門</b>字安定 <span class="ex">[ 日 ]</span></div>' +
+        '<div class="rhyme-item"><b>先寫中央</b>後兩邊 <span class="ex">[ 小 ]</span></div>' +
+        '</div>';
+    } else {
+      rhymeEl.classList.remove('show');
+      rhymeEl.innerHTML = '';
+    }
+  }
 
   // Content
   let html = '';
