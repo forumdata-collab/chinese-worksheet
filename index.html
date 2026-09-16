@@ -855,15 +855,12 @@ details.advance-collapse summary:hover { color: var(--red); }
 /* 田字格: cross only */
 .guide-tian .cell-guides .g-h, .guide-tian .cell-guides .g-v { display: block; }
 
-/* 九宮格: 3×3 + 中宮框強調 */
+/* 新九宮格: 3×3 均等紅色網格（外框+十字線同粗幼，無中宮強調） */
 .guide-jiugong .cell-guides .g-h3a, .guide-jiugong .cell-guides .g-h3b,
-.guide-jiugong .cell-guides .g-v3a, .guide-jiugong .cell-guides .g-v3b { display: block; }
-.guide-jiugong .cell-guides .g-center {
+.guide-jiugong .cell-guides .g-v3a, .guide-jiugong .cell-guides .g-v3b {
   display: block;
   stroke: var(--red-grid);
-  stroke-width: 2.2;
-  vector-effect: non-scaling-stroke;
-  fill: none;
+  stroke-width: 1.6;
 }
 
 /* 井字格: 3×3 井字（無中宮強調） */
@@ -962,7 +959,7 @@ details.advance-collapse summary:hover { color: var(--red); }
           <select id="optGuideStyle">
             <option value="mizi" selected>米字格（十字+對角線）</option>
             <option value="tian">田字格（十字）</option>
-            <option value="jiugong">九宮格（中宮）</option>
+            <option value="jiugong">新九宮格（3×3）</option>
             <option value="jingzi">井字格（3×3）</option>
             <option value="dashed">虛線格</option>
             <option value="blank">空白格</option>
