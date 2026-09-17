@@ -482,6 +482,9 @@ body {
 .stroke-seq .seq-names { letter-spacing: 1px; color: #444; word-break: break-all; }
 .stroke-seq .seq-count { color: #999; margin-left: 2px; }
 .stroke-seq .seq-src { display: block; color: #aaa; font-size: 0.82em; letter-spacing: 0; }
+.twpen-note { margin: 4px 0 0; color: #888; font-size: 0.9em; line-height: 1.5; }
+.twpen-note.small { font-size: 0.8em; }
+.twpen-note a { color: #4a6fa5; text-decoration: underline; word-break: break-all; }
 
 /* 描紅格內的筆順次序文字（無筆順字形時替代數字標示） */
 .seq-overlay-cell { position: relative; }
@@ -1134,7 +1137,7 @@ details.advance-collapse summary:hover { color: var(--red); }
   <div id="wsContent"></div>
   <div class="ws-footer" id="wsFooter">
     資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>
-    字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net<br>
+    字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net · 字詞表未收錄字筆順參考：筆順字典 twpen.com（台灣教育部標準）<br>
     列印建議使用A4直向 · 本工具為教育用途，與香港教育局無從屬關係
   </div>
   <div class="footer-links no-print">
@@ -2092,7 +2095,7 @@ function setWsFooter(o) {
   if (o.layout !== 'word' && currentSentences.length) parts.push(`${currentSentences.length} 句`);
   document.getElementById('wsFooter').innerHTML =
     `${parts.join(' · ')} · 資料來源：開放粵語字典 CC-BY 3.0（kaifangcidian.com）· pypinyin · OpenCC<br>` +
-    `字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net<br>` +
+    `字形與筆順：香港教育局《香港小學學習字詞表》（edbchinese.hk）· 後備 HanziWriter（hanziwriter.org）· 無字形字筆順：漢典 zdic.net · 字詞表未收錄字筆順參考：筆順字典 twpen.com（台灣教育部標準）<br>` +
     `列印建議使用A4直向 · 本工具為教育用途，與香港教育局無從屬關係`;
 }
 
@@ -2556,13 +2559,28 @@ async function strokeUnavailable(ch) {
   } catch (e) {
     return false;                                      // 網絡問題 → 唔好誤灰
   }
+  // hkGlyph 無 → 直接 fetch HW data URL，分辨 404（真正冇）定網絡錯誤（唔灰）
   try {
-    const d = await HanziWriter.loadCharacterData(ch);
-    if (d && d.strokes && d.strokes.length) return false;
-    return true;                                       // 答得成但係空 → 真係冇
+    const hwUrl = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(ch)}.json`;
+    const r = await fetch(hwUrl);
+    if (r.ok) {
+      const d = await r.json();
+      if (d && d.strokes && d.strokes.length) return false;  // HW 有資料
+    }
+    return true;                                        // 404 或空 → 真係冇
   } catch (e) {
-    return false;                                      // 抓取失敗 → 唔好誤灰
+    return false;                                      // 網絡問題 → 唔好誤灰
   }
+}
+
+// 小字註解：無香港筆順資料時，指向「筆順字典 twpen.com」（台灣教育部標準）作參考。
+// 香港教育局《香港小學學習字詞表》未有此字嘅官方筆順，twpen 有 GIF 動畫可睇寫法。
+function twpenNoteHtml(ch, opts) {
+  const small = (opts && opts.small);
+  const url = `https://www.twpen.com/${encodeURIComponent(ch)}.html`;
+  return `<p class="twpen-note${small ? ' small' : ''}">` +
+    `筆順參考：<a href="${url}" target="_blank" rel="noopener">「${esc(ch)}」筆順字典 twpen.com</a>` +
+    `<span class="seq-src">台灣教育部標準 · 香港字詞表未收錄此字</span></p>`;
 }
 
 function showStrokeUnavailable(ch, modalId = 'strokeModal', targetId = 'stroke-target') {
@@ -2574,6 +2592,7 @@ function showStrokeUnavailable(ch, modalId = 'strokeModal', targetId = 'stroke-t
   target.innerHTML =
     `<div style="font-size:110px;font-family:var(--cell-guide-font,serif);line-height:1.1;">${esc(ch)}</div>` +
     strokeSeqHtml(ch) +
+    twpenNoteHtml(ch) +
     `<p style="margin-top:12px;color:#8a8a8a;font-size:13px;line-height:1.6;">` +
     `未收錄於《香港小學學習字詞表》，暫無官方筆順字形（示範字仍可作字形參考，練習格可正常列印）。</p>`;
   document.querySelectorAll(`#${modalId} button, #${modalId} input`).forEach(el => {
@@ -2630,6 +2649,16 @@ async function markNoStrokeData(root) {
         details.insertBefore(meta, details.querySelector('.action-bar') || null);
       }
       meta.insertAdjacentHTML('beforeend', strokeSeqHtml(ch, { small: true }));
+    }
+    // 香港字詞表無資料嘅字 → 加 twpen.com 筆順字典小字註解（台灣教育部標準參考）
+    if (details && !details.querySelector('.twpen-note')) {
+      let meta = details.querySelector('.meta-row');
+      if (!meta) {
+        meta = document.createElement('div');
+        meta.className = 'meta-row';
+        details.insertBefore(meta, details.querySelector('.action-bar') || null);
+      }
+      meta.insertAdjacentHTML('beforeend', twpenNoteHtml(ch, { small: true }));
     }
   }));
 }
