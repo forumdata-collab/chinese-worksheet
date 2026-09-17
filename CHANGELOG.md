@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.11] - 2026-09-17
+
+### Added
+- **未收錄字 twpen.com 筆順註解**（沚 案）：香港字詞表／HanziWriter／漢典都無嘅字（例：沚、芷），卡片同「未收錄」彈窗加小字註解連結「筆順字典 twpen.com」（台灣教育部標準），用戶可跳去睇台灣標準筆順動畫。href=`https://www.twpen.com/<hex>.html`。
+
+### Fixed
+- **`strokeUnavailable()` 分辨唔到「真 404」同「網絡錯誤」**：舊用 `HanziWriter.loadCharacterData()`，404 時拋 `Failed to load char data` 被 catch 當「網絡問題→有資料」→ 沚等字筆順按鈕唔灰、彈窗空白。改為直接 fetch `hanzi-writer-data@2.0/<hex>.json`，`!r.ok` = 真冇資料（灰按鈕），網絡錯誤先 catch 返回 false。
+
 ## [1.2.10] - 2026-09-16
 
 ### Added
