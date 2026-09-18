@@ -16,8 +16,8 @@
   --ink: #33302A;
   --red: #C0392B;
   --red-light: #E8D5D0;
-  --red-grid: #CCAAAA;  /* softer guide line color */
-  --guide-line: #D8C8C8; /* screen guide line color — subtle so tracing char stands out */
+  --red-grid: #E3CDCD;  /* softer guide line color */
+  --guide-line: #E7DEDC; /* screen guide line color — subtle so tracing char stands out */
   --guide-tint: #F9E8E5; /* screen tracing char — very light, just visible enough to trace */
   --blue: #2C6FAC;
   --blue-light: #E8F0F8;
@@ -714,9 +714,9 @@ body {
     --cell-practice: var(--print-cell-practice, 2.2cm) !important;
     --cell-font: var(--print-cell-font, calc(2.2cm * 0.82)) !important;
     --cell-guide-font: var(--print-cell-guide-font, calc(2.2cm * 0.82)) !important;
-    --guide-line: #C5B0B0 !important; /* lighter than screen — prints as subtle pink-gray */
+    --guide-line: #D8CAC8 !important; /* lighter than screen — prints as subtle pink-gray */
     --guide-tint: #F0C8C4 !important; /* tracing char — light pink, prints visibly but not bold */
-    --red-grid: #BBA8A8 !important;
+    --red-grid: #CFBEBE !important;
   }
   .cell-guides line { stroke-width: 1.5; }
   /* Fix: per-row flex sizing must NOT override print cell size — grid cells follow
@@ -846,6 +846,7 @@ details.advance-collapse summary:hover { color: var(--red); }
 .cell-guides line {
   stroke: var(--guide-line);
   stroke-width: 1.2;
+  stroke-dasharray: 4 4;        /* 所有導線一律虛線（2026-09-18 用戶：實線改虛線） */
   vector-effect: non-scaling-stroke;
   display: none;
 }
@@ -869,16 +870,12 @@ details.advance-collapse summary:hover { color: var(--red); }
 .guide-jiugong .cell-guides .g-vn3a, .guide-jiugong .cell-guides .g-vn3b {
   display: block;
   stroke: var(--red-grid);
-  stroke-width: 1.6;
+  stroke-width: 1.1;
 }
 
 /* 井字格: 3×3 均等井字 */
 .guide-grid3 .cell-guides .g-h3a, .guide-grid3 .cell-guides .g-h3b,
 .guide-grid3 .cell-guides .g-v3a, .guide-grid3 .cell-guides .g-v3b { display: block; }
-
-/* 虛線格: cross + diagonals as dashed */
-.guide-dashed .cell-guides .g-h, .guide-dashed .cell-guides .g-v,
-.guide-dashed .cell-guides .g-d1, .guide-dashed .cell-guides .g-d2 { display: block; stroke-dasharray: 6 6; opacity: 0.5; }
 
 /* 空白格: no guides (all stay hidden) */
 .guide-blank .cell-guides { display: none; }
@@ -970,7 +967,6 @@ details.advance-collapse summary:hover { color: var(--red); }
             <option value="tian">田字格（十字）</option>
             <option value="jiugong">新九宮格（3×3）</option>
             <option value="jingzi">井字格（3×3）</option>
-            <option value="dashed">虛線格</option>
             <option value="blank">空白格</option>
           </select>
         </div>
@@ -1243,7 +1239,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       if (saved.practice != null) document.getElementById('optPractice').value = saved.practice;
       if (saved.size) document.getElementById('optSize').value = saved.size;
-      if (saved.guideStyle) document.getElementById('optGuideStyle').value = saved.guideStyle;
+      if (['mizi','tian','jiugong','jingzi','blank'].includes(saved.guideStyle)) {
+        document.getElementById('optGuideStyle').value = saved.guideStyle;
+      }
       if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
       if (saved.printSize) {
         const v = saved.printSize;
@@ -1968,8 +1966,8 @@ async function overlayStrokeNum(cell) {
 // 尺寸全部按墨跡 box 比例計 → 螢幕/列印/任何字級自動跟住縮放。
 function appendStrokeArrows(svg, medians, C, box) {
   if (!svg || !medians || !medians.length || !(box > 0)) return;
-  const w = box * 0.018;                                  // 線粗
-  const dash = `${(box * 0.05).toFixed(1)} ${(box * 0.042).toFixed(1)}`;
+  const w = box * 0.02;                                   // 線粗（亦係圓點直徑）
+  const dots = `0 ${(box * 0.028).toFixed(1)}`;            // 密點線：0 長度 dash + round cap = 圓點
   const headL = box * 0.075, headW = box * 0.036;          // 箭頭長 / 半闊
   medians.forEach(med => {
     if (!med || med.length < 2) return;
@@ -1978,7 +1976,7 @@ function appendStrokeArrows(svg, medians, C, box) {
     pl.setAttribute('class', 'stroke-arrow');
     pl.setAttribute('points', pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '));
     pl.setAttribute('stroke-width', w.toFixed(1));
-    pl.setAttribute('stroke-dasharray', dash);
+    pl.setAttribute('stroke-dasharray', dots);
     svg.appendChild(pl);
     const [ax, ay] = pts[pts.length - 1];
     const [bx, by] = pts[pts.length - 2];
@@ -2207,13 +2205,12 @@ function renderWorksheet() {
   ws.style.setProperty('--print-cell-font', `calc(${ps} * ${GLYPH_RATIO})`);
   ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
 
-  // Guide style class (mizi/tian/jiugong/jingzi/dashed/blank)
+  // Guide style class (mizi/tian/jiugong/jingzi/blank)
   ws.classList.remove('guide-mizi', 'guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
   if (o.guideStyle === 'mizi') ws.classList.add('guide-mizi');
   else if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
   else if (o.guideStyle === 'jiugong') ws.classList.add('guide-jiugong');
   else if (o.guideStyle === 'jingzi') ws.classList.add('guide-grid3');
-  else if (o.guideStyle === 'dashed') ws.classList.add('guide-dashed');
   else if (o.guideStyle === 'blank') ws.classList.add('guide-blank');
 
   // Header

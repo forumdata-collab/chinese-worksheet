@@ -14,13 +14,13 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | 🖊️ Stroke order | Animated per-stroke playback + interactive 試寫 (draw-along quiz), **following the 香港小學學習字詞表 stroke-order standard** |
 | 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (4,493 chars) instead of a generic font |
 | 🔢 Stroke-order digits | Numbered strokes (1…n) overlaid on the first tracing cell — the strokeorder.com.tw look |
-| ➡️ Stroke direction arrows | Optional (off by default): dashed centreline + arrowhead per stroke, at the stroke's end, showing the writing direction |
+| ➡️ Stroke direction arrows | Optional (off by default): dotted centreline + arrowhead per stroke, at the stroke's end, showing the writing direction |
 | 📝 練習模式 (3 modes) | 每字練習 (default) · 每字 + 整句 · 整句練習 — sentence copybook adds a 描紅 model row plus N blank rows (次數 adjustable) |
 | ❕ 標點全形直出 | Punctuation occupies its own grid cell like a character; half-width `, . ! ?` auto-convert to full-width `，。！？` |
 | 🔊 Pronunciation | Jyutping (Cantonese) + Pinyin (Mandarin), with TTS audio for both |
 | 🗣️ Multiple readings | 又讀 (alternative readings) shown when a character is polyphonic |
 | 📄 Print-focused | Dedicated A4 CSS output with **82% character-to-cell ratio** (copybook look); 默書版 (dictation) hides answers |
-| 🔲 6 grid styles | 米字格 · 田字格 · 新九宮格（22:56:22 中宮放大）· 井字格 · 虛線格 · 空白格 |
+| 🔲 5 grid styles | 米字格 · 田字格 · 新九宮格（22:56:22 中宮放大）· 井字格 · 空白格 — all guide lines light + dashed |
 | 📏 Flexible layout | 4 grid sizes (56–128 px), 4–8 cells per row, per-row count |
 | 🎲 常用範例 | **32 組** presets |
 | 🔤 Smart input | Simplified Chinese → Traditional conversion, dedup option |

@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.13] - 2026-09-18
+
+### Changed
+- **所有導線改淺色 + 一律虛線**：`--guide-line` `#D8C8C8 → #E7DEDC`、`--red-grid` `#CCAAAA → #E3CDCD`（列印 `#C5B0B0 → #D8CAC8`、`#BBA8A8 → #CFBEBE`）；`.cell-guides line` 加 `stroke-dasharray: 4 4`（以前只有「虛線格」係虛線）。九宮格線 `stroke-width: 1.6 → 1.1`。格仔外框（用 `--red-grid`）跟住變淺但**保持實線**（用戶指定）。
+- **筆順方向箭咀改密點線**：`stroke-dasharray: 0 <0.028×box>` + `stroke-linecap: round`（0 長度 dash + round cap = 圓點），點徑 = 線粗 `0.02×box`；原本係 5%/4.2% 虛線。
+
+### Removed
+- **「虛線格」選項**（`#optGuideStyle` 由 6 款減至 5 款：米字格 · 田字格 · 新九宮格 · 井字格 · 空白格）—— 所有導線已經係虛線，呢個選項同米字格無分別。連同 `.guide-dashed` CSS、render 分支一併刪除；localStorage 還原加 allow-list（舊存 'dashed' 會安全 fallback 米字格，唔會出現空白 select）。
+
+### Notes
+- 驗證：5 個樣式顯示線數（4/2/4/4/0）正確；箭咀 15 箭頭+15 數字（天國）；列印媒體下 dash/顏色同樣生效；舊設定 `guideStyle:'dashed'` → mizi 而其他設定保留。
+
 ## [1.2.12] - 2026-09-18
 
 ### Added
