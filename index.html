@@ -2395,7 +2395,12 @@ async function installStrokePage(root) {
       const { svg, lastEl } = partialGlyphSvg(paths, frame, k);
       host.textContent = '';
       host.appendChild(svg);                    // 先 append，之後 addStepNumber 才查得到墨跡
-      addStepNumber(svg, lastEl, frame, k, medians ? medians[k - 1] : null, paths.length);
+      // 方向箭咀（跟「筆順方向箭咀」選項）：只畫新加嗰筆，避免同累積筆畫互相疊住
+      const med = medians ? medians[k - 1] : null;
+      if (currentOptions.arrow && med) {
+        try { appendStrokeArrows(svg, [med], frame.C, frame.box); } catch (e) { /* 無箭咀就算 */ }
+      }
+      addStepNumber(svg, lastEl, frame, k, med, paths.length);
     });
   }
 }

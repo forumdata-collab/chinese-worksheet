@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.19] - 2026-09-18
+
+### Changed
+- **筆順工作紙每格加方向箭咀**：每個 step 格顯示**新增嗰筆**嘅密點線 + 筆尾箭頭（同描紅格一樣嘅 `appendStrokeArrows()` 幾何，只傳一條 median），跟「🖊️ 筆順 → 筆順方向箭咀」開關；DOM 次序 = 字形 → 箭咀 → 數字（數字最上層）。只畫新加嗰筆（唔畫之前已寫嘅筆），避免累積格互相疊住。
+
+### Notes
+- 驗證：洪+天 13 格 → 13 條 dotted arrow + 13 個箭頭 + 13 個編號；關掉「筆順方向箭咀」→ 0 條箭咀。
+
 ## [1.2.18] - 2026-09-18
 
 ### Added
