@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.18] - 2026-09-18
+
+### Added
+- **描紅格數**（`#optGuideCount`）：無描紅 / 1 格（首格，預設）/ 2 格 / 全部格子 —— 每個字嘅前 N 格都印淺色描紅字（參考 EdUHK「縱橫習字簿」嘅「水印字」選項）。筆順數字同方向箭咀仍然只放第一格。「淺色範本指引」checkbox 仍係總開關（`guideRowCount(o)` 統一判斷）。
+- **筆順工作紙（可列印）**（`#optStrokePage`，default 關）：附加一頁，每字一行 —— 第 k 格顯示「首 k 筆」（用 `rec.s` 逐筆累加畫），新增嗰筆標紅色編號（沿中線 1/5 起筆位置，落唔到墨跡就在自己筆畫 bbox 內掃點）；標題列印筆畫數 + 粵拼/拼音；STROKE_SEQ（無字形）字印筆順次序文字；默書版自動隱藏；列印時 `page-break-before: always` 另起一頁。
+  - 資料路徑：EDB glyph（`hkGlyph`）優先，非 EDB 字用 HanziWriter strokes/medians；座標系同描紅格一致（viewBox = 墨跡方形 bbox、`g` 內 `translate(0,C) scale(1,-1)`），所以螢幕/列印/任何字級自動跟隨。
+
+### Changed
+- **選項面板重新排版**：由「📐 版面 / 📝 內容 / ⚙️ 進階（收埋式）」改為四段清楚分類 —— **📐 練習格**（每字格數·描紅格數·每行格數·導線樣式·螢幕/印刷格大小·練習模式+整句次數）· **📝 文字內容**（粵拼·拼音·筆畫數·去重·簡轉繁·朗讀語速）· **🖊️ 筆順**（描紅·筆順數字·方向箭咀·筆順工作紙）· **📄 頁面**（標題資訊·筆順口訣·標題/姓名/日期）。「進階」摺疊層已移除（全部一屏睇齊）。
+
+### Notes
+- 驗證：描紅格數 none/1/2/all → 每字 0/1/2/4 個描紅格、數字格數維持 1；筆順工作紙 天 4 格、國 11 格、洪 9 格，累積筆數 1..n 全對、編號全部落喺新增嗰筆；列印媒體格 = 2.2cm、`page-break-before: always`。
+
 ## [1.2.17] - 2026-09-18
 
 ### Fixed

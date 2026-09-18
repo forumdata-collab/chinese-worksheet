@@ -16,6 +16,8 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | 🔢 Stroke-order digits | Numbered strokes (1…n) overlaid on the first tracing cell, placed **a fifth of the way along each stroke from its start**, with **one uniform digit size per character** (dense characters scale down as a whole instead of mixing big and small digits) — the strokeorder.com.tw look |
 | ➡️ Stroke direction arrows | Optional (off by default): dotted centreline + arrowhead per stroke, at the stroke's end, showing the writing direction |
 | 📝 練習模式 (3 modes) | 每字練習 (default) · 每字 + 整句 · 整句練習 — sentence copybook adds a 描紅 model row plus N blank rows (次數 adjustable) |
+| ✍️ 描紅格數 | How many of a character's cells carry the light 描紅 tracing model: none / 1 / 2 / all |
+| 🖊️ 筆順工作紙 | Optional printable stroke-order sheet: one row per character, cell *k* = the first *k* strokes, with the new stroke numbered |
 | ❕ 標點全形直出 | Punctuation occupies its own grid cell like a character; half-width `, . ! ?` auto-convert to full-width `，。！？` |
 | 🔊 Pronunciation | Jyutping (Cantonese) + Pinyin (Mandarin), with TTS audio for both |
 | 🗣️ Multiple readings | 又讀 (alternative readings) shown when a character is polyphonic |

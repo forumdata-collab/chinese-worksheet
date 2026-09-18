@@ -439,6 +439,31 @@ body {
 .hk-glyph-svg .stroke-arrow-head, .stroke-num-svg .stroke-arrow-head { fill: #C0392B; fill-opacity: 0.55; }
 .quiz-mode .hk-glyph-svg text { display: none !important; }
 
+/* ===== 筆順工作紙（附加列印頁，2026-09-18）===== */
+.stroke-page { margin-top: 30px; }
+.stroke-page-title {
+  font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", serif;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #555;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--guide-line);
+  margin-bottom: 12px;
+}
+.stroke-page-block { margin-bottom: 16px; page-break-inside: avoid; }
+.stroke-caption {
+  font-family: "LXGW WenKai TC", "KaiTi", "STKaiti", serif;
+  font-size: 1em;
+  color: #555;
+  margin-bottom: 4px;
+}
+.stroke-caption .stroke-meta { color: #999; font-size: 0.88em; margin-left: 4px; }
+.stroke-caption .seq-names-inline { color: #8a8a8a; font-size: 0.85em; margin-left: 8px; }
+.stroke-caption .seq-src { color: #bbb; font-size: 0.78em; margin-left: 6px; }
+.stroke-page-row { flex-wrap: wrap; }
+.stroke-step-cell .step-svg { color: var(--guide-tint); }
+.quiz-mode .stroke-page { display: none !important; }
+
 /* ===== FOOTER ===== */
 .ws-footer {
   margin-top: 30px;
@@ -719,6 +744,10 @@ body {
     --red-grid: #CFBEBE !important;
   }
   .cell-guides line { stroke-width: 1.5; }
+  /* 筆順工作紙：另起一頁，每字一行唔好斷開 */
+  .stroke-page { page-break-before: always; margin-top: 0; }
+  .stroke-page-title { font-size: 0.95em; }
+  .stroke-caption { font-size: 0.85em; }
   /* Fix: per-row flex sizing must NOT override print cell size — grid cells follow
      --cell-practice (cm) so box and font scale together. Row count then comes
      naturally from the A4 width. flex-basis must be overridden too (it beats width). */
@@ -942,23 +971,29 @@ details.advance-collapse summary:hover { color: var(--red); }
 
   <div class="options">
     <div class="opt-section">
-      <h3>📐 版面</h3>
+      <h3>📐 練習格</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <label>每字練習格數</label>
           <input type="number" id="optPractice" value="4" min="0" max="10">
         </div>
         <div class="opt-group">
-          <label>練習模式</label>
-          <select id="optLayout" onchange="toggleLayoutOpts()">
-            <option value="word" selected>每字練習（預設）</option>
-            <option value="word+sentence">每字 + 整句</option>
-            <option value="sentence">整句練習</option>
+          <label>描紅格數</label>
+          <select id="optGuideCount">
+            <option value="none">無描紅</option>
+            <option value="1" selected>1 格（首格）</option>
+            <option value="2">2 格</option>
+            <option value="all">全部格子</option>
           </select>
         </div>
-        <div class="opt-group" id="optSentenceGroup" style="display:none;">
-          <label>整句練習次數</label>
-          <input type="number" id="optSentenceTimes" value="2" min="1" max="8">
+        <div class="opt-group">
+          <label>每行格數</label>
+          <select id="optPerRow">
+            <option value="auto" selected>自動</option>
+            <option value="4">4格</option>
+            <option value="6">6格</option>
+            <option value="8">8格</option>
+          </select>
         </div>
         <div class="opt-group">
           <label>導線樣式</label>
@@ -990,19 +1025,22 @@ details.advance-collapse summary:hover { color: var(--red); }
           </select>
         </div>
         <div class="opt-group">
-          <label>每行格數</label>
-          <select id="optPerRow">
-            <option value="auto" selected>自動</option>
-            <option value="4">4格</option>
-            <option value="6">6格</option>
-            <option value="8">8格</option>
+          <label>練習模式</label>
+          <select id="optLayout" onchange="toggleLayoutOpts()">
+            <option value="word" selected>每字練習（預設）</option>
+            <option value="word+sentence">每字 + 整句</option>
+            <option value="sentence">整句練習</option>
           </select>
+        </div>
+        <div class="opt-group" id="optSentenceGroup" style="display:none;">
+          <label>整句練習次數</label>
+          <input type="number" id="optSentenceTimes" value="2" min="1" max="8">
         </div>
       </div>
     </div>
 
     <div class="opt-section">
-      <h3>📝 內容</h3>
+      <h3>📝 文字內容</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <div class="toggle-row">
@@ -1018,8 +1056,39 @@ details.advance-collapse summary:hover { color: var(--red); }
         </div>
         <div class="opt-group">
           <div class="toggle-row">
+            <input type="checkbox" id="optStrokes" checked>
+            <label for="optStrokes">顯示筆畫數</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optDedup">
+            <label for="optDedup">去重（只寫一次）</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <input type="checkbox" id="optS2T">
+            <label for="optS2T">簡體輸入轉繁體</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
+            <label for="audioRate">朗讀語速</label>
+            <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
+                   style="width:80px;" title="語音語速">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt-section">
+      <h3>🖊️ 筆順</h3>
+      <div class="opt-grid">
+        <div class="opt-group">
+          <div class="toggle-row">
             <input type="checkbox" id="optGuide" checked>
-            <label for="optGuide">淺色範本指引</label>
+            <label for="optGuide">淺色範本指引（描紅）</label>
           </div>
         </div>
         <div class="opt-group">
@@ -1036,6 +1105,18 @@ details.advance-collapse summary:hover { color: var(--red); }
         </div>
         <div class="opt-group">
           <div class="toggle-row">
+            <input type="checkbox" id="optStrokePage">
+            <label for="optStrokePage">附加筆順工作紙（列印）</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt-section">
+      <h3>📄 頁面</h3>
+      <div class="opt-grid">
+        <div class="opt-group">
+          <div class="toggle-row">
             <input type="checkbox" id="optShowHeader" checked>
             <label for="optShowHeader">顯示標題資訊</label>
           </div>
@@ -1046,53 +1127,19 @@ details.advance-collapse summary:hover { color: var(--red); }
             <label for="optRhyme">頁首筆順口訣</label>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="opt-section">
-      <h3>⚙️ 進階</h3>
-      <details class="advance-collapse">
-        <summary>進階選項（筆畫數 · 去重 · 簡體轉換 · 頁首文字）</summary>
-        <div class="opt-grid collapse-wrap">
-          <div class="opt-group">
-            <div class="toggle-row">
-              <input type="checkbox" id="optStrokes" checked>
-              <label for="optStrokes">顯示筆畫數</label>
-            </div>
-          </div>
-          <div class="opt-group">
-            <div class="toggle-row">
-              <input type="checkbox" id="optDedup">
-              <label for="optDedup">去重（只寫一次）</label>
-            </div>
-          </div>
-          <div class="opt-group">
-            <div class="toggle-row">
-              <input type="checkbox" id="optS2T">
-              <label for="optS2T">簡體輸入轉繁體</label>
-            </div>
-          </div>
-          <div class="opt-group">
-            <div class="toggle-row">
-              <label for="audioRate">朗讀語速</label>
-              <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
-                     style="width:80px;" title="語音語速">
-            </div>
-          </div>
-          <div class="opt-group">
-            <label>練習紙標題</label>
-            <input type="text" id="optTitle" value="練習簿" placeholder="例如：中文科練習">
-          </div>
-          <div class="opt-group">
-            <label>姓名</label>
-            <input type="text" id="optName" value="" placeholder="同學姓名">
-          </div>
-          <div class="opt-group">
-            <label>日期</label>
-            <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
-          </div>
+        <div class="opt-group">
+          <label>練習紙標題</label>
+          <input type="text" id="optTitle" value="練習簿" placeholder="例如：中文科練習">
         </div>
-      </details>
+        <div class="opt-group">
+          <label>姓名</label>
+          <input type="text" id="optName" value="" placeholder="同學姓名">
+        </div>
+        <div class="opt-group">
+          <label>日期</label>
+          <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1258,6 +1305,10 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('optGuide').checked = saved.guide !== false;
       document.getElementById('optStrokeNum').checked = saved.strokeNum !== false;
       document.getElementById('optArrow').checked = saved.arrow === true;   // default 關
+      document.getElementById('optStrokePage').checked = saved.strokePage === true;   // default 關
+      if (['none', '1', '2', 'all'].includes(saved.guideCount)) {
+        document.getElementById('optGuideCount').value = saved.guideCount;
+      }
       if (saved.dedup != null) document.getElementById('optDedup').checked = saved.dedup;
       if (saved.title) document.getElementById('optTitle').value = saved.title;
       if (saved.name) document.getElementById('optName').value = saved.name;
@@ -1358,6 +1409,8 @@ function readOptions() {
     practice: $('optPractice').value,
     size: $('optSize').value,
     guideStyle: $('optGuideStyle').value,
+    guideCount: $('optGuideCount').value,
+    strokePage: $('optStrokePage').checked,
     perRow: $('optPerRow').value,
     printSize: $('optPrintSize').value,
     showHeader: $('optShowHeader').checked,
@@ -1421,6 +1474,8 @@ function generate() {
     practice: parseInt(opts.practice) || 0,
     size: opts.size,
     guideStyle: opts.guideStyle || 'mizi',
+    guideCount: opts.guideCount || '1',
+    strokePage: opts.strokePage === true,
     perRow: opts.perRow || 'auto',
     printSize: opts.printSize || 'auto',
     showHeader: opts.showHeader,
@@ -2043,6 +2098,14 @@ function guideSvg() {
     `</svg>`;
 }
 
+// ===== 描紅格數（2026-09-18，參考 EdUHK 縱橫習字簿「水印字」選項） =====
+// 'none' = 無描紅；'1'/'2' = 首 N 格；'all' = 全部格。淺色範本指引（o.guide）仍係總開關。
+function guideRowCount(o) {
+  if (!o.guide || o.guideCount === 'none') return 0;
+  if (o.guideCount === 'all') return Infinity;
+  return parseInt(o.guideCount) || 1;
+}
+
 function seqOverlayHtml(seq) {
   // Characters with no outlines at all (STROKE_SEQ) can't show stroke numbers, so their
   // tracing cell carries the 筆順次序 text instead.
@@ -2139,9 +2202,11 @@ function charCardHtml(ch, o) {
   if (o.practice > 0) {
     const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
     html += `<div class="practice-row"${perRowAttr}>`;
+    const gcount = guideRowCount(o);
     for (let r = 0; r < o.practice; r++) {
+      const isGuide = r < gcount;
       html += traceCellHtml(ch, 'practice-cell',
-        { guide: !!o.guide, strokeNum: r === 0 && !!o.strokeNum, arrow: r === 0 && !!o.arrow });
+        { guide: isGuide, strokeNum: isGuide && r === 0 && !!o.strokeNum, arrow: isGuide && r === 0 && !!o.arrow });
     }
     html += `</div>`;
   }
@@ -2160,7 +2225,7 @@ function sentenceSectionHtml(o) {
     html += `<div class="sentence-block">`;
     html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
     for (let t = 0; t < o.sentenceTimes; t++) {
-      const hasGuide = (t === 0 && o.guide);
+      const hasGuide = (t === 0 && guideRowCount(o) > 0);
       html += `<div class="sentence-row">`;
       sChars.forEach(ch => {
         // stroke numbers sit on the tracing (first) row, same as word practice cells
@@ -2173,6 +2238,166 @@ function sentenceSectionHtml(o) {
   });
   html += `</div>`;
   return html;
+}
+
+// ===== 筆順工作紙（附加列印頁）=====
+// 每字一行：第 1 格顯示第 1 筆、第 2 格顯示 1–2 筆 …… 第 n 格 = 全字，新增嗰筆標示編號。
+// 字形用同一個 glyph SVG 座標系（viewBox = 墨跡 bbox、C 翻轉），所以螢幕/列印/任何字級自動跟。
+function strokeCountOf(ch) {
+  const seq = strokeSeqInfo(ch);
+  const db = (window.CHAR_DB || {})[ch];
+  const n = db && db.s ? db.s : (seq ? seq.count : 0);
+  if (!n) return null;
+  return { count: n, seq };
+}
+
+function strokePageHtml(o) {
+  if (!o.strokePage || o.layout === 'sentence' || !currentChars.length) return '';
+  let rows = '';
+  let total = 0;
+  currentChars.forEach(ch => {
+    if (isPunct(ch)) return;
+    const info = strokeCountOf(ch);
+    if (!info) return;
+    total++;
+    const db = (window.CHAR_DB || {})[ch] || {};
+    const meta = [];
+    if (o.canto && db.jy) meta.push(db.jy);
+    if (o.pinyin && db.py) meta.push(db.py);
+    let cells = '';
+    for (let k = 1; k <= info.count; k++) {
+      cells += `<div class="practice-cell stroke-step-cell" data-step-ch="${esc(ch)}" data-step-k="${k}">`
+        + guideSvg()
+        + `<span class="guide-char"><span class="step-glyph">${esc(ch)}</span></span>`
+        + `</div>`;
+    }
+    rows += `<div class="stroke-page-block">`
+      + `<div class="stroke-caption">✍️ ${esc(ch)}`
+      + `<span class="stroke-meta">（共 ${info.count} 筆${meta.length ? ' · ' + esc(meta.join(' / ')) : ''}）</span>`
+      + (info.seq ? `<span class="seq-names-inline">${esc(info.seq.names)}</span><span class="seq-src">次序來源：漢典 zdic.net</span>` : '')
+      + `</div><div class="practice-row stroke-page-row">${cells}</div></div>`;
+  });
+  if (!total) return '';
+  return `<div class="stroke-page"><div class="stroke-page-title">🖊️ 筆順工作紙</div>${rows}</div>`;
+}
+
+/** 墨跡框（用離屏 probe 量 paths 嘅 union bbox）+ 翻轉軸 C + 方形 viewBox。 */
+function measureInkFrame(paths) {
+  const probe = document.createElementNS(NS, 'svg');
+  probe.setAttribute('width', '0');
+  probe.setAttribute('height', '0');
+  probe.style.cssText = 'position:absolute;left:-9999px;overflow:hidden';
+  document.body.appendChild(probe);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  try {
+    for (const d of paths) {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', d); probe.appendChild(p);
+      const b = p.getBBox();
+      x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+      x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+    }
+  } catch (e) { /* fall through */ }
+  probe.remove();
+  if (!(x1 > x0) || !(y1 > y0)) return null;
+  const box = Math.max(x1 - x0, y1 - y0);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  return {
+    box, C: y0 + y1,
+    viewBox: `${(cx - box / 2).toFixed(1)} ${(cy - box / 2).toFixed(1)} ${box.toFixed(1)} ${box.toFixed(1)}`,
+  };
+}
+
+/** 只畫前 k 筆嘅 SVG（geometry 同 hkGlyphSvg 一致：g 內 translate(0,C) scale(1,-1)）。 */
+function partialGlyphSvg(paths, frame, k) {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'hk-glyph-svg step-svg');
+  svg.setAttribute('viewBox', frame.viewBox);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.setAttribute('aria-hidden', 'true');
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', `translate(0,${frame.C.toFixed(1)}) scale(1,-1)`);
+  const els = [];
+  for (let i = 0; i < Math.min(k, paths.length); i++) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', paths[i]);
+    g.appendChild(p);
+    els.push(p);
+  }
+  svg.appendChild(g);
+  return { svg, lastEl: els[els.length - 1] || null };
+}
+
+// 新增嗰筆嘅編號。⚠️ 一定要喺 SVG append 落 DOM 之後才做 —— isPointInFill() 對
+// detached 節點永遠回 false（skill 有記錄），會令「貼住自己筆畫」嘅判斷静默失效。
+function addStepNumber(svg, lastEl, frame, k, med, totalStrokes) {
+  if (!lastEl || !med) return;
+  const fs = frame.box * 0.14 * numberBaseScale(totalStrokes || k);
+  let chosen = null, onInkFound = false;
+  for (const f of [0.2, 0.35, 0.5, 0.65, 0.8]) {
+    const pt = medianPtAt(med, f);
+    if (!pt) continue;
+    const cx = pt.x, cy = frame.C - pt.y;
+    if (!chosen) chosen = { cx, cy };
+    let onInk = false;
+    try { onInk = lastEl.isPointInFill(new DOMPoint(cx, frame.C - cy)); } catch (e) { onInk = true; }
+    if (onInk) { chosen = { cx, cy }; onInkFound = true; break; }
+  }
+  if (!onInkFound) {
+    // 中線全部落唔到墨跡（幼點/短筆）→ 喺最後一筆嘅 bbox 掃一個保證喺墨跡內嘅點
+    try {
+      const b = lastEl.getBBox();
+      for (let i = 1; i <= 6 && !onInkFound; i++) {
+        for (let j = 1; j <= 6; j++) {
+          const sx = b.x + b.width * (i / 7), sy = b.y + b.height * (j / 7);
+          let ok = false;
+          try { ok = lastEl.isPointInFill(new DOMPoint(sx, sy)); } catch (e) { ok = true; }
+          if (ok) { chosen = { cx: sx, cy: frame.C - sy }; onInkFound = true; break; }
+        }
+      }
+    } catch (e) { /* 用中線嘅第一個候選 */ }
+  }
+  if (!chosen) return;
+  const t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', chosen.cx.toFixed(1));
+  t.setAttribute('y', (chosen.cy - fs * 0.18).toFixed(1));
+  t.setAttribute('font-size', fs.toFixed(1));
+  t.textContent = String(k);
+  svg.appendChild(t);
+}
+
+async function installStrokePage(root) {
+  const cells = [...root.querySelectorAll('.stroke-step-cell[data-step-ch]')];
+  if (!cells.length) return;
+  const byChar = new Map();
+  cells.forEach(c => {
+    const ch = c.dataset.stepCh;
+    if (!byChar.has(ch)) byChar.set(ch, []);
+    byChar.get(ch).push(c);
+  });
+  for (const [ch, list] of byChar) {
+    let paths = null, medians = null;
+    try {
+      const rec = await hkGlyph(ch);
+      if (rec && rec.s && rec.s.length) { paths = rec.s; medians = rec.m; }
+    } catch (e) { /* try HW below */ }
+    if (!paths) {
+      const d = await _hwCharData(ch);
+      if (d && d.strokes && d.strokes.length) { paths = d.strokes; medians = d.medians; }
+    }
+    if (!paths) continue;                       // 無字形（STROKE_SEQ）→ 留低字體字形
+    const frame = measureInkFrame(paths);
+    if (!frame) continue;
+    list.forEach(cell => {
+      const k = parseInt(cell.dataset.stepK) || 1;
+      const host = cell.querySelector('.step-glyph');
+      if (!host) return;
+      const { svg, lastEl } = partialGlyphSvg(paths, frame, k);
+      host.textContent = '';
+      host.appendChild(svg);                    // 先 append，之後 addStepNumber 才查得到墨跡
+      addStepNumber(svg, lastEl, frame, k, medians ? medians[k - 1] : null, paths.length);
+    });
+  }
 }
 
 /** Footer line: character / sentence counts plus the data-source credits. */
@@ -2281,6 +2506,9 @@ function renderWorksheet() {
   // Sentence copybook section (整句練習)
   html += sentenceSectionHtml(o);
 
+  // 筆順工作紙（附加列印頁）
+  html += strokePageHtml(o);
+
   content.innerHTML = html;
 
   setWsFooter(o);
@@ -2288,6 +2516,7 @@ function renderWorksheet() {
   normalizeGlyphs();
 
   installGlyphLayer(content);
+  installStrokePage(content).catch(() => { /* non-fatal */ });
 }
 
 // ===== OPTICAL NORMALIZATION (balance per-char ink size) =====
