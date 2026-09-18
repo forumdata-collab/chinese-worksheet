@@ -1535,8 +1535,14 @@ function medianPtAt(m, f) {
 // actually lies in stroke i's ink.  A plain arc-length midpoint can fall OUTSIDE a
 // short/thin stroke (兒's first stroke is only ~25 units wide, so its number floated
 // in blank space), and candidates that miss their own stroke are penalised hard.
+// 統一數字字級（2026-09-18）：筆畫多嘅字全部數字用同一個基準級數，唔會一大一小。
+function numberBaseScale(n) { return n > 8 ? Math.max(0.55, 1 - 0.028 * (n - 8)) : 1; }
+
 function placeNumberLabels(medians, frame, hooks) {
-  const { fs: fontSize, C: flipC } = frame;   // glyph geometry travels as one frame
+  const { fs: globalFs, C: flipC } = frame;  // glyph geometry travels as one frame
+  const nStrokes = medians.length || 1;
+  const fontSize = globalFs * numberBaseScale(nStrokes);  // 全字統一基準
+  const wideLen = String(nStrokes).length;                // 10 筆以上：全部當兩位寬
   hooks = hooks || {};
   const insideFn = hooks.inside;              // is this point in MY stroke's ink?
   const inkPointFn = hooks.inkPoint;          // a point certainly in MY stroke's ink
@@ -1551,6 +1557,8 @@ function placeNumberLabels(medians, frame, hooks) {
   const FRACTIONS = [0.2, 0.17, 0.23, 0.14, 0.26, 0.11, 0.29, 0.08, 0.32, 0.05, 0.36, 0.4,
                      0.46, 0.52, 0.6, 0.7, 0.8, 0.9];
   const SIZE_SCALES = [1, 0.85, 0.72, 0.6, 0.5, 0.42];
+  // 側移距離（× 字級）：0 = 中線本身，之後左右交替
+  const LATERAL = [0, 0.45, -0.45, 0.8, -0.8, 1.2, -1.2];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
   // above its baseline, plus a small breathing gap. Using the full em box made the
   // solver think two labels 90 units apart still collided and settle for a needless
@@ -1578,7 +1586,7 @@ function placeNumberLabels(medians, frame, hooks) {
     let size = fontSize;
     if (hooks.size) {
       try {
-        const s = hooks.size(i, label.length);
+        const s = hooks.size(i, wideLen);
         if (s && s > 0) size = s;
       } catch (e) { /* keep the global size */ }
     }
@@ -1590,7 +1598,7 @@ function placeNumberLabels(medians, frame, hooks) {
       try { p = inkPointFn ? inkPointFn(i) : (m && m[0] ? { x: m[0][0], y: m[0][1] } : null); } catch (e) { p = null; }
       if (p) {
         const cx = p.x, cy = flipC - p.y;
-        const bw = size * 0.55 * label.length;
+        const bw = size * 0.55 * wideLen;
         placed.push({ label, cx, cy,
                       bx0: cx - bw / 2 - gap, bx1: cx + bw / 2 + gap,
                       by0: cy - size * 0.90 - gap, by1: cy - size * 0.18 + gap,
@@ -1599,13 +1607,25 @@ function placeNumberLabels(medians, frame, hooks) {
       return;
     }
     let best = null, bestOv = Infinity, bestOff = false;
+    // 候選點 = 中線上嘅位置 ＋ 沿中線法線嘅側移（側移只准留喺自己筆畫嘅墨跡內）。
+    // 側移排喺縮字之前：同一字嘅數字級數先保持一致，唔使靠越縮越細去避撞。
+    const aN = medianPtAt(m, 0.42), bN = medianPtAt(m, 0.58);
+    let nX = 0, nY = 0;
+    if (aN && bN) {
+      const dxN = bN.x - aN.x, dyN = -(bN.y - aN.y);
+      const LN = Math.hypot(dxN, dyN);
+      if (LN) { nX = -dyN / LN; nY = dxN / LN; }
+    }
     scales: for (const scale of SIZE_SCALES) {
     const sizeS = Math.max(size * scale, fontSize * 0.3);
     for (const f of FRACTIONS) {
       const pt = medianPtAt(m, f);
       if (!pt) continue;
-      const cx = pt.x, cy = flipC - pt.y;
-      const bw = sizeS * 0.55 * label.length;
+      const bx = pt.x, by = flipC - pt.y;
+      for (let li = 0; li < LATERAL.length; li++) {
+      const off = sizeS * LATERAL[li];
+      const cx = bx + nX * off, cy = by + nY * off;
+      const bw = sizeS * 0.55 * wideLen;
       const bx0 = cx - bw / 2 - gap, bx1 = cx + bw / 2 + gap;
       // Digits sit ON the text baseline, which the renderer lifts 0.18em above cy,
       // and their ink reaches ~0.72em above that baseline — so the box is NOT centred
@@ -1634,6 +1654,7 @@ function placeNumberLabels(medians, frame, hooks) {
         best = { label, cx, cy, bx0, bx1, by0, by1, fs: sizeS };
       }
       if (ov === 0) break scales;      // clean spot at this size — keep the largest
+      }
     }
     if (bestOv === 0) break;           // nothing smaller will beat a clean fit
     }
@@ -1650,7 +1671,7 @@ function placeNumberLabels(medians, frame, hooks) {
       }
       for (const k of [0.6, 0.9, 1.2, 1.5, 1.8, -0.6, -0.9, -1.2, -1.5, -1.8]) {
         const cx2 = best.cx + nx * size * k, cy2 = best.cy + ny * size * k;
-        const bw2 = size * 0.55 * label.length;
+        const bw2 = size * 0.55 * wideLen;
         const bx2 = [cx2 - bw2 / 2 - gap, cx2 + bw2 / 2 + gap];
         const by2 = [cy2 - size * 0.90 - gap, cy2 - size * 0.18 + gap];
         const area2 = Math.max((bx2[1] - bx2[0]) * (by2[1] - by2[0]), 1e-6);
@@ -1683,7 +1704,7 @@ function placeNumberLabels(medians, frame, hooks) {
       try { p = inkPointFn(i); } catch (e) { p = null; }
       if (p) {
         const cx3 = p.x, cy3 = flipC - p.y;
-        const bw3 = size * 0.55 * label.length;
+        const bw3 = size * 0.55 * wideLen;
         const bx3 = [cx3 - bw3 / 2 - gap, cx3 + bw3 / 2 + gap];
         const by3 = [cy3 - size * 0.90 - gap, cy3 - size * 0.18 + gap];
         const area3 = Math.max((bx3[1] - bx3[0]) * (by3[1] - by3[0]), 1e-6);
@@ -1815,9 +1836,10 @@ function addGlyphNumbers(svg) {
       try { b = el.getBBox(); } catch (e) { return fs; }
       const thick = Math.min(b.width, b.height);
       if (!(thick > 0)) return fs;
+      const fsEff = fs * numberBaseScale(medians.length);
       const byHeight = 1.8 * thick;                    // digit ink ~0.72 em tall
       const byWidth = 2.36 * thick / Math.max(digitCount, 1);   // ~0.55 em per digit
-      return Math.max(Math.min(fs, byHeight, byWidth), fs * 0.45);
+      return Math.max(Math.min(fsEff, byHeight, byWidth), fsEff * 0.8);
     },
     // digits must not sit on a crossing neighbour's ink either
     others: (i, cx, cy) => {
