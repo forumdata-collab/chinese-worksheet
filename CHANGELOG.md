@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.12] - 2026-09-18
+
+### Added
+- **筆順方向箭咀**（`optArrow`，內容區，**預設關**）：每個描紅格除筆順數字外，可顯示每筆嘅方向引導線 — 沿該筆**中線**嘅紅色虛線 + **筆尾箭頭**（同 筆順字典/twpen 嘅示範風格一致）。資料直接用 glyph 中線（EDB `rec.m` ／ HanziWriter `medians`），同數字共用同一個 SVG 同 viewBox，所以螢幕/列印/任何字級自動縮放；方向經 y-flip 修正（display y = C − y），唔會上下倒轉。
+  - 只喺每字第一個描紅格（同筆順數字一樣位置）；`整句練習` 第一行都會有。
+  - 兩條資料路徑都支援：教育局字形（`installHKGlyphs` → `appendStrokeArrows`）同無字形字嘅 HanziWriter fallback（`overlayStrokeNum`）；STROKE_SEQ（完全無字形）字不受影響。
+  - 畫序：字形 → 箭咀 → 數字（數字永遠最上層）。CSS `.stroke-arrow` / `.stroke-arrow-head`（`#C0392B`，opacity 0.38 / 0.55）。
+
+### Notes
+- 驗證：天 4 筆方向（橫左→右、撇↘左下、捺↘右下）、國 11 筆全對；噠（HanziWriter fallback）15 筆箭咀+數字齊；預設載入 = 0 箭咀 + 15 數字；設定持久化正常；筆順/試寫彈窗無改動。
+
 ## [1.2.11] - 2026-09-17
 
 ### Added

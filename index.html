@@ -431,6 +431,12 @@ body {
   text-anchor: middle;
   dominant-baseline: central;
 }
+/* 筆順方向箭咀：每筆中線（虛線）+ 筆尾箭頭。畫喺字形之上、數字之下。 */
+.stroke-arrow { fill: none; stroke: #C0392B; stroke-opacity: 0.38; stroke-linecap: round; stroke-linejoin: round; }
+.stroke-arrow-head { fill: #C0392B; fill-opacity: 0.55; }
+/* 呢兩條一定要贏過 .hk-glyph-svg path { fill: currentColor } 嘅 specificity */
+.hk-glyph-svg .stroke-arrow, .stroke-num-svg .stroke-arrow { fill: none; stroke: #C0392B; stroke-opacity: 0.38; }
+.hk-glyph-svg .stroke-arrow-head, .stroke-num-svg .stroke-arrow-head { fill: #C0392B; fill-opacity: 0.55; }
 .quiz-mode .hk-glyph-svg text { display: none !important; }
 
 /* ===== FOOTER ===== */
@@ -1028,6 +1034,12 @@ details.advance-collapse summary:hover { color: var(--red); }
         </div>
         <div class="opt-group">
           <div class="toggle-row">
+            <input type="checkbox" id="optArrow">
+            <label for="optArrow">筆順方向箭咀</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
             <input type="checkbox" id="optShowHeader" checked>
             <label for="optShowHeader">顯示標題資訊</label>
           </div>
@@ -1247,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('optStrokes').checked = saved.strokes !== false;
       document.getElementById('optGuide').checked = saved.guide !== false;
       document.getElementById('optStrokeNum').checked = saved.strokeNum !== false;
+      document.getElementById('optArrow').checked = saved.arrow === true;   // default 關
       if (saved.dedup != null) document.getElementById('optDedup').checked = saved.dedup;
       if (saved.title) document.getElementById('optTitle').value = saved.title;
       if (saved.name) document.getElementById('optName').value = saved.name;
@@ -1356,6 +1369,7 @@ function readOptions() {
     strokes: $('optStrokes').checked,
     guide: $('optGuide').checked,
     strokeNum: $('optStrokeNum').checked,
+    arrow: $('optArrow').checked,
     dedup: $('optDedup').checked,
     title: $('optTitle').value,
     name: $('optName').value,
@@ -1418,6 +1432,7 @@ function generate() {
     strokes: opts.strokes,
     guide: opts.guide,
     strokeNum: opts.strokeNum,
+    arrow: opts.arrow,
     dedup: opts.dedup,
     title: opts.title || '練習簿',
     name: opts.name,
@@ -1845,7 +1860,13 @@ async function installHKGlyphs(root) {
     el.textContent = '';
     el.style.transform = '';           // font-based optical normalisation not needed
     el.appendChild(svg);
-    if (withNum) addGlyphNumbers(svg);  // after attach, so isPointInFill() works
+    if (withNum) {
+      // after attach, so isPointInFill() works
+      if (currentOptions.arrow) {
+        appendStrokeArrows(svg, rec.m, svg._glyphMeta.C, svg._glyphMeta.box);
+      }
+      if (currentOptions.strokeNum !== false) addGlyphNumbers(svg);   // 數字最上層
+    }
     handled.add(el.dataset.ch);
   });
   return handled;
@@ -1926,6 +1947,11 @@ async function overlayStrokeNum(cell) {
   // numbers landed on the wrong strokes. Mirror about the ink bbox, exactly like the
   // HK-glyph path does with C = y0 + y1.
   const flipC = hwY0 + hwY1;
+  // 方向箭咀（同一 flip 修正）先畫，數字後畫 = 數字喺最上層
+  if (currentOptions.arrow) {
+    appendStrokeArrows(svg, medPolys, flipC, Math.max(hwW, hwH));
+  }
+  if (currentOptions.strokeNum === false) { glyph.appendChild(svg); return; }
   placeNumberLabels(medPolys, { fs: numFontSize, C: flipC }).forEach(p => {
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', p.cx.toFixed(1));
@@ -1937,6 +1963,40 @@ async function overlayStrokeNum(cell) {
 
   glyph.appendChild(svg);
 }
+// 每筆中線 + 筆尾箭咀（顯示書寫方向），同筆順數字共用一個 SVG / 座標系。
+// medians 係 stored y-UP 空間（EDB rec.m ／ HanziWriter medians），display y = C - y。
+// 尺寸全部按墨跡 box 比例計 → 螢幕/列印/任何字級自動跟住縮放。
+function appendStrokeArrows(svg, medians, C, box) {
+  if (!svg || !medians || !medians.length || !(box > 0)) return;
+  const w = box * 0.018;                                  // 線粗
+  const dash = `${(box * 0.05).toFixed(1)} ${(box * 0.042).toFixed(1)}`;
+  const headL = box * 0.075, headW = box * 0.036;          // 箭頭長 / 半闊
+  medians.forEach(med => {
+    if (!med || med.length < 2) return;
+    const pts = med.map(p => [p[0], C - p[1]]);
+    const pl = document.createElementNS(NS, 'polyline');
+    pl.setAttribute('class', 'stroke-arrow');
+    pl.setAttribute('points', pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '));
+    pl.setAttribute('stroke-width', w.toFixed(1));
+    pl.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(pl);
+    const [ax, ay] = pts[pts.length - 1];
+    const [bx, by] = pts[pts.length - 2];
+    let dx = ax - bx, dy = ay - by;
+    const len = Math.hypot(dx, dy);
+    if (!len || !isFinite(len)) return;
+    dx /= len; dy /= len;
+    const nx = -dy, ny = dx;
+    const d = `M${(ax - dx * headL + nx * headW).toFixed(1)},${(ay - dy * headL + ny * headW).toFixed(1)}`
+            + ` L${ax.toFixed(1)},${ay.toFixed(1)}`
+            + ` L${(ax - dx * headL - nx * headW).toFixed(1)},${(ay - dy * headL - ny * headW).toFixed(1)} Z`;
+    const head = document.createElementNS(NS, 'path');
+    head.setAttribute('class', 'stroke-arrow-head');
+    head.setAttribute('d', d);
+    svg.appendChild(head);
+  });
+}
+
 // ===== RENDER =====
 function guideSvg() {
   // Inline SVG guide layer — strokes print reliably (CSS background gradients don't).
@@ -1974,7 +2034,8 @@ function seqOverlayHtml(seq) {
  */
 function traceCellHtml(ch, cellClass, opts) {
   const seq = (opts.guide && opts.strokeNum) ? strokeSeqInfo(ch) : null;
-  const numCell = !!(opts.guide && opts.strokeNum && !isPunct(ch) && !seq);
+  // 數字同箭咀任何一個開都可能要 overlay 層（.stroke-num-cell 只係層嘅標記）
+  const numCell = !!(opts.guide && (opts.strokeNum || opts.arrow) && !isPunct(ch) && !seq);
   return `<div class="${cellClass}${numCell ? ' stroke-num-cell' : ''}${seq ? ' seq-overlay-cell' : ''}"`
     + (numCell ? ` data-ch="${esc(ch)}"` : '')
     + `>`
@@ -2054,7 +2115,7 @@ function charCardHtml(ch, o) {
     html += `<div class="practice-row"${perRowAttr}>`;
     for (let r = 0; r < o.practice; r++) {
       html += traceCellHtml(ch, 'practice-cell',
-        { guide: !!o.guide, strokeNum: r === 0 && !!o.strokeNum });
+        { guide: !!o.guide, strokeNum: r === 0 && !!o.strokeNum, arrow: r === 0 && !!o.arrow });
     }
     html += `</div>`;
   }
@@ -2078,7 +2139,7 @@ function sentenceSectionHtml(o) {
       sChars.forEach(ch => {
         // stroke numbers sit on the tracing (first) row, same as word practice cells
         html += traceCellHtml(ch, 'sentence-cell',
-          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum });
+          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum, arrow: hasGuide && !!o.arrow });
       });
       html += `</div>`;
     }
