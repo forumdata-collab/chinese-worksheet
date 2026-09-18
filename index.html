@@ -1492,7 +1492,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=15`)
+  const p = fetch(`glyphs/${hex}.json?v=16`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
@@ -1536,7 +1536,11 @@ function medianPtAt(m, f) {
 // short/thin stroke (兒's first stroke is only ~25 units wide, so its number floated
 // in blank space), and candidates that miss their own stroke are penalised hard.
 // 統一數字字級（2026-09-18）：筆畫多嘅字全部數字用同一個基準級數，唔會一大一小。
-function numberBaseScale(n) { return n > 8 ? Math.max(0.55, 1 - 0.028 * (n - 8)) : 1; }
+// DIGIT_SCALE = 用戶要求「所有數字再縮一個單位」（= SIZE_SCALES 一級 0.85）。
+const DIGIT_SCALE = 0.85;
+function numberBaseScale(n) {
+  return DIGIT_SCALE * (n > 8 ? Math.max(0.55, 1 - 0.028 * (n - 8)) : 1);
+}
 
 function placeNumberLabels(medians, frame, hooks) {
   const { fs: globalFs, C: flipC } = frame;  // glyph geometry travels as one frame
@@ -2747,10 +2751,18 @@ async function markNoStrokeData(root) {
 
 
 function strokeReplay() {
-  if (strokeWriter) {
-    strokeWriter.cancelAnimation();
-    strokeWriter.animateCharacter();
-  }
+  if (!strokeWriter) return;
+  // ⚠️ 呢個 HanziWriter build 冇 cancelAnimation()（實測 prototype 只有 animateCharacter /
+  // animateStroke / pauseAnimation / resumeAnimation / setCharacter …）—— 舊寫法會直接
+  // throw，令「▶ 重播」靜靜壞掉。用 pauseAnimation + setCharacter 重置再播。
+  try { if (strokeWriter.pauseAnimation) strokeWriter.pauseAnimation(); } catch (e) {}
+  try { if (strokeWriter.setCharacter) strokeWriter.setCharacter(currentStrokeChar, hanziWriterOpts({
+      showCharacter: true,
+      strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
+      strokeColor: '#33302A',
+    })); } catch (e) {}
+  const p = strokeWriter.animateCharacter();
+  if (p && p.catch) p.catch(() => {});
 }
 
 function strokeStep() {

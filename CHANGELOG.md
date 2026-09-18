@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.16] - 2026-09-18
+
+### Fixed
+- **筆畫中線方向（median direction）系統性反向 —— 影響筆順動畫方向同數字錨點**。用戶報「洪 嘅三點水首兩點應由上而下，動畫也錯」。用 HanziWriter medians（`/tmp/hw_cache`，Make Me a Hanzi 權威手寫次序）逐筆對比全部 4,690 字（53,131 筆，HK_ORDER 對齊後）：**原本 1,469 筆（961 字）方向同 HW 相反**（cos < −0.5），其中 2-point median 短筆（點/提）佔多數。
+  - 兩輪保守修正（兩者都要通過）：① 端點交換測試（`d(swap) < 0.5 × d(same)`）→ 反轉 **914 筆**；② cos < −0.85 且 HW 方向本身合法（非「向上/向左」）→ 再反轉 **250 筆**。**共 1,164 筆**；其餘 305 筆（cos −0.5…−0.85，多為彎筆且 EDB/HW median 形狀唔同）保持不動。
+  - 洪 #1/#2 median dy 由 `+39/+45`（由下而上）→ **`−40/−45`（由上而下 ✓）**；江 #2、深 #1 等 氵 字同步修正。
+  - ⚠️ 只反轉 `rec.m[i]` 嘅頂點次序（幾何不變），`s` 路徑完全冇動 → 字形、`sanity_geom` 不受影響；`?v=15 → 16`。
+  - `sanity_data.py`：4690 glyph / 57,470 筆，**OK — self-consistent and upright**。
+
+### Fixed（同步發現）
+- **「▶ 重播」按鈕靜靜壞掉**：呢個 HanziWriter build **冇 `cancelAnimation()`**（實測 prototype 只有 `animateCharacter / animateStroke / pauseAnimation / resumeAnimation / setCharacter / loopCharacterAnimation…`），舊 `strokeReplay()` 一 call 就 throw。改為 `pauseAnimation()` + `setCharacter()` 重置再 `animateCharacter()`。
+
+### Changed
+- **數字再縮一級**（`DIGIT_SCALE = 0.85`，等於 `SIZE_SCALES` 一級）：天 1.00 → **0.85**、國 0.73–0.92 → **0.62–0.78**、鬱 0.27–0.55 → **0.18–0.47**（相對差距不變，整體細一級）。
+
 ## [1.2.15] - 2026-09-18
 
 ### Added
