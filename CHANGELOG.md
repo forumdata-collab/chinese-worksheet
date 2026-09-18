@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.17] - 2026-09-18
+
+### Fixed
+- **呢 / 囉 用教育局字形重建**：呢(5462) 8 筆、囉(56c9) 22 筆——之前係 twpen 逆向版本（幾何唔符 EDB），rebuild 後 `tools/sanity_geom.py` **STALE 0 / OK**。
+- **再 5 條 median 反向修正**（第三輪）：協#8、囉#12、囉#13、霏#7、霹#7。呢輪先用「最佳匹配筆」搵對應，再用 **HK_ORDER 權威對應** 覆核——15 個候選只有 5 個通過（cos ≤ −0.66 且中線殘差 < 0.25×筆長），其餘 10 個（嚮/陪/隙/鸞…）中線殘差 56–393 單位 → **回滾不修正**（唔夠信心）。
+- 剩 300 筆（221 字）維持原狀：佢哋同 HW 對應筆嘅中線形狀本身唔同（多為 EDB/HW 筆序或字形差異），現有方法無法判定方向，唔可以盲反轉。
+
+### Findings（今次踩到嘅坑，已修復）
+- ⚠️ **重跑 `flip_glyphs.py` + `reframe_glyphs.py` 會二次處理「唔喺進度表」嘅 glyph**：197 個非 EDB（twpen 逆向）glyph 從未登記入 `/tmp/glyph_flip_done.json` / `reframe_done.json`，所以今次 rebuild 呢/囉 時，佢哋被 **再 flip + 再 reframe**（座標被二次縮放）→ 197 個檔案幾何損壞。
+  - **偵測**：`git diff --name-only -- glyphs | wc -l` 由預期 2 變成 199。
+  - **救回**：`git checkout -- glyphs/`（還原全部）→ 再 copy 返真正想重建嘅 2 個檔（呢/囉 喺 build→flip→reframe 各跑一次 = 正確）。
+  - **預防**：跑 pipeline 前確認進度表覆蓋**所有** glyph 檔（現已補齊 4,690 個）；新 pipeline（twpen 等）出嘅 glyph 一定要登記入 flip/reframe 進度表。
+
 ## [1.2.16] - 2026-09-18
 
 ### Fixed
