@@ -1546,8 +1546,10 @@ function placeNumberLabels(medians, frame, hooks) {
   // size, so the search walks 23 positions along the stroke at decreasing sizes and stops
   // at the first size that fits without a pile-up. Shrinking beats both overlapping and
   // leaving the labelled stroke.
-  const FRACTIONS = [0.5, 0.46, 0.54, 0.42, 0.58, 0.38, 0.62, 0.34, 0.66, 0.3, 0.7,
-                     0.26, 0.74, 0.22, 0.78, 0.18, 0.82, 0.14, 0.86, 0.1, 0.9, 0.06, 0.94];
+  // 2026-09-18 用戶要求：數字放喺**起筆後 1/5 弧長**位置（由 1/2 中點改；1/4、1/5、1/6 三版
+  // 對比後用戶揀 1/5）。由 0.2 開始向兩邊展開搵位，後面位置保留做避撞 fallback。
+  const FRACTIONS = [0.2, 0.17, 0.23, 0.14, 0.26, 0.11, 0.29, 0.08, 0.32, 0.05, 0.36, 0.4,
+                     0.46, 0.52, 0.6, 0.7, 0.8, 0.9];
   const SIZE_SCALES = [1, 0.85, 0.72, 0.6, 0.5, 0.42];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
   // above its baseline, plus a small breathing gap. Using the full em box made the
