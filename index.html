@@ -2531,34 +2531,39 @@ async function installGlyphLayer(content) {
 }
 
 
-function renderWorksheet() {
-  const o = currentOptions;
-  const ws = document.getElementById('worksheet');
-  const content = document.getElementById('wsContent');
-  CAONI_ACTIVE = (o.guideStyle === 'caoni' || o.guideStyle === 'caoni-color');
-  CAONI_IMG = (o.guideStyle === 'caoni');   // caoni=貼原圖；caoni-color=只有顏色
-
-  // Set size variable (CSS var --cell-practice drives both char cell + practice cells)
-  ws.style.setProperty('--cell-practice', (SIZE_PX[o.size] || 96) + 'px');
-
-  // Print sizing — used by @media print. Explicit cm chosen, or 'auto':
-  // auto maps screen px to physical size (96px ≈ 2.54cm) clamped to a sensible
-  // A4 print range so a large screen preview doesn't waste paper.
+// 螢幕／列印格大小同字級（單一入口；原本 updateCellStyles() 同 renderWorksheet() 各設一次）
+function applyCellSizes(ws, o) {
+  const size = SIZE_PX[o.size] || SIZE_PX.md;
+  ws.style.setProperty('--cell-practice', size + 'px');
+  ws.style.setProperty('--cell-font', `calc(${size}px * ${GLYPH_RATIO})`);
+  ws.style.setProperty('--cell-guide-font', `calc(${size}px * ${GLYPH_RATIO})`);
+  // 列印：明確 cm 或 'auto'（螢幕 px → 實際尺寸 96px ≈ 2.54cm，再夾到合理 A4 範圍）
   let ps;
   if (o.printSize && o.printSize !== 'auto') {
     ps = o.printSize;
   } else {
-    const cm = (SIZE_PX[o.size] || 96) / 96 * 2.54;
+    const cm = size / 96 * 2.54;
     ps = Math.min(Math.max(cm, 1.5), 2.6).toFixed(2) + 'cm';
   }
   ws.style.setProperty('--print-cell-practice', ps);
-  // font = 82% of cell for print — copybook style: character fills most of the grid.
   ws.style.setProperty('--print-cell-font', `calc(${ps} * ${GLYPH_RATIO})`);
   ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
+}
 
-  applyGuideStyle(ws, o);   // 樣式表見 GUIDE_STYLES
+const RHYME_HTML =
+  '<div class="strokes">現代漢字基本筆畫共有8種：<b>橫(一)</b> <b>豎(丨)</b> <b>撇(丿)</b> <b>點(丶)</b> <b>捺(㇏)</b> <b>挑(㇀)</b> <b>鈎(亅)</b> <b>折(乛)</b></div>' +
+  '<div class="rhyme-grid">' +
+  '<div class="rhyme-item"><b>1. 先橫後直</b>要分清 <span class="ex">[ 十 ]</span></div>' +
+  '<div class="rhyme-item"><b>2. 先撇後捺</b>要分明 <span class="ex">[ 人 ]</span></div>' +
+  '<div class="rhyme-item"><b>3. 從上到下</b>心中記 <span class="ex">[ 三 ]</span></div>' +
+  '<div class="rhyme-item"><b>4. 從外到內</b>字成形 <span class="ex">[ 月 ]</span></div>' +
+  '<div class="rhyme-item"><b>5. 先中間</b>後兩邊 <span class="ex">[ 小 ]</span></div>' +
+  '<div class="rhyme-item"><b>6. 進屋關門</b>字安定 <span class="ex">[ 日 ]</span></div>' +
+  '<div class="rhyme-item"><b>7. 先寫中央</b>後兩邊 <span class="ex">[ 小 ]</span></div>' +
+  '</div>';
 
-  // Header
+// 頁首：標題 / 姓名 / 日期 / 筆順口訣
+function applyHeader(o) {
   document.getElementById('wsTitle').textContent = o.title;
   const wsHeader = document.querySelector('#worksheet .ws-header');
   if (wsHeader) wsHeader.style.display = o.showHeader ? '' : 'none';
@@ -2567,27 +2572,25 @@ function renderWorksheet() {
   if (o.date) metaHtml += `<span>日期：${esc(o.date)}</span>`;
   document.getElementById('wsMeta').innerHTML = metaHtml;
 
-  // 頁首筆順口訣 (optRhyme)
   const rhymeEl = document.getElementById('wsRhyme');
-  if (rhymeEl) {
-    if (o.rhyme) {
-      rhymeEl.classList.add('show');
-      rhymeEl.innerHTML =
-        '<div class="strokes">現代漢字基本筆畫共有8種：<b>橫(一)</b> <b>豎(丨)</b> <b>撇(丿)</b> <b>點(丶)</b> <b>捺(㇏)</b> <b>挑(㇀)</b> <b>鈎(亅)</b> <b>折(乛)</b></div>' +
-        '<div class="rhyme-grid">' +
-        '<div class="rhyme-item"><b>1. 先橫後直</b>要分清 <span class="ex">[ 十 ]</span></div>' +
-        '<div class="rhyme-item"><b>2. 先撇後捺</b>要分明 <span class="ex">[ 人 ]</span></div>' +
-        '<div class="rhyme-item"><b>3. 從上到下</b>心中記 <span class="ex">[ 三 ]</span></div>' +
-        '<div class="rhyme-item"><b>4. 從外到內</b>字成形 <span class="ex">[ 月 ]</span></div>' +
-        '<div class="rhyme-item"><b>5. 從左到右</b>才順手 <span class="ex">[ 便 ]</span></div>' +
-        '<div class="rhyme-item"><b>6. 進屋關門</b>字安定 <span class="ex">[ 日 ]</span></div>' +
-        '<div class="rhyme-item"><b>7. 先寫中央</b>後兩邊 <span class="ex">[ 小 ]</span></div>' +
-        '</div>';
-    } else {
-      rhymeEl.classList.remove('show');
-      rhymeEl.innerHTML = '';
-    }
+  if (!rhymeEl) return;
+  if (o.rhyme) {
+    rhymeEl.classList.add('show');
+    rhymeEl.innerHTML = RHYME_HTML;
+  } else {
+    rhymeEl.classList.remove('show');
+    rhymeEl.innerHTML = '';
   }
+}
+
+function renderWorksheet() {
+  const o = currentOptions;
+  const ws = document.getElementById('worksheet');
+  const content = document.getElementById('wsContent');
+
+  applyCellSizes(ws, o);
+  applyGuideStyle(ws, o);   // 樣式表見 GUIDE_STYLES
+  applyHeader(o);
 
   // Content
   let html = '';
@@ -2604,7 +2607,6 @@ function renderWorksheet() {
   content.innerHTML = html;
 
   setWsFooter(o);
-  updateCellStyles();
   normalizeGlyphs();
 
   installGlyphLayer(content);
@@ -2710,18 +2712,6 @@ function cellFlags(o, { guide, isFirst }) {
   return { guide: !!guide, strokeNum: !!guide && f.strokeNum, arrow: !!guide && f.arrow };
 }
 
-function updateCellStyles() {
-  const size = SIZE_PX[currentOptions.size] || SIZE_PX.md;
-  // 字與框比例 82%（螢幕）：與列印同一比例，字帖所見即所得
-  const fontSize = `calc(${size}px * ${GLYPH_RATIO})`;
-  const guideSize = fontSize; // tracing guides match the model char size exactly
-
-  // Set CSS vars on the worksheet — screen sizing (print overrides below)
-  const ws = document.getElementById('worksheet');
-  ws.style.setProperty('--cell-practice', size + 'px');
-  ws.style.setProperty('--cell-font', fontSize);
-  ws.style.setProperty('--cell-guide-font', guideSize);
-}
 
 // ===== QUIZ MODE =====
 function toggleQuizMode() {
