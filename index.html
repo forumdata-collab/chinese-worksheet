@@ -1353,6 +1353,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.ctrlKey && e.key === 'Enter') generate();
   });
 
+  // 選項一改就自動重新產生（唔使再撳「產生工作紙」）
+  // 之前改完選項工作表唔會更新，用戶會以為「選項選了也不生效」。
+  bindAutoRegenerate();
+
   // Back to top button
   const backBtn = document.getElementById('backToTop');
   if (backBtn) {
@@ -1408,6 +1412,25 @@ function parseInput(text) {
   // Keep CJK chars + full-width punctuation (each symbol = one cell)
   const regex = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF，。！？、；：「」『』（）《》〈〉【】〔〕…—–·]/gu;
   return (text.match(regex) || []);
+}
+
+// 選項面板內任何控件一改，就自動重新產生工作表（250ms debounce）
+// 只喺已經產生過工作表（#wsContent 有內容）而且輸入唔係空嘅時候做 —— 避免一開頁就彈 toast。
+function bindAutoRegenerate() {
+  const panel = document.getElementById('optionsPanel') || document.querySelector('.options');
+  if (!panel) return;
+  let timer = null;
+  const run = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const inp = document.getElementById('inputText');
+      const ws = document.getElementById('wsContent');
+      if (!inp || !inp.value.trim() || !ws || !ws.innerHTML) return;
+      try { generate(); } catch (e) { /* non-fatal */ }
+    }, 250);
+  };
+  panel.addEventListener('change', run);
+  panel.addEventListener('input', run);
 }
 
 // Show/hide layout-dependent options (called on select change + settings restore)
@@ -2297,13 +2320,19 @@ function sentenceSectionHtml(o) {
     const sText = sChars.join('');
     html += `<div class="sentence-block">`;
     html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
+    const gcount = guideRowCount(o);
+    const traceNum  = (o.traceFormat === 'num' || o.traceFormat === 'num+arrow');
+    const traceArrow = (o.traceFormat === 'num+arrow');
     for (let t = 0; t < o.sentenceTimes; t++) {
-      const hasGuide = (t === 0 && guideRowCount(o) > 0);
+      const hasGuide = t < gcount;          // 描紅格數：首 N 行／全部行（原本只描第一行，令「描紅格數」對句子唔生效）
+      const isFirst = t === 0;
       html += `<div class="sentence-row">`;
       sChars.forEach((ch, ci) => {
-        // stroke numbers sit on the tracing (first) row, same as word practice cells
+        // row 0 跟示範格格式，其餘跟練習格格式 —— 同每字練習一致
         html += traceCellHtml(ch, 'sentence-cell',
-          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum, arrow: hasGuide && !!o.arrow }, ci % 3);
+          { guide: hasGuide,
+            strokeNum: hasGuide && (isFirst ? !!o.strokeNum : traceNum),
+            arrow:     hasGuide && (isFirst ? !!o.arrow     : traceArrow) }, ci % 3);
       });
       html += `</div>`;
     }

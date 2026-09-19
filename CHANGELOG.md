@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.21] - 2026-09-19
+
+### Changed
+- **選項一改就自動重新產生工作表**（`bindAutoRegenerate()`，面板 `change`/`input` 250ms debounce）。之前改完選項要再撳一次「產生工作紙」先見到效果，用戶反映「整句練習次數選了也不生效」。守門：只在輸入非空 + 已產生過工作表時才跑，避免一開頁彈 toast。
+- **描紅格數（2／全部格）對整句練習生效**：`sentenceSectionHtml()` 原本寫死 `t === 0` 只描第一行，所以「描紅格數」對句子等於只有開／關。改為 `t < guideRowCount(o)` —— 同每字練習嘅 `r < gcount` 一致。
+- **整句練習行跟示範／練習格格式**：第 0 行跟示範格格式（`optDemoFormat`），其餘行跟練習格格式（`optTraceFormat`），同每字練習格一致（原本每行都用示範格設定）。
+
+### Notes
+- ⚠️ chineseword 嘅選項面板係 `<div class="options">`，**冇 `id="optionsPanel"`**（engword 有）—— 綁事件要用 `document.querySelector('.options')`。
+- 驗證（headless chromium + dispatch change 事件，唔撳 generate）：改次數 2→5 → 每句行數 [2,2]→[5,5]；描紅格數 全部／2／無 → 每句描紅行 [5,5]／[2,2]／[0,0]；回歸：每字模式 描紅=全部 → 4格/4描 不變。
+
 ## [1.2.20] - 2026-09-19
 
 ### Added
