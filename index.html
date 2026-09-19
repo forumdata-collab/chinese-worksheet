@@ -740,11 +740,11 @@ body {
     --cell-font: var(--print-cell-font, calc(2.2cm * 0.82)) !important;
     --cell-guide-font: var(--print-cell-guide-font, calc(2.2cm * 0.82)) !important;
     --guide-line: #D8CAC8 !important; /* lighter than screen — prints as subtle pink-gray */
-    --guide-tint: #F0C8C4 !important; /* tracing char — light pink, prints visibly but not bold */
+    --guide-tint: #F4D6D2 !important; /* tracing char — light pink, prints visibly but not bold */
     --red-grid: #CFBEBE !important;
   }
-  /* 彩色天草泥底色較深，描紅字要比標準粉再深先睇到 */
-  #worksheet.guide-caoni { --guide-tint: #E8B2A6 !important; }
+  /* 彩色天草泥底色較深，描紅字要比標準粉再深先睇到（2026-09-19 用戶要求調淺 → #F2D6CE） */
+  #worksheet.guide-caoni { --guide-tint: #F4DCD6 !important; }
   .cell-guides line { stroke-width: 1.5; }
   /* 筆順工作紙：另起一頁，每字一行唔好斷開 */
   .stroke-page { page-break-before: always; margin-top: 0; }
@@ -913,8 +913,8 @@ details.advance-collapse summary:hover { color: var(--red); }
    行主題由 JS 喺每一格 bake 入（theme 0/1/2 循環），所以唔使 nth-child。 */
 .guide-caoni .cell-guides .g-h3a, .guide-caoni .cell-guides .g-h3b,
 .guide-caoni .cell-guides .g-v3a, .guide-caoni .cell-guides .g-v3b { display: block; }
-/* 描紅字喺彩色底上要深返少少先睇到 */
-.guide-caoni { --guide-tint: #E8B2A6; }
+/* 描紅字喺彩色底上要深返少少先睇到（2026-09-19 用戶：再淺一點 → #E8B2A6 → #F2D6CE） */
+.guide-caoni { --guide-tint: #F4DCD6; }
 .guide-caoni .caoni-bg rect { vector-effect: non-scaling-stroke; }
 .guide-caoni .caoni-bg .caoni-pattern { opacity: 1; }
 
