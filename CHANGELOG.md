@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.20] - 2026-09-19
+
+### Added
+- **彩色天草泥井字（3×3）**（`#optGuideStyle` = `caoni`）：上中下三色帶 —— 天（淺藍 `#CFE6FA`）/ 草（淺綠 `#D9EFCF`）/ 泥（淺棕 `#EFDFC4`），opacity 0.45，界線 33.3% / 66.7% 對齊井字格。用**用戶原圖**切片渲染（`caoni-bg.jpg`，967×311 → 裁框內 774×234、黑線壓成淺灰 172）：`<image href="caoni-bg.jpg" x="-100×slice" width="300" height="100" preserveAspectRatio="none">` —— 3 倍闊 + 負 x 偏移，SVG viewport 自動裁走溢出 → 一行三格剛好重組原圖，只需一個資源檔。格線（`guideSvg()`）畫喺色帶**上面**（線要叠色）。
+- **天草泥三色（只有顏色）**（`caoni-color`）：唔用圖，只有三色帶（實心 `#D9EAF7` / `#E3F2DD` / `#F1E7D8`）。
+- 兩款模板 `@media print` 同步：`#worksheet.guide-caoni { … !important }`（ID+class 先壓得住 `#worksheet{…!important}`）。
+
+### Changed
+- **選項面板重新分類**：`格選項`（每行格數·導線樣式·格大小·練習模式）· `文字內容` · **`描紅格選項`** · `頁面`。原本三個 checkbox（描紅／筆順數字／方向箭咀）＋「練習格描紅格式」屬同類，合併為兩個 select，並移除重複嘅「淺色範本指引」checkbox。
+- **示範格／練習格格式分家**：`optDemoFormat`（第一格，或無描紅時無效）同 `optTraceFormat`（其餘格）各自揀 純描紅 / 描紅＋筆順數字 / 描紅＋數字＋箭咀（`traceFormatFlags()` 統一解析）。
+- 描紅字色調淺：caoni 模式 `#F4DCD6`、印刷預設 `#F4D6D2`、螢幕 `#F9E8E5`。
+
+### Fixed
+- **練習格格式嘅箭咀冇跟設定**：筆順數字／方向箭咀係由 overlay 層（`installHKGlyphs()` / `overlayStrokeNum()`）非同步畫上去，嗰段 code 讀**全局** `currentOptions.arrow` → 練習格揀「描紅＋筆順數字」都會照出箭咀。改為每個 cell bake 自己嘅 `data-num` / `data-arrow`，overlay 逐格跟隨（EDB glyph 同 HanziWriter fallback 兩條 path 都改）。
+
+### Notes
+- 驗證（5 個「示範格 × 練習格」組合實測）：num+arrow / num → 練習格 4 個數字、**0 條箭咀**；num+arrow / num+arrow → 4+4；num+arrow / plain → 練習格無 overlay；plain / num → 示範格無 overlay、練習格 4 數字；num / plain → 練習格無 overlay。
+- 色帶對齊：垂直掃 pixel 確認色帶轉折 = 33.3% / 66.7%，井字線壓喺色帶上仍清晰可見。
+
 ## [1.2.19] - 2026-09-18
 
 ### Changed

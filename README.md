@@ -17,12 +17,14 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | ➡️ Stroke direction arrows | Optional (off by default): dotted centreline + arrowhead per stroke, at the stroke's end, showing the writing direction |
 | 📝 練習模式 (3 modes) | 每字練習 (default) · 每字 + 整句 · 整句練習 — sentence copybook adds a 描紅 model row plus N blank rows (次數 adjustable) |
 | ✍️ 描紅格數 | How many of a character's cells carry the light 描紅 tracing model: none / 1 / 2 / all |
+| 🖍️ 描紅格式 | 示範格（第一格）同其餘練習格**各自**揀 純描紅 / 描紅＋筆順數字 / 描紅＋數字＋方向箭咀。每個 cell 帶自己嘅 flags（`data-num` / `data-arrow`），overlay 層逐格跟隨 —— 唔會再出現「練習格揀咗只有數字但仍然出箭咀」 |
 | 🖊️ 筆順工作紙 | Optional printable stroke-order sheet: one row per character, cell *k* = the first *k* strokes, with the new stroke numbered |
 | ❕ 標點全形直出 | Punctuation occupies its own grid cell like a character; half-width `, . ! ?` auto-convert to full-width `，。！？` |
 | 🔊 Pronunciation | Jyutping (Cantonese) + Pinyin (Mandarin), with TTS audio for both |
 | 🗣️ Multiple readings | 又讀 (alternative readings) shown when a character is polyphonic |
 | 📄 Print-focused | Dedicated A4 CSS output with **82% character-to-cell ratio** (copybook look); 默書版 (dictation) hides answers |
-| 🔲 5 grid styles | 米字格 · 田字格 · 新九宮格（22:56:22 中宮放大）· 井字格 · 空白格 — all guide lines light + dashed |
+| 🔲 7 grid styles | 米字格 · 田字格 · 新九宮格（22:56:22 中宮放大）· 井字格 · **彩色天草泥井字（3×3）** · **天草泥三色（只有顏色）** · 空白格 — all guide lines light + dashed |
+| 🌤️ 彩色天草泥井字 | 上中下三色帶（天 淺藍 / 草 淺綠 / 泥 淺棕）＋圖案，用**原圖**切片渲染（`caoni-bg.jpg`：`<image>` × 3 倍闊 + 負 x 偏移，SVG viewport 自動裁走 = 一行三格重組原圖），格線仍叠喺色帶上；另一款「只有顏色」唔用圖 |
 | 📏 Flexible layout | 4 grid sizes (56–128 px), 4–8 cells per row, per-row count |
 | 🎲 常用範例 | **32 組** presets |
 | 🔤 Smart input | Simplified Chinese → Traditional conversion, dedup option |
