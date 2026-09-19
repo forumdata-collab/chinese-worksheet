@@ -1972,11 +1972,14 @@ async function installHKGlyphs(root) {
     el.style.transform = '';           // font-based optical normalisation not needed
     el.appendChild(svg);
     if (withNum) {
-      // after attach, so isPointInFill() works
-      if (currentOptions.arrow) {
+      // per-cell flags：第一示範格跟示範格格式，其餘格跟練習格格式（唔可以讀全局 currentOptions）
+      const cellEl = el.closest('.stroke-num-cell');
+      const wantArrow = cellEl && cellEl.dataset.arrow != null ? cellEl.dataset.arrow === '1' : !!currentOptions.arrow;
+      const wantNum = cellEl && cellEl.dataset.num != null ? cellEl.dataset.num === '1' : currentOptions.strokeNum !== false;
+      if (wantArrow) {
         appendStrokeArrows(svg, rec.m, svg._glyphMeta.C, svg._glyphMeta.box);
       }
-      if (currentOptions.strokeNum !== false) addGlyphNumbers(svg);   // 數字最上層
+      if (wantNum) addGlyphNumbers(svg);   // 數字最上層
     }
     handled.add(el.dataset.ch);
   });
@@ -2058,11 +2061,14 @@ async function overlayStrokeNum(cell) {
   // numbers landed on the wrong strokes. Mirror about the ink bbox, exactly like the
   // HK-glyph path does with C = y0 + y1.
   const flipC = hwY0 + hwY1;
+  // per-cell flags（同 installHKGlyphs 一致）：唔可以讀全局 currentOptions
+  const wantArrow = cell.dataset.arrow != null ? cell.dataset.arrow === '1' : !!currentOptions.arrow;
+  const wantNum = cell.dataset.num != null ? cell.dataset.num === '1' : currentOptions.strokeNum !== false;
   // 方向箭咀（同一 flip 修正）先畫，數字後畫 = 數字喺最上層
-  if (currentOptions.arrow) {
+  if (wantArrow) {
     appendStrokeArrows(svg, medPolys, flipC, Math.max(hwW, hwH));
   }
-  if (currentOptions.strokeNum === false) { glyph.appendChild(svg); return; }
+  if (!wantNum) { glyph.appendChild(svg); return; }
   placeNumberLabels(medPolys, { fs: numFontSize, C: flipC }).forEach(p => {
     const t = document.createElementNS(NS, 'text');
     t.setAttribute('x', p.cx.toFixed(1));
@@ -2184,7 +2190,7 @@ function traceCellHtml(ch, cellClass, opts, slice) {
   // 數字同箭咀任何一個開都可能要 overlay 層（.stroke-num-cell 只係層嘅標記）
   const numCell = !!(opts.guide && (opts.strokeNum || opts.arrow) && !isPunct(ch) && !seq);
   return `<div class="${cellClass}${numCell ? ' stroke-num-cell' : ''}${seq ? ' seq-overlay-cell' : ''}"`
-    + (numCell ? ` data-ch="${esc(ch)}"` : '')
+    + (numCell ? ` data-ch="${esc(ch)}" data-num="${opts.strokeNum ? 1 : 0}" data-arrow="${opts.arrow ? 1 : 0}"` : '')
     + `>`
     + guideSvg(slice)
     + (opts.guide
