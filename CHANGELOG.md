@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.23] - 2026-09-19
+
+### Changed
+- **頁腳改為專業「資料來源與聲明」區塊**：由原本一行流水式文字，改為有標題 + 標籤欄（字形與筆順／語言資料／天草泥格線／聲明）嘅分項排版。標籤欄用 `.wsf-block { display:grid; grid-template-columns:max-content 1fr }` + `.wsf-row { display:contents }` → 跨行自動對齊（唔可以用 per-row grid，`max-content` 係逐行計，長標籤會推歪）。
+- **加入天草泥格線來源**：「天草泥格線印章教材套」由協康會職業治療師團隊推出，以「天空」、「草地」和「泥土」圖案將視覺提示融入書寫訓練；本站「彩色天草泥井字」／「天草泥三色」為教學參考應用。
+- **聲明明確化**：本站為非官方教學輔助工具，與上述機構並無隸屬或合作關係；相關名稱、教材及資料版權屬原機構所有；列印建議 A4 直向。
+
+### Fixed
+- **`✉️ 聯絡作者` 連結被 Cloudflare email obfuscation 轉成 `/cdn-cgi/l/email-protection#…`**（喺 repo 存在已久，只靠 Cloudflare 注入嘅 script 解碼）→ 還原為 `mailto:forumdata@gmail.com`。
+- 移除同一來源嘅殘留死 script `<script src="/cdn-cgi/scripts/…/email-decode.min.js">`。
+
+## [1.2.22] - 2026-09-19
 ## [1.2.22] - 2026-09-19
 
 ### Fixed
