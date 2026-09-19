@@ -743,6 +743,8 @@ body {
     --guide-tint: #F0C8C4 !important; /* tracing char — light pink, prints visibly but not bold */
     --red-grid: #CFBEBE !important;
   }
+  /* 彩色天草泥底色較深，描紅字要比標準粉再深先睇到 */
+  #worksheet.guide-caoni { --guide-tint: #E8B2A6 !important; }
   .cell-guides line { stroke-width: 1.5; }
   /* 筆順工作紙：另起一頁，每字一行唔好斷開 */
   .stroke-page { page-break-before: always; margin-top: 0; }
@@ -906,6 +908,16 @@ details.advance-collapse summary:hover { color: var(--red); }
 .guide-grid3 .cell-guides .g-h3a, .guide-grid3 .cell-guides .g-h3b,
 .guide-grid3 .cell-guides .g-v3a, .guide-grid3 .cell-guides .g-v3b { display: block; }
 
+/* 彩色天草泥井字 (2026-09-19): 3×3 井字 + 每行一色（天淺藍 / 草淺綠 / 泥淺棕）+ 印花。
+   印花係 inline SVG（.caoni-bg 首層），有齊 rect 底 + 圖案 → 列印實出；
+   行主題由 JS 喺每一格 bake 入（theme 0/1/2 循環），所以唔使 nth-child。 */
+.guide-caoni .cell-guides .g-h3a, .guide-caoni .cell-guides .g-h3b,
+.guide-caoni .cell-guides .g-v3a, .guide-caoni .cell-guides .g-v3b { display: block; }
+/* 描紅字喺彩色底上要深返少少先睇到 */
+.guide-caoni { --guide-tint: #E8B2A6; }
+.guide-caoni .caoni-bg rect { vector-effect: non-scaling-stroke; }
+.guide-caoni .caoni-bg .caoni-pattern { opacity: 1; }
+
 /* 空白格: no guides (all stay hidden) */
 .guide-blank .cell-guides { display: none; }
 
@@ -1002,6 +1014,7 @@ details.advance-collapse summary:hover { color: var(--red); }
             <option value="tian">田字格（十字）</option>
             <option value="jiugong">新九宮格（3×3）</option>
             <option value="jingzi">井字格（3×3）</option>
+            <option value="caoni">彩色天草泥井字（3×3）</option>
             <option value="blank">空白格</option>
           </select>
         </div>
@@ -1286,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       if (saved.practice != null) document.getElementById('optPractice').value = saved.practice;
       if (saved.size) document.getElementById('optSize').value = saved.size;
-      if (['mizi','tian','jiugong','jingzi','blank'].includes(saved.guideStyle)) {
+      if (['mizi','tian','jiugong','jingzi','caoni','blank'].includes(saved.guideStyle)) {
         document.getElementById('optGuideStyle').value = saved.guideStyle;
       }
       if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
@@ -2079,10 +2092,47 @@ function appendStrokeArrows(svg, medians, C, box) {
 }
 
 // ===== RENDER =====
-function guideSvg() {
+// 彩色天草泥井字印花（2026-09-19）。theme: 0=天(淺藍,雲+雀) 1=草(淺綠,草叢) 2=泥(淺棕,泥點)。
+// 全部係 inline SVG（rect 底 + 圖案），CSS background 列印唔出，SVG 先出到 → 跟 Grid Styles 鐵律。
+// 座標系同導線一致（viewBox 0-100），中宮 33-66% 留空畀練字。
+function caoniPattern(theme) {
+  if (theme === 0) { // 天：淺藍底 + 白雲 + 藍雀
+    return `<g class="caoni-bg"><rect width="100" height="100" fill="#CDE6F5"/>` +
+      `<g class="caoni-pattern" fill="none" stroke="#7FB3D5" stroke-width="1.6" stroke-linecap="round">` +
+      `<path d="M13 30 q5 6 11 0 M27 37 q5 6 11 0 M66 22 q4 5 9 0 M79 29 q4 5 9 0"/></g>` +
+      `<g class="caoni-pattern" fill="#FFFFFF" stroke="#7FB3D5" stroke-width="1">` +
+      `<circle cx="17" cy="18" r="6.5"/><circle cx="25" cy="14" r="8"/><circle cx="33" cy="18" r="6.5"/>` +
+      `<path d="M17 18 h16 v5 h-16 z"/>` +
+      `<circle cx="70" cy="12" r="5"/><circle cx="76" cy="9" r="6"/><circle cx="82" cy="12" r="5"/>` +
+      `<path d="M70 12 h12 v4 h-12 z"/></g></g>`;
+  }
+  if (theme === 1) { // 草：淺綠底 + 兩住草叢葉
+    return `<g class="caoni-bg"><rect width="100" height="100" fill="#D9EED3"/>` +
+      `<g class="caoni-pattern" fill="none" stroke="#7CB57E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+      `<path d="M22 85 L22 62 M22 68 L15 61 M22 66 L29 60 M22 73 L14 68 M22 72 L30 67 M22 79 L16 76 M22 78 L28 75"/>` +
+      `<path d="M78 85 L78 64 M78 70 L71 63 M78 68 L85 62 M78 75 L70 70 M78 74 L86 69 M78 81 L72 78 M78 80 L84 77"/>` +
+      `</g></g>`;
+  }
+  if (theme === 2) { // 泥：淺棕底 + 散佈泥點
+    return `<g class="caoni-bg"><rect width="100" height="100" fill="#EADCC8"/>` +
+      `<g class="caoni-pattern" fill="#C4A882">` +
+      `<circle cx="12" cy="16" r="2.2"/><circle cx="20" cy="28" r="1.6"/><circle cx="30" cy="14" r="1.4"/>` +
+      `<circle cx="42" cy="24" r="2"/><circle cx="52" cy="12" r="1.5"/><circle cx="63" cy="27" r="2.2"/>` +
+      `<circle cx="75" cy="15" r="1.6"/><circle cx="86" cy="25" r="1.9"/><circle cx="95" cy="12" r="1.3"/>` +
+      `<circle cx="10" cy="72" r="1.8"/><circle cx="24" cy="80" r="2.3"/><circle cx="36" cy="70" r="1.5"/>` +
+      `<circle cx="48" cy="83" r="1.7"/><circle cx="60" cy="72" r="2"/><circle cx="72" cy="84" r="1.6"/>` +
+      `<circle cx="84" cy="72" r="2.1"/><circle cx="93" cy="82" r="1.4"/><circle cx="18" cy="86" r="1.3"/>` +
+      `</g></g>`;
+  }
+  return '';
+}
+function guideSvg(theme) {
   // Inline SVG guide layer — strokes print reliably (CSS background gradients don't).
   // viewBox 0-100, lines at 33.3/50/66.7 positions; CSS classes toggle which show.
+  // theme (0/1/2/undefined) bakes the 天草泥印花 into the cell; CSS `.guide-caoni`
+  // controls visibility so other guide styles are unaffected.
   return `<svg class="cell-guides" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
+    (theme != null ? caoniPattern(theme) : '') +
     `<line class="g-h" x1="0" y1="50" x2="100" y2="50"/>` +
     `<line class="g-v" x1="50" y1="0" x2="50" y2="100"/>` +
     `<line class="g-d1" x1="0" y1="0" x2="100" y2="100"/>` +
@@ -2121,14 +2171,14 @@ function seqOverlayHtml(seq) {
  *
  * `cellClass` is the layout's own cell class (practice-cell / sentence-cell).
  */
-function traceCellHtml(ch, cellClass, opts) {
+function traceCellHtml(ch, cellClass, opts, theme) {
   const seq = (opts.guide && opts.strokeNum) ? strokeSeqInfo(ch) : null;
   // 數字同箭咀任何一個開都可能要 overlay 層（.stroke-num-cell 只係層嘅標記）
   const numCell = !!(opts.guide && (opts.strokeNum || opts.arrow) && !isPunct(ch) && !seq);
   return `<div class="${cellClass}${numCell ? ' stroke-num-cell' : ''}${seq ? ' seq-overlay-cell' : ''}"`
     + (numCell ? ` data-ch="${esc(ch)}"` : '')
     + `>`
-    + guideSvg()
+    + guideSvg(theme)
     + (opts.guide
         ? `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></span>`
         : '')
@@ -2140,7 +2190,7 @@ function traceCellHtml(ch, cellClass, opts) {
  * One character card: the character, its readings and meta line, and the practice grid
  * underneath. Screen-only action buttons live here too.
  */
-function charCardHtml(ch, o) {
+function charCardHtml(ch, o, cardIdx) {
   let html = '';
   const d = window.CHAR_DB[ch] || {};
   const cName = o.quizMode ? 'quiz-mode' : '';
@@ -2149,7 +2199,9 @@ function charCardHtml(ch, o) {
   // Char info row
   html += `<div class="char-info">`;
   html += `<div class="char-display"${isPunct(ch) ? '' : ` onclick="openStroke('${esc(ch)}')" title="點擊查看筆順"`}>`;
-  html += `<div class="char-cell">${guideSvg()}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
+  // 彩色天草泥：只有選咗 caoni 樣式先 bake 印花（其他導線樣式唔帶背景）
+  const theme = (o.guideStyle === 'caoni' && cardIdx != null) ? (cardIdx % 3) : null;
+  html += `<div class="char-cell">${guideSvg(theme)}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
   html += `</div>`;
   html += `<div class="char-details">`;
 
@@ -2206,7 +2258,7 @@ function charCardHtml(ch, o) {
     for (let r = 0; r < o.practice; r++) {
       const isGuide = r < gcount;
       html += traceCellHtml(ch, 'practice-cell',
-        { guide: isGuide, strokeNum: isGuide && r === 0 && !!o.strokeNum, arrow: isGuide && r === 0 && !!o.arrow });
+        { guide: isGuide, strokeNum: isGuide && r === 0 && !!o.strokeNum, arrow: isGuide && r === 0 && !!o.arrow }, theme);
     }
     html += `</div>`;
   }
@@ -2220,8 +2272,9 @@ function sentenceSectionHtml(o) {
   if (o.layout === 'word' || !currentSentences.length) return '';
   let html = '';
   html += `<div class="sentence-section">`;
-  currentSentences.forEach(sChars => {
+  currentSentences.forEach((sChars, si) => {
     const sText = sChars.join('');
+    const sTheme = (o.guideStyle === 'caoni') ? (si % 3) : null;
     html += `<div class="sentence-block">`;
     html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
     for (let t = 0; t < o.sentenceTimes; t++) {
@@ -2230,7 +2283,7 @@ function sentenceSectionHtml(o) {
       sChars.forEach(ch => {
         // stroke numbers sit on the tracing (first) row, same as word practice cells
         html += traceCellHtml(ch, 'sentence-cell',
-          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum, arrow: hasGuide && !!o.arrow });
+          { guide: hasGuide, strokeNum: hasGuide && !!o.strokeNum, arrow: hasGuide && !!o.arrow }, sTheme);
       });
       html += `</div>`;
     }
@@ -2255,7 +2308,7 @@ function strokePageHtml(o) {
   if (!o.strokePage || o.layout === 'sentence' || !currentChars.length) return '';
   let rows = '';
   let total = 0;
-  currentChars.forEach(ch => {
+  currentChars.forEach((ch, i) => {
     if (isPunct(ch)) return;
     const info = strokeCountOf(ch);
     if (!info) return;
@@ -2264,10 +2317,11 @@ function strokePageHtml(o) {
     const meta = [];
     if (o.canto && db.jy) meta.push(db.jy);
     if (o.pinyin && db.py) meta.push(db.py);
+    const stepTheme = (o.guideStyle === 'caoni') ? (i % 3) : null;
     let cells = '';
     for (let k = 1; k <= info.count; k++) {
       cells += `<div class="practice-cell stroke-step-cell" data-step-ch="${esc(ch)}" data-step-k="${k}">`
-        + guideSvg()
+        + guideSvg(stepTheme)
         + `<span class="guide-char"><span class="step-glyph">${esc(ch)}</span></span>`
         + `</div>`;
     }
@@ -2464,11 +2518,12 @@ function renderWorksheet() {
   ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
 
   // Guide style class (mizi/tian/jiugong/jingzi/blank)
-  ws.classList.remove('guide-mizi', 'guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank');
+  ws.classList.remove('guide-mizi', 'guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank', 'guide-caoni');
   if (o.guideStyle === 'mizi') ws.classList.add('guide-mizi');
   else if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
   else if (o.guideStyle === 'jiugong') ws.classList.add('guide-jiugong');
   else if (o.guideStyle === 'jingzi') ws.classList.add('guide-grid3');
+  else if (o.guideStyle === 'caoni') ws.classList.add('guide-caoni');
   else if (o.guideStyle === 'blank') ws.classList.add('guide-blank');
 
   // Header
@@ -2505,7 +2560,7 @@ function renderWorksheet() {
   // Content
   let html = '';
   if (o.layout !== 'sentence') {
-    currentChars.forEach(ch => { html += charCardHtml(ch, o); });
+    currentChars.forEach((ch, i) => { html += charCardHtml(ch, o, i); });
   }
 
   // Sentence copybook section (整句練習)
