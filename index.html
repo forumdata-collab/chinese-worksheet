@@ -983,20 +983,11 @@ details.advance-collapse summary:hover { color: var(--red); }
 
   <div class="options">
     <div class="opt-section">
-      <h3>📐 練習格</h3>
+      <h3>格選項</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <label>每字練習格數</label>
           <input type="number" id="optPractice" value="4" min="0" max="10">
-        </div>
-        <div class="opt-group">
-          <label>描紅格數</label>
-          <select id="optGuideCount">
-            <option value="none">無描紅</option>
-            <option value="1" selected>1 格（首格）</option>
-            <option value="2">2 格</option>
-            <option value="all">全部格子</option>
-          </select>
         </div>
         <div class="opt-group">
           <label>每行格數</label>
@@ -1054,7 +1045,7 @@ details.advance-collapse summary:hover { color: var(--red); }
     </div>
 
     <div class="opt-section">
-      <h3>📝 文字內容</h3>
+      <h3>文字內容</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <div class="toggle-row">
@@ -1097,32 +1088,31 @@ details.advance-collapse summary:hover { color: var(--red); }
     </div>
 
     <div class="opt-section">
-      <h3>🖊️ 筆順</h3>
+      <h3>描紅格選項</h3>
       <div class="opt-grid">
         <div class="opt-group">
-          <div class="toggle-row">
-            <input type="checkbox" id="optGuide" checked>
-            <label for="optGuide">淺色範本指引（描紅）</label>
-          </div>
+          <label>描紅格數</label>
+          <select id="optGuideCount">
+            <option value="none">無</option>
+            <option value="1" selected>1 格（示範格）</option>
+            <option value="2">2 格</option>
+            <option value="all">全部格</option>
+          </select>
         </div>
         <div class="opt-group">
-          <div class="toggle-row">
-            <input type="checkbox" id="optStrokeNum" checked>
-            <label for="optStrokeNum">筆順數字</label>
-          </div>
+          <label>示範格格式（第一格）</label>
+          <select id="optDemoFormat">
+            <option value="plain">純描紅</option>
+            <option value="num" selected>描紅＋筆順數字</option>
+            <option value="num+arrow">描紅＋數字＋箭咀</option>
+          </select>
         </div>
         <div class="opt-group">
-          <div class="toggle-row">
-            <input type="checkbox" id="optArrow">
-            <label for="optArrow">筆順方向箭咀</label>
-          </div>
-        </div>
-        <div class="opt-group">
-          <label>練習格描紅格式</label>
+          <label>練習格格式（其餘格）</label>
           <select id="optTraceFormat">
             <option value="plain">純描紅</option>
-            <option value="num" selected>描紅+筆順數字</option>
-            <option value="num+arrow">描紅+筆順數字+箭咀</option>
+            <option value="num" selected>描紅＋筆順數字</option>
+            <option value="num+arrow">描紅＋數字＋箭咀</option>
           </select>
         </div>
         <div class="opt-group">
@@ -1135,7 +1125,7 @@ details.advance-collapse summary:hover { color: var(--red); }
     </div>
 
     <div class="opt-section">
-      <h3>📄 頁面</h3>
+      <h3>頁面</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <div class="toggle-row">
@@ -1324,15 +1314,19 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('optCanto').checked = saved.canto !== false;
       document.getElementById('optPinyin').checked = saved.pinyin !== false;
       document.getElementById('optStrokes').checked = saved.strokes !== false;
-      // 描紅格式：新存值 allow-list；舊版三個 flag 推算（arrow→num+arrow，無數字→plain，其餘 num）
-      const tfOld = saved.traceFormat;
-      document.getElementById('optTraceFormat').value =
-        (tfOld === 'plain' || tfOld === 'num' || tfOld === 'num+arrow') ? tfOld
+      // 描紅格選項三個控件（全部 allow-list；舊存值（無 guideCount 但有 guide=false）→ 'none'）
+      const fmtOk = ['plain', 'num', 'num+arrow'];
+      const gcOk = ['none', '1', '2', 'all'];
+      const demoOld = fmtOk.includes(saved.demoFormat) ? saved.demoFormat
         : (saved.arrow === true ? 'num+arrow' : (saved.strokeNum === false ? 'plain' : 'num'));
+      document.getElementById('optDemoFormat').value = demoOld;
+      document.getElementById('optTraceFormat').value =
+        fmtOk.includes(saved.traceFormat) ? saved.traceFormat
+        : (saved.arrow === true ? 'num+arrow' : (saved.strokeNum === false ? 'plain' : 'num'));
+      document.getElementById('optGuideCount').value =
+        gcOk.includes(saved.guideCount) ? saved.guideCount
+        : (saved.guide === false ? 'none' : '1');
       document.getElementById('optStrokePage').checked = saved.strokePage === true;   // default 關
-      if (['none', '1', '2', 'all'].includes(saved.guideCount)) {
-        document.getElementById('optGuideCount').value = saved.guideCount;
-      }
       if (saved.dedup != null) document.getElementById('optDedup').checked = saved.dedup;
       if (saved.title) document.getElementById('optTitle').value = saved.title;
       if (saved.name) document.getElementById('optName').value = saved.name;
@@ -1435,12 +1429,13 @@ function traceFormatFlags(tf) {
 }
 function readOptions() {
   const $ = id => document.getElementById(id);
-  const tf = traceFormatFlags($('optTraceFormat').value);
+  const demo = traceFormatFlags($('optDemoFormat').value);      // 示範格（第一格）
+  const guideCount = $('optGuideCount').value;
   return {
     practice: $('optPractice').value,
     size: $('optSize').value,
     guideStyle: $('optGuideStyle').value,
-    guideCount: $('optGuideCount').value,
+    guideCount: guideCount,
     strokePage: $('optStrokePage').checked,
     perRow: $('optPerRow').value,
     printSize: $('optPrintSize').value,
@@ -1449,10 +1444,11 @@ function readOptions() {
     canto: $('optCanto').checked,
     pinyin: $('optPinyin').checked,
     strokes: $('optStrokes').checked,
+    guide: guideCount !== 'none',   // 「描紅格數 = 無」＝冇描紅（取代舊 #optGuide checkbox）
+    demoFormat: $('optDemoFormat').value,
+    strokeNum: demo.strokeNum,      // 示範格數字／箭咀
+    arrow: demo.arrow,
     traceFormat: $('optTraceFormat').value,
-    guide: tf.guide,
-    strokeNum: tf.strokeNum,
-    arrow: tf.arrow,
     dedup: $('optDedup').checked,
     title: $('optTitle').value,
     name: $('optName').value,
@@ -1518,6 +1514,7 @@ function generate() {
     guide: opts.guide,
     strokeNum: opts.strokeNum,
     arrow: opts.arrow,
+    demoFormat: opts.demoFormat || 'num',
     traceFormat: opts.traceFormat || 'num',
     dedup: opts.dedup,
     title: opts.title || '練習簿',
