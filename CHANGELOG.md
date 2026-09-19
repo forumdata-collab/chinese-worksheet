@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.22] - 2026-09-19
+
+### Fixed
+- **每行格數（perRow）模式下字級冇跟格仔**：格仔闊度由 `flex-basis` 計出（perRow=4 → 182px），但 `--cell-font` / `--cell-guide-font` 仍係螢幕格大小（96px × 0.82 = 78.7px）→ 比例 0.434（應為 0.82），perRow=8 反而 0.887 過大。改用 **container query**：`.practice-row[data-perrow] .practice-cell { container-type: inline-size; --cell-font/gude-font: 82cqw }`（cqw = 格仔闊度 1%）→ 螢幕同列印都自動跟格仔比例（實測 0.78–0.80）。
+
+### Changed（Code Smells 修正）
+- **Shotgun Surgery + Primitive Obsession → 單一真相表**：新增 `GUIDE_STYLES` registry（value → label / class / caoni 模式），`<select id="optGuideStyle">` 選項改由 `buildGuideStyleSelect()` 生成，class 套用改 `applyGuideStyle()`。原本加／改一款格線樣式要同步 5 個地方（select、localStorage allow-list、預設值、class 套用 if/else 鏈、CAONI flag），而家只改表 + CSS。
+- **Data Clumps → `cellFlags(o, {guide, isFirst})`**：`{guide, strokeNum, arrow}` 三件嘢原本喺 `charCardHtml()` 同 `sentenceSectionHtml()` 各砌一次，而家一處出（並統一「第 0 格跟示範格格式、其餘跟練習格格式」規則）。
+- **Long Parameter List**：`addStepNumber(svg, lastEl, frame, k, med, totalStrokes)` → `addStepNumber(svg, {lastEl, frame, k, med, totalStrokes})`。
+- **Dead Code**：清走 `.advance-collapse`／`.collapse-wrap` 死 CSS、「進階」摺疊層移除後遺留嘅 `guide-dashed` class 清除項（改由 registry 管）。
+
+### Notes
+- 建立回歸測試套件 **37 項**（headless chromium + `dispatchEvent('change')` 模擬真實操作 + `--dump-dom` 讀結果）：輸入解析（半形標點、去重、簡轉繁）· 描紅格數 × 示範/練習格格式矩陣（箭咀／數字 per-cell）· 7 款格線樣式 · 整句練習（次數／描紅格數 / auto-regenerate）· 筆順工作紙 · 默書版 · perRow 字級 · localStorage · 橫向溢出 · JS error。全綠。
+- 列印版面另作測試（`@media print` → `@media all` + 794px 窗）：無溢出、格 83px = 2.2cm、字級比 0.782。
+
 ## [1.2.21] - 2026-09-19
 
 ### Changed

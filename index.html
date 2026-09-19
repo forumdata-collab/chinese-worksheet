@@ -930,6 +930,16 @@ details.advance-collapse summary:hover { color: var(--red); }
   flex: 0 0 calc((100% - 4px * (var(--n, 4) - 1)) / var(--n));
   aspect-ratio: 1;
 }
+/* perRow 模式格仔闊度唔再由 --cell-practice 決定，字級／描紅字級要跟住格仔：
+   否則 perRow=4 格仔 182px 但字仍係 78.72px（比例 0.43 而非 0.82），perRow=8 反而過大。
+   cqw = 格仔闊度 1%，82% = GLYPH_RATIO。列印時格仔 = 列印尺寸，同一條規則一樣啱。 */
+@supports (container-type: inline-size) {
+  .practice-row[data-perrow] .practice-cell {
+    container-type: inline-size;
+    --cell-font: 82cqw;
+    --cell-guide-font: 82cqw;
+  }
+}
 </style>
 </head>
 <body>
@@ -981,7 +991,7 @@ details.advance-collapse summary:hover { color: var(--red); }
     </div>
   </details>
 
-  <div class="options">
+  <div class="options" id="optionsPanel">
     <div class="opt-section">
       <h3>格選項</h3>
       <div class="opt-grid">
@@ -1000,15 +1010,7 @@ details.advance-collapse summary:hover { color: var(--red); }
         </div>
         <div class="opt-group">
           <label>導線樣式</label>
-          <select id="optGuideStyle">
-            <option value="mizi" selected>米字格（十字+對角線）</option>
-            <option value="tian">田字格（十字）</option>
-            <option value="jiugong">新九宮格（3×3）</option>
-            <option value="jingzi">井字格（3×3）</option>
-            <option value="caoni">彩色天草泥井字（3×3）</option>
-            <option value="caoni-color">天草泥三色（只有顏色）</option>
-            <option value="blank">空白格</option>
-          </select>
+          <select id="optGuideStyle"><!-- 選項由 GUIDE_STYLES 生成（buildGuideStyleSelect） --></select>
         </div>
         <div class="opt-group">
           <label>螢幕格大小</label>
@@ -1290,6 +1292,7 @@ const GLYPH_RATIO = 0.82;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  buildGuideStyleSelect();               // 格線樣式選項由 GUIDE_STYLES 生成（要先於還原設定）
   document.getElementById('optDate').value = todayStr();
 
   // restore saved settings
@@ -1298,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       if (saved.practice != null) document.getElementById('optPractice').value = saved.practice;
       if (saved.size) document.getElementById('optSize').value = saved.size;
-      if (['mizi','tian','jiugong','jingzi','caoni','caoni-color','blank'].includes(saved.guideStyle)) {
+      if (GUIDE_STYLES[saved.guideStyle]) {
         document.getElementById('optGuideStyle').value = saved.guideStyle;
       }
       if (saved.perRow) document.getElementById('optPerRow').value = saved.perRow;
@@ -1524,7 +1527,7 @@ function generate() {
   currentOptions = {
     practice: parseInt(opts.practice) || 0,
     size: opts.size,
-    guideStyle: opts.guideStyle || 'mizi',
+    guideStyle: opts.guideStyle || GUIDE_DEFAULT,
     guideCount: opts.guideCount || '1',
     strokePage: opts.strokePage === true,
     perRow: opts.perRow || 'auto',
@@ -2292,17 +2295,8 @@ function charCardHtml(ch, o, cardIdx) {
     const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
     html += `<div class="practice-row"${perRowAttr}>`;
     const gcount = guideRowCount(o);
-    // 練習格格式：第一格（r===0）跟 checkbox；其餘格（r>=1）跟「練習格描紅格式」select
-    const traceNum  = (o.traceFormat === 'num' || o.traceFormat === 'num+arrow');
-    const traceArrow = (o.traceFormat === 'num+arrow');
     for (let r = 0; r < o.practice; r++) {
-      const isGuide = r < gcount;
-      const isFirst = r === 0;
-      html += traceCellHtml(ch, 'practice-cell', {
-        guide: isGuide,
-        strokeNum: isGuide && (isFirst ? !!o.strokeNum : traceNum),
-        arrow:     isGuide && (isFirst ? !!o.arrow     : traceArrow)
-      }, r % 3);
+      html += traceCellHtml(ch, 'practice-cell', cellFlags(o, { guide: r < gcount, isFirst: r === 0 }), r % 3);
     }
     html += `</div>`;
   }
@@ -2321,18 +2315,12 @@ function sentenceSectionHtml(o) {
     html += `<div class="sentence-block">`;
     html += `<div class="sentence-caption">✏️ ${esc(sText)}</div>`;
     const gcount = guideRowCount(o);
-    const traceNum  = (o.traceFormat === 'num' || o.traceFormat === 'num+arrow');
-    const traceArrow = (o.traceFormat === 'num+arrow');
     for (let t = 0; t < o.sentenceTimes; t++) {
-      const hasGuide = t < gcount;          // 描紅格數：首 N 行／全部行（原本只描第一行，令「描紅格數」對句子唔生效）
-      const isFirst = t === 0;
+      // 描紅格數：首 N 行／全部行；row 0 跟示範格格式，其餘跟練習格格式（同每字練習一致）
+      const flags = cellFlags(o, { guide: t < gcount, isFirst: t === 0 });
       html += `<div class="sentence-row">`;
       sChars.forEach((ch, ci) => {
-        // row 0 跟示範格格式，其餘跟練習格格式 —— 同每字練習一致
-        html += traceCellHtml(ch, 'sentence-cell',
-          { guide: hasGuide,
-            strokeNum: hasGuide && (isFirst ? !!o.strokeNum : traceNum),
-            arrow:     hasGuide && (isFirst ? !!o.arrow     : traceArrow) }, ci % 3);
+        html += traceCellHtml(ch, 'sentence-cell', flags, ci % 3);
       });
       html += `</div>`;
     }
@@ -2432,7 +2420,8 @@ function partialGlyphSvg(paths, frame, k) {
 
 // 新增嗰筆嘅編號。⚠️ 一定要喺 SVG append 落 DOM 之後才做 —— isPointInFill() 對
 // detached 節點永遠回 false（skill 有記錄），會令「貼住自己筆畫」嘅判斷静默失效。
-function addStepNumber(svg, lastEl, frame, k, med, totalStrokes) {
+// 參數由 6 個收成一個物件（原 svg/lastEl/frame/k/med/totalStrokes = Long Parameter List）
+function addStepNumber(svg, { lastEl, frame, k, med, totalStrokes }) {
   if (!lastEl || !med) return;
   const fs = frame.box * 0.14 * numberBaseScale(totalStrokes || k);
   let chosen = null, onInkFound = false;
@@ -2502,7 +2491,7 @@ async function installStrokePage(root) {
       if (currentOptions.arrow && med) {
         try { appendStrokeArrows(svg, [med], frame.C, frame.box); } catch (e) { /* 無箭咀就算 */ }
       }
-      addStepNumber(svg, lastEl, frame, k, med, paths.length);
+      addStepNumber(svg, { lastEl, frame, k, med, totalStrokes: paths.length });
     });
   }
 }
@@ -2567,15 +2556,7 @@ function renderWorksheet() {
   ws.style.setProperty('--print-cell-font', `calc(${ps} * ${GLYPH_RATIO})`);
   ws.style.setProperty('--print-cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
 
-  // Guide style class (mizi/tian/jiugong/jingzi/caoni/caoni-color/blank)
-  ws.classList.remove('guide-mizi', 'guide-tian', 'guide-grid3', 'guide-jiugong', 'guide-dashed', 'guide-blank', 'guide-caoni', 'guide-caoni-color');
-  if (o.guideStyle === 'mizi') ws.classList.add('guide-mizi');
-  else if (o.guideStyle === 'tian') ws.classList.add('guide-tian');
-  else if (o.guideStyle === 'jiugong') ws.classList.add('guide-jiugong');
-  else if (o.guideStyle === 'jingzi') ws.classList.add('guide-grid3');
-  else if (o.guideStyle === 'caoni') ws.classList.add('guide-caoni');
-  else if (o.guideStyle === 'caoni-color') ws.classList.add('guide-caoni', 'guide-caoni-color');
-  else if (o.guideStyle === 'blank') ws.classList.add('guide-blank');
+  applyGuideStyle(ws, o);   // 樣式表見 GUIDE_STYLES
 
   // Header
   document.getElementById('wsTitle').textContent = o.title;
@@ -2688,6 +2669,45 @@ function normalizeGlyphs() {
       x.style.transform = `scale(${scale.toFixed(3)})`;
     });
   });
+}
+
+// ===== 格線樣式：單一真相表 =====
+// 加／改一款樣式只改呢度 + 對應 CSS。原本要同步 5 個地方（<select>、localStorage allow-list、
+// 預設值、class 套用鏈、CAONI flag）= 典型 Shotgun Surgery。
+const GUIDE_STYLES = {
+  mizi:          { label: '米字格（十字+對角線）',   cls: ['guide-mizi'],                        caoni: '' },
+  tian:          { label: '田字格（十字）',          cls: ['guide-tian'],                        caoni: '' },
+  jiugong:       { label: '新九宮格（3×3）',         cls: ['guide-jiugong'],                     caoni: '' },
+  jingzi:        { label: '井字格（3×3）',           cls: ['guide-grid3'],                       caoni: '' },
+  caoni:         { label: '彩色天草泥井字（3×3）',   cls: ['guide-caoni'],                       caoni: 'img' },
+  'caoni-color': { label: '天草泥三色（只有顏色）',   cls: ['guide-caoni', 'guide-caoni-color'],  caoni: 'color' },
+  blank:         { label: '空白格',                  cls: ['guide-blank'],                       caoni: '' }
+};
+const GUIDE_DEFAULT = 'mizi';
+
+// <select> 選項由表生成 —— 唔使喺 HTML 同 JS 各寫一次清單
+function buildGuideStyleSelect() {
+  const sel = document.getElementById('optGuideStyle');
+  if (!sel) return;
+  const cur = sel.value || GUIDE_DEFAULT;
+  sel.innerHTML = Object.entries(GUIDE_STYLES)
+    .map(([v, st]) => `<option value="${v}">${st.label}</option>`).join('');
+  sel.value = GUIDE_STYLES[cur] ? cur : GUIDE_DEFAULT;
+}
+
+function applyGuideStyle(ws, o) {
+  Object.values(GUIDE_STYLES).forEach(st => st.cls.forEach(c => ws.classList.remove(c)));
+  const st = GUIDE_STYLES[o.guideStyle] || GUIDE_STYLES[GUIDE_DEFAULT];
+  st.cls.forEach(c => ws.classList.add(c));
+  CAONI_ACTIVE = !!st.caoni;
+  CAONI_IMG = st.caoni === 'img';
+}
+
+// 描紅格 flags：guide / strokeNum / arrow 三件嘢成日一齊傳（data clump），齊埋一齊出。
+// 規則：第 0 格跟「示範格格式」，其餘格跟「練習格格式」；guide 由描紅格數決定。
+function cellFlags(o, { guide, isFirst }) {
+  const f = traceFormatFlags(isFirst ? (o.demoFormat || 'num') : (o.traceFormat || 'num'));
+  return { guide: !!guide, strokeNum: !!guide && f.strokeNum, arrow: !!guide && f.arrow };
 }
 
 function updateCellStyles() {

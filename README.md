@@ -113,6 +113,12 @@ renders wrong, work through [DEBUG.md](DEBUG.md):
 - **Known parser pitfalls** — 9-arg `setTransform` regX/regY, multi-shape stroke finals, label-counting traps
 - **Rebuild-only-changed flow** — regenerate just the affected glyphs, not all 4,493
 
+## 🧪 品質與代碼健康（2026-09-19 審計）
+
+- **回歸測試套件 37 項**（headless chromium 注入 + `dispatchEvent('change')` 模擬真實操作，`--dump-dom` 讀結果）：輸入解析（半形標點／去重／簡轉繁）· 描紅格數 × 示範/練習格格式矩陣 · 7 款格線樣式 · 整句練習 · 筆順工作紙 · 默書版 · perRow 字級 · localStorage · 橫向溢出 · JS error。列印版面另測（`@media print` 規則強制生效 + A4 闊度）：無溢出、格 2.2cm 正確。
+- **已修氣味**：Shotgun Surgery + Primitive Obsession（`GUIDE_STYLES` 單一真相表 + `<select>` 由 JS 生成）· Data Clumps（`cellFlags()`）· Long Parameter List（`addStepNumber` 物件參數）· Dead Code（死 CSS）。
+- **刻意保留**：`index.html` 單檔、無 build step（部署 = copy 檔案）—— Large Class 係設計取捨；`placeNumberLabels()`（184 行）係避碰演算法本體，硬拆反而令狀態更難追；`traceCellHtml()` 4 個參數（其中 `opts` 係 flags 物件）唔算 Long Parameter List。
+
 ## 📜 License
 
 MIT © 2026 [forumdata-collab](https://github.com/forumdata-collab). Chinese pronunciation data from [開放粵語字典](https://kaifangcidian.com) is CC-BY 3.0.
