@@ -3155,8 +3155,11 @@ function strokeStep() {
   // 而家逐次點擊推進一筆，畫完最後一筆就回卷到第一筆。
   strokeWriter.animateStroke(strokeStepIndex);
   strokeStepIndex++;
-  const info = strokeCountOf(currentStrokeChar);
-  const total = info ? info.count : 0;
+  // 筆畫數以動畫實際載入嘅數據為準（EDB glyph 定 HanziWriter fallback 都啱），
+  // CHAR_DB 嘅 Unihan 統計可能同動畫筆數唔符，只用嚟做 fallback。
+  let total = 0;
+  try { total = (strokeWriter._character && strokeWriter._character.strokes) ? strokeWriter._character.strokes.length : 0; } catch (e) {}
+  if (!total) { const info = strokeCountOf(currentStrokeChar); total = info ? info.count : 0; }
   if (total > 0 && strokeStepIndex >= total) strokeStepIndex = 0;
 }
 
