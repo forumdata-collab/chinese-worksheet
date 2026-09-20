@@ -1302,6 +1302,7 @@ let currentOptions = {};
 let quizWriter = null;
 let strokeWriter = null;
 let currentStrokeChar = '';
+let strokeStepIndex = 0;
 let quizMode = false;
 
 // Shared size config: px values (data clump fix — single source of truth)
@@ -2979,6 +2980,7 @@ function openStroke(ch) {
   strokeUnavailable(ch).then(missing => {
   if (missing) return showStrokeUnavailable(ch);
   currentStrokeChar = ch;
+  strokeStepIndex = 0;
   document.getElementById('strokeModalTitle').textContent = `筆順：${ch}`;
   openModal('strokeModal');
   // a previous 「未收錄」 char may have left the controls disabled
@@ -3131,6 +3133,7 @@ async function markNoStrokeData(root) {
 
 function strokeReplay() {
   if (!strokeWriter) return;
+  strokeStepIndex = 0;
   // ⚠️ 呢個 HanziWriter build 冇 cancelAnimation()（實測 prototype 只有 animateCharacter /
   // animateStroke / pauseAnimation / resumeAnimation / setCharacter …）—— 舊寫法會直接
   // throw，令「▶ 重播」靜靜壞掉。用 pauseAnimation + setCharacter 重置再播。
@@ -3145,10 +3148,16 @@ function strokeReplay() {
 }
 
 function strokeStep() {
-  if (strokeWriter) {
-    strokeWriter.pauseAnimation();
-    strokeWriter.animateStroke();
-  }
+  if (!strokeWriter) return;
+  strokeWriter.pauseAnimation();
+  // HanziWriter 嘅 animateStroke(strokeNum) 一定要俾筆序（0-based）。冇俾 argument 時
+  // 內部 normalizer n=(t,e)=>t<0?e+t:t 會令 stroke 變 undefined → 靜靜唔畫任何嘢。
+  // 而家逐次點擊推進一筆，畫完最後一筆就回卷到第一筆。
+  strokeWriter.animateStroke(strokeStepIndex);
+  strokeStepIndex++;
+  const info = strokeCountOf(currentStrokeChar);
+  const total = info ? info.count : 0;
+  if (total > 0 && strokeStepIndex >= total) strokeStepIndex = 0;
 }
 
 // ===== QUIZ MODAL =====
