@@ -2172,16 +2172,16 @@ function caoniPattern(slice) {
   // 只有顏色：唔貼原圖，淨係三條淺色帶（天淺藍/草淺綠/泥淺棕）
   if (!CAONI_IMG) {
     return `<g class="caoni-bg">` +
-      `<rect width="100" height="33.3" fill="#D9EAF7"/>` +
-      `<rect y="33.3" width="100" height="33.3" fill="#E3F2DD"/>` +
-      `<rect y="66.7" width="100" height="33.3" fill="#F1E7D8"/>` +
+      `<rect width="100" height="33.3" fill="#E6F1FA"/>` +
+      `<rect y="33.3" width="100" height="33.3" fill="#EBF6E5"/>` +
+      `<rect y="66.7" width="100" height="33.3" fill="#F5EEE3"/>` +
       `</g>`;
   }
   return `<g class="caoni-bg">` +
     `<image href="caoni-bg.jpg" x="${-100 * s}" y="0" width="300" height="100" preserveAspectRatio="none"/>` +
-    `<rect width="100" height="33.3" fill="#CFE6FA" fill-opacity="0.45"/>` +
-    `<rect y="33.3" width="100" height="33.3" fill="#D9EFCF" fill-opacity="0.45"/>` +
-    `<rect y="66.7" width="100" height="33.3" fill="#EFDFC4" fill-opacity="0.45"/>` +
+    `<rect width="100" height="33.3" fill="#CFE6FA" fill-opacity="0.30"/>` +
+    `<rect y="33.3" width="100" height="33.3" fill="#D9EFCF" fill-opacity="0.30"/>` +
+    `<rect y="66.7" width="100" height="33.3" fill="#EFDFC4" fill-opacity="0.30"/>` +
     `</g>`;
 }
 // CAONI_ACTIVE / CAONI_IMG: 由 renderWorksheet 設定。ACTIVE = 用天草泥井字樣式；
