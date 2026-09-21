@@ -52,6 +52,25 @@
   .tag.struct { background: #f0fdf4; color: #16a34a; }
   .tag.same { background: #fef3c7; color: #b45309; }
   code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.88em; }
+  /* 數據統計圖表 */
+  .stat-figure { margin: 20px 0; }
+  .stat-figure-title { font-weight: 600; font-size: 0.98em; margin-bottom: 8px; }
+  .bar-segmented {
+    display: flex; height: 26px; border-radius: 3px; overflow: hidden;
+    background: #e2e8f0; width: 100%;
+  }
+  .bar-seg { height: 100%; }
+  .bar-edb { background: #2563eb; }
+  .bar-fallback { background: #94a3b8; }
+  .bar-twpen { background: #cbd5e1; }
+  .legend { margin-top: 10px; font-size: 0.88em; color: var(--muted); line-height: 1.9; }
+  .legend span { margin-right: 18px; white-space: nowrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .legend .dot-edb { background: #2563eb; }
+  .legend .dot-fallback { background: #94a3b8; }
+  .legend .dot-twpen { background: #cbd5e1; }
+  .stat-line { font-size: 0.95em; color: var(--ink); }
+  .stat-line b { color: #2563eb; font-size: 1.1em; }
 </style>
 </head>
 <body>
@@ -73,18 +92,27 @@
 
   <h2>數據統計</h2>
   <p>以下為本站的收錄數據（由自動化腳本統計，隨更新而變動）：</p>
-  <ul>
-    <li><strong>收錄漢字</strong>：5,535 個常用繁體字</li>
-    <li><strong>字形與筆順來源</strong>：
-      <ul>
-        <li>香港教育局《香港小學學習字詞表》官方筆順：<strong>4,519 字</strong>（字形與筆順均依官方標準）</li>
-        <li>台灣教育部筆順字典（後備）：<strong>197 字</strong>（字詞表未收錄之字，依台灣標準）</li>
-        <li>HanziWriter／內建字體（後備）：<strong>819 字</strong>（僅作字形顯示，筆順依通用標準）</li>
-      </ul>
-    </li>
-    <li><strong>讀音</strong>：全部 5,535 字均有粵拼（Jyutping）及普通話拼音</li>
-    <li><strong>筆畫數</strong>：全部 5,535 字均有筆畫數</li>
-  </ul>
+
+  <div class="stat-figure">
+    <div class="stat-figure-title">字形與筆順來源（共 5,535 字）</div>
+    <div class="bar-segmented">
+      <div class="bar-seg bar-edb" style="width:82%"></div>
+      <div class="bar-seg bar-fallback" style="width:15%"></div>
+      <div class="bar-seg bar-twpen" style="width:3%"></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot-edb"></i>香港教育局官方筆順 4,519 字（82%）</span>
+      <span><i class="dot-fallback"></i>HanziWriter／字體後備 819 字（15%）</span>
+      <span><i class="dot-twpen"></i>台灣筆順字典後備 197 字（3%）</span>
+    </div>
+  </div>
+
+  <div class="stat-figure">
+    <div class="stat-figure-title">讀音與筆畫數覆蓋</div>
+    <div class="stat-line">
+      收錄 <b>5,535</b> 個漢字，其中 <b>100%</b> 有粵拼及普通話拼音，<b>100%</b> 有筆畫數。
+    </div>
+  </div>
 
   <h2>自動轉換的字及原因</h2>
   <p>中文有不少字在台灣、香港、大陸有不同寫法（異體字）。本站輸入簡體或台灣慣用寫法時，會自動轉成香港教育局標準正字。以下按差異原因分類羅列常見情況。</p>
