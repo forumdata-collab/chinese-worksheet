@@ -1688,7 +1688,7 @@ function medianPtAt(m, f) {
 // DIGIT_SCALE = 用戶要求「所有數字再縮一個單位」（= SIZE_SCALES 一級 0.85）。
 const DIGIT_SCALE = 0.85;
 function numberBaseScale(n) {
-  return DIGIT_SCALE * (n > 8 ? Math.max(0.55, 1 - 0.028 * (n - 8)) : 1);
+  return DIGIT_SCALE * (n > 8 ? Math.max(0.45, 1 - 0.028 * (n - 8)) : 1);
 }
 
 function placeNumberLabels(medians, frame, hooks) {
@@ -1709,7 +1709,7 @@ function placeNumberLabels(medians, frame, hooks) {
   // 對比後用戶揀 1/5）。由 0.2 開始向兩邊展開搵位，後面位置保留做避撞 fallback。
   const FRACTIONS = [0.2, 0.17, 0.23, 0.14, 0.26, 0.11, 0.29, 0.08, 0.32, 0.05, 0.36, 0.4,
                      0.46, 0.52, 0.6, 0.7, 0.8, 0.9];
-  const SIZE_SCALES = [1, 0.85, 0.72, 0.6, 0.5, 0.42];
+  const SIZE_SCALES = [1, 0.85, 0.72, 0.6, 0.5, 0.42, 0.36, 0.3];
   // 側移距離（× 字級）：0 = 中線本身，之後左右交替
   const LATERAL = [0, 0.45, -0.45, 0.8, -0.8, 1.2, -1.2];
   // Box ≈ the DIGIT INK, not the em box: a digit is ~0.55em wide and rises ~0.72em
