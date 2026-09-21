@@ -34,13 +34,13 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 
 ### Data coverage
 
-- **5,509 common Traditional Chinese characters**, each with Jyutping, Pinyin, stroke count, simplified form
+- **5,534 common Traditional Chinese characters**, each with Jyutping, Pinyin, stroke count, simplified form
 - **518 polyphonic groups** with alternate readings
 - Sources: [開放粵語字典](https://kaifangcidian.com) (CC-BY 3.0), pypinyin, Unicode Unihan (kTotalStrokes), OpenCC
 
 ### Hong Kong standard (香港標準)
 
-- **Stroke order** follows 香港教育局《香港小學學習字詞表》— derived from the official EDB stroke-order animations (`edbchinese.hk`), covering 4,493 characters (671 of which differ from the generic 通用筆順 order)
+- **Stroke order** follows 香港教育局《香港小學學習字詞表》— derived from the official EDB stroke-order animations (`edbchinese.hk`), covering 4,518 characters (671 of which differ from the generic 通用筆順 order)
 - **Glyph forms** use the official 教育局 standard outlines (e.g. 「舟」's open top-right corner, which differs from the Taiwan-style font form)
 - Characters outside the lexicon fall back to the bundled font + generic stroke order
   (their stroke-order digits are placed with the same collision-aware solver, so they stay on the right stroke)
@@ -112,6 +112,29 @@ renders wrong, work through [DEBUG.md](DEBUG.md):
   4. Browser visual check with headless Chromium (⚠️ don't trust vision on glyph shapes)
 - **Known parser pitfalls** — 9-arg `setTransform` regX/regY, multi-shape stroke finals, label-counting traps
 - **Rebuild-only-changed flow** — regenerate just the affected glyphs, not all 4,493
+
+## 🔤 異體字正字缺 glyph 修復（2026-09-21）
+
+「裏」嘅 bug 係系統性嘅：站內字典收咗台灣／大陸慣用異體字（兌/臥/戶/說/衛/鉤…），而 EDB 香港正字係另一批（兑/卧/户/説/衞/鈎…）。pipeline 用異體字查 EDB 時被 redirect 去正字（共用同一個 demo id），所以 build 出嚟嘅 glyph 內容係**正字字形**、但掛咗喺**異體字檔名**——正字反而冇 glyph，輸入正字就 fallback HanziWriter（筆順／字形唔啱）。
+
+### 分辨方法（決定性，唔靠 vision）
+
+EDB 查詢頁面有兩個欄位直接標示邊個係正字：
+
+- **「異體字」欄**（`YiTiZi_gif/{id}a.gif`）→ 顯示**異體**字
+- **「簡化字」欄**（文字）→ 顯示**簡化**字
+- EDB 動畫（`{id}.js`）畫嘅係**正字**
+
+例：查「脣」→ 簡化字欄顯示「唇」＝脣係正字（站內收脣啱，無 bug）；查「兌」→ 異體 gif 顯示「兌」＝兌係異體、正字係「兑」（站內收咗異體 = bug）。
+
+⚠️ OpenCC t2hk 方向唔可靠（t2hk 話「脣→唇」，但 EDB 正字係「脣」），只能做候選清單；判定一定要用 EDB 頁面欄位。
+
+### 修法
+
+- **共用 EDB id**（異體 glyph 內容實為正字字形）：`cp glyphs/<異體hex>.json glyphs/<正字hex>.json`
+- **獨立 EDB id**（着/絃/愠/枴/氲/蜕）：download 動畫 → parse → flip → reframe（冇 HW cache 用 median fallback framing）
+
+2026-09-21 補齊 25 字（18 共用 + 6 獨立 + 裏），連同讀音（`jy`/`py`/`s` 由異體字 copy、`si` 欄位唔設以免搞亂 SIM2T）一併補入 `data.js`（5,509 → 5,534 字）。
 
 ## 🧪 品質與代碼健康（2026-09-19 審計）
 
