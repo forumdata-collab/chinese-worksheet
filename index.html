@@ -1633,6 +1633,21 @@ function hkGlyph(ch) {
   return p;
 }
 
+// 字形來源（provenance）—— 顯式標記每字 glyph 從邊度嚟。
+// 回 'EDB'（香港教育局字詞表）｜'twpen'（台灣筆順字典逆向）｜null（無字形，fallback 字體）。
+let _glyphSources = null;
+async function glyphSource(ch) {
+  if (!ch) return null;
+  if (!_glyphSources) {
+    try {
+      const r = await fetch('data/glyph_sources.json');
+      _glyphSources = r.ok ? (await r.json()).glyphs : {};
+    } catch (e) { _glyphSources = {}; }
+  }
+  const hex = ch.codePointAt(0).toString(16);
+  return _glyphSources[hex] || null;
+}
+
 // arc-length point at fraction f (0..1) along a polyline [[x,y]…]
 function medianPtAt(m, f) {
   if (!m || !m.length) return null;

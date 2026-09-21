@@ -75,6 +75,49 @@ chinese-worksheet/
 └── LICENSE             # MIT
 ```
 
+## 🏛️ 架構憲章（Architecture Principles）
+
+本站唔止係「工作紙生成器」，而係一個**香港中文字數據 + 字形 + 筆順渲染引擎**——核心資產係數據層（字形/筆順/讀音/來源），工作紙只係其中一個輸出。
+
+### 五層分離（Separation of Concerns）
+
+```
+字元身份（Unicode） ≠ 字形（區域字形） ≠ 筆順（教學標準） ≠ 讀音 ≠ 渲染
+```
+
+一個字「存在」唔代表「字形啱」「筆順啱」「數字位置啱」——呢啲係獨立嘅數據層。例如 `說` 同 `説` 係同一字元嘅唔同區域字形，`裏`（衣部）同 `裡`（衤部）係書寫方法唔同。
+
+### 來源層級（Source Hierarchy）
+
+每個數據有唔同嘅權威來源，唔假設單一來源權威一切：
+
+| 數據 | 主要來源 | 後備 |
+|---|---|---|
+| 字形 | 香港教育局 EDB | LXGW 字體 |
+| 筆順 | 香港教育局 EDB | HanziWriter / twpen |
+| 粵拼 | 開放粵語字典 | — |
+| 拼音 | pypinyin | — |
+| 筆畫數 | Unicode Unihan | — |
+| 簡繁轉換 | OpenCC | 香港正字歸一化 |
+
+### 開發哲學
+
+1. **Standard First** — 香港 EDB 標準優先（字形 + 筆順），後備來源只在缺時用
+2. **Data Provenance** — 每字字形來源記錄喺 `data/glyph_sources.json`（`tools/build_provenance.py` 生成），前端 `glyphSource(ch)` 可查
+3. **Separation of Concerns** — 字元/字形/筆順/讀音/筆畫數/轉換/渲染 七層邏輯分離
+4. **Graceful Fallback** — 後備來源狀態可辨識（twpen 字喺 footer 標明「台灣標準」）
+5. **Reproducibility** — 核心數據可由開源資料重現（EDB 動畫逆向 pipeline 全在 `tools/`）
+6. **Print First** — 最終輸出係可列印 A4，唔係淨係螢幕好睇
+7. **Verification Over Appearance** — 「睇落啱」唔夠，要可驗證（見下）
+
+### 驗證優先
+
+由「Does it look right?」進化到「Can we verify it?」——`sanity_data.py`（字形自洽）/ `sanity_parser.py`（parser 一致性）/ `sanity_geom.py`（幾何比對）/ `sanity_numbers.js`（數字碰撞 + 錨點）四件套 + 回歸測試，取代人眼判斷。
+
+### 未來方向
+
+每字級 `source + verified` 標記、glyph authority 顯式化（EDB/font/fallback 三路唔再隱式切換）、dataset versioning（EDB 版/glyph 抽取版/筆順版/讀音版）、engine/UI 概念分離、擴展自動化驗證。
+
 ## 🧠 How it works
 
 - **`data.js`** is a precomputed dictionary: `window.CHAR_DB = { 字: {jy, py, s, jy2?, py2?, si?}, ... }`
