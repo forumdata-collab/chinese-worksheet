@@ -85,15 +85,25 @@
     fill: none; stroke: #1e293b; stroke-width: 5;
     stroke-linecap: round; stroke-linejoin: round;
     stroke-dasharray: 1; stroke-dashoffset: 1;
-    animation: stroke-draw 2.6s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
+    animation: stroke-draw 2.8s ease-in-out infinite;
   }
+  .stroke-item circle { fill: #1e293b; opacity: 0; }
+  .stroke-item .dot-start { animation: dot-in 0.3s ease-out 0s both; }
+  .stroke-item .dot-end { animation: dot-in 0.3s ease-out 2.05s both; }
   @keyframes stroke-draw {
     0%   { stroke-dashoffset: 1; }
-    62%  { stroke-dashoffset: 0; }
+    12%  { stroke-dashoffset: 0.88; }
+    58%  { stroke-dashoffset: 0.12; }
+    76%  { stroke-dashoffset: 0; }
     100% { stroke-dashoffset: 0; }
+  }
+  @keyframes dot-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     .stroke-item path { animation: none; stroke-dashoffset: 0; }
+    .stroke-item circle { animation: none; opacity: 1; }
   }
   .stroke-name { font-size: 0.85em; font-weight: 600; margin-top: 4px; }
   .stroke-no { color: var(--muted); font-weight: 400; margin-right: 3px; font-size: 0.8em; }
@@ -238,32 +248,32 @@
   <h3>基本筆畫（6 種）</h3>
   <div class="stroke-grid">
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 18 Q41 27 30 40 Q26 33 30 18"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 18 Q41 27 30 40 Q26 33 30 18"/><circle class="dot-start" cx="30" cy="18" r="3.6"/><circle class="dot-end" cx="30" cy="18" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">1</span>點</div>
         <div class="stroke-example">例：主</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M10 30 L50 30"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M10 30 L50 30"/><circle class="dot-start" cx="10" cy="30" r="3.6"/><circle class="dot-end" cx="50" cy="30" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">2</span>橫</div>
         <div class="stroke-example">例：三</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 50"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 50"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="30" cy="50" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">3</span>豎</div>
         <div class="stroke-example">例：十</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M44 12 L18 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M44 12 L18 48"/><circle class="dot-start" cx="44" cy="12" r="3.6"/><circle class="dot-end" cx="18" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">4</span>撇</div>
         <div class="stroke-example">例：八</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M16 12 L44 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M16 12 L44 48"/><circle class="dot-start" cx="16" cy="12" r="3.6"/><circle class="dot-end" cx="44" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">5</span>捺</div>
         <div class="stroke-example">例：人</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M18 46 L44 20"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M18 46 L44 20"/><circle class="dot-start" cx="18" cy="46" r="3.6"/><circle class="dot-end" cx="44" cy="20" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">6</span>提</div>
         <div class="stroke-example">例：打</div>
       </div>
@@ -272,132 +282,132 @@
   <h3>派生筆畫（26 種）</h3>
   <div class="stroke-grid">
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M36 12 L16 38 L40 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M36 12 L16 38 L40 48"/><circle class="dot-start" cx="36" cy="12" r="3.6"/><circle class="dot-end" cx="40" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">7</span>撇點</div>
         <div class="stroke-example">例：女</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 L45 47"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 L45 47"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="45" cy="47" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">8</span>豎提</div>
         <div class="stroke-example">例：長</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 32 L50 44"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 32 L50 44"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="50" cy="44" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">9</span>橫折提</div>
         <div class="stroke-example">例：語</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M40 10 Q48 30 34 48 Q29 41 37 37"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M40 10 Q48 30 34 48 Q29 41 37 37"/><circle class="dot-start" cx="40" cy="10" r="3.6"/><circle class="dot-end" cx="37" cy="37" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">10</span>彎鈎</div>
         <div class="stroke-example">例：了</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 42 Q30 52 40 50"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 42 Q30 52 40 50"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="40" cy="50" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">11</span>豎鈎</div>
         <div class="stroke-example">例：小</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 Q30 50 50 50 Q50 40 42 42"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 Q30 50 50 50 Q50 40 42 42"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="42" cy="42" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">12</span>豎彎鈎</div>
         <div class="stroke-example">例：孔</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M38 10 Q42 30 22 50 Q14 46 22 43"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M38 10 Q42 30 22 50 Q14 46 22 43"/><circle class="dot-start" cx="38" cy="10" r="3.6"/><circle class="dot-end" cx="22" cy="43" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">13</span>斜鈎</div>
         <div class="stroke-example">例：我</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 28 Q30 45 48 28 Q51 20 42 27"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 28 Q30 45 48 28 Q51 20 42 27"/><circle class="dot-start" cx="12" cy="28" r="3.6"/><circle class="dot-end" cx="42" cy="27" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">14</span>卧鈎</div>
         <div class="stroke-example">例：心</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M10 18 L45 18 Q53 18 45 31"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M10 18 L45 18 Q53 18 45 31"/><circle class="dot-start" cx="10" cy="18" r="3.6"/><circle class="dot-end" cx="45" cy="31" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">15</span>橫鈎</div>
         <div class="stroke-example">例：寫</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 36 Q44 50 35 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 36 Q44 50 35 48"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="35" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">16</span>橫折鈎</div>
         <div class="stroke-example">例：力</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 30 Q40 44 22 44 Q12 44 17 34"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 30 Q40 44 22 44 Q12 44 17 34"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="17" cy="34" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">17</span>橫折彎鈎</div>
         <div class="stroke-example">例：九</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L30 38 Q44 49 50 37"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L30 38 Q44 49 50 37"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="50" cy="37" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">18</span>橫撇彎鈎</div>
         <div class="stroke-example">例：鄭</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L28 28 L28 40 Q28 51 38 49"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L28 28 L28 40 Q28 51 38 49"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="38" cy="49" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">19</span>橫折折鈎</div>
         <div class="stroke-example">例：奶</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 28 L16 28 L16 40 Q16 51 26 49"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 28 L16 28 L16 40 Q16 51 26 49"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="26" cy="49" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">20</span>豎折折鈎</div>
         <div class="stroke-example">例：與</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 Q30 50 50 50"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 34 Q30 50 50 50"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="50" cy="50" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">21</span>豎彎</div>
         <div class="stroke-example">例：西</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 30 Q40 44 22 44"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L40 14 L40 30 Q40 44 22 44"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="22" cy="44" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">22</span>橫折彎</div>
         <div class="stroke-example">例：沒</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 46"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 46"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="44" cy="46" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">23</span>橫折</div>
         <div class="stroke-example">例：口</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 30 L16 30"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 30 L16 30"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="16" cy="30" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">24</span>豎折</div>
         <div class="stroke-example">例：山</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M40 12 L20 30 L42 30"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M40 12 L20 30 L42 30"/><circle class="dot-start" cx="40" cy="12" r="3.6"/><circle class="dot-end" cx="42" cy="30" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">25</span>撇折</div>
         <div class="stroke-example">例：雲</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L25 42"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L25 42"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="25" cy="42" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">26</span>橫撇</div>
         <div class="stroke-example">例：水</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L27 28 L17 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L27 28 L17 48"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="17" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">27</span>橫折折撇</div>
         <div class="stroke-example">例：及</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 27 L15 27 L30 48"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 27 L15 27 L30 48"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="30" cy="48" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">28</span>豎折撇</div>
         <div class="stroke-example">例：專</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 Q44 34 22 50 Q13 47 19 44"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 Q44 34 22 50 Q13 47 19 44"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="19" cy="44" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">29</span>橫斜鈎</div>
         <div class="stroke-example">例：風</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 27 L15 27 L15 44"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M30 10 L30 27 L15 27 L15 44"/><circle class="dot-start" cx="30" cy="10" r="3.6"/><circle class="dot-end" cx="15" cy="44" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">30</span>豎折折</div>
         <div class="stroke-example">例：鼎</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 29 L27 29 L27 44"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 29 L27 29 L27 44"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="27" cy="44" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">31</span>橫折折</div>
         <div class="stroke-example">例：凹</div>
       </div>
       <div class="stroke-item">
-        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L30 28 L30 40 L17 40"/></svg>
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path pathLength="1" d="M12 14 L44 14 L44 28 L30 28 L30 40 L17 40"/><circle class="dot-start" cx="12" cy="14" r="3.6"/><circle class="dot-end" cx="17" cy="40" r="3.6"/></svg>
         <div class="stroke-name"><span class="stroke-no">32</span>橫折折折</div>
         <div class="stroke-example">例：凸</div>
       </div>
