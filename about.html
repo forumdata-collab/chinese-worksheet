@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開發說明 — 中文筆順練習簿</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.75;
+    padding: 24px 16px 60px;
+  }
+  .container { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.6em; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.95em; margin-bottom: 20px; }
+  a.back { display: inline-block; color: var(--accent); text-decoration: none; margin-bottom: 24px; font-size: 0.95em; }
+  a.back:hover { text-decoration: underline; }
+  h2 {
+    font-size: 1.2em; margin: 32px 0 12px;
+    padding-bottom: 6px; border-bottom: 2px solid var(--line);
+  }
+  h3 { font-size: 1.02em; margin: 20px 0 8px; color: #334155; }
+  p, li { font-size: 0.95em; }
+  ul { padding-left: 22px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 20px;
+    background: #fff; border: 1px solid var(--line); font-size: 0.92em;
+  }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f1f5f9; font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .hanzi { font-size: 1.25em; font-weight: 600; white-space: nowrap; }
+  .note {
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.92em;
+  }
+  .tag {
+    display: inline-block; font-size: 0.78em; padding: 1px 8px; border-radius: 10px;
+    background: #eff6ff; color: var(--accent); margin-left: 6px; white-space: nowrap;
+  }
+  .tag.struct { background: #f0fdf4; color: #16a34a; }
+  .tag.same { background: #fef3c7; color: #b45309; }
+  code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.88em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>開發說明</h1>
+  <div class="subtitle">中文筆順練習簿（chineseword.we1co.me）— 開發邏輯與字形標準說明</div>
+  <a class="back" href="./">← 返回練習簿</a>
+
+  <h2>開發邏輯</h2>
+  <p>本站係一個純前端靜態網站（單一 HTML + 靜態資料檔），無後端、無資料庫、無追蹤。核心設計係「香港標準優先」：字形、筆順、讀音都以香港教育局標準為準，其餘來源只作後備。</p>
+  <ul>
+    <li><strong>字形與筆順</strong>：香港教育局《香港小學學習字詞表》（edbchinese.hk）官方筆順動畫，逆向提取為向量輪廓（4,518 字）。字詞表未收錄之字，後備 HanziWriter（hanziwriter.org）通用筆順，其筆順次序另參漢典（zdic.net）及筆順字典（twpen.com）。</li>
+    <li><strong>讀音</strong>：粵拼取自開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音取自 pypinyin；筆畫數取自 Unicode Unihan。</li>
+    <li><strong>簡繁轉換</strong>：以 OpenCC 詞組表為基礎，逐字轉換時再做「香港正字歸一化」，將台灣慣用異體統一成香港標準正字（詳見下節）。</li>
+    <li><strong>字體</strong>：內建 LXGW WenKai TC（霞鶩文楷）自託管字體，無外部 Google Fonts 依賴。</li>
+    <li><strong>部署</strong>：Cloudflare Pages + 自訂域名，GitHub 開源（forumdata-collab/chinese-worksheet）。</li>
+  </ul>
+
+  <h2>自動轉換的字及原因</h2>
+  <p>中文有不少字喺台灣、香港、大陸有唔同寫法（異體字）。本站輸入簡體或台灣慣用寫法時，會自動轉成香港教育局標準正字。以下按差異原因分類羅列常見情況。</p>
+
+  <div class="note">
+    判斷原則：香港教育局《香港小學學習字詞表》的正字為準。表內左欄為本站採用的標準正字，右欄為其他慣用寫法。
+  </div>
+
+  <h3>一、部件寫法唔同（字一樣）</h3>
+  <p>呢類係同一個字，只係某個部件嘅寫法有差異，字義完全一樣。</p>
+  <table>
+    <thead>
+      <tr><th>標準正字</th><th>其他寫法</th><th>差異原因</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="hanzi">説</td><td class="hanzi">說</td><td>右邊「兑」字頭：兩點（丷）vs 撇捺（八）</td></tr>
+      <tr><td class="hanzi">衞</td><td class="hanzi">衛</td><td>中間「韋」部件寫法不同</td></tr>
+      <tr><td class="hanzi">鈎</td><td class="hanzi">鉤</td><td>右邊「句」vs「勾」部件</td></tr>
+      <tr><td class="hanzi">敍</td><td class="hanzi">敘</td><td>右邊「攴」vs「攵」部件</td></tr>
+      <tr><td class="hanzi">兑</td><td class="hanzi">兌</td><td>「丷」vs「八」字頭</td></tr>
+      <tr><td class="hanzi">卧</td><td class="hanzi">臥</td><td>右邊「卜」vs「人」部件</td></tr>
+      <tr><td class="hanzi">户</td><td class="hanzi">戶</td><td>頂部橫筆寫法不同</td></tr>
+      <tr><td class="hanzi">温</td><td class="hanzi">溫</td><td>右邊「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">税</td><td class="hanzi">稅</td><td>右邊「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">脱</td><td class="hanzi">脫</td><td>右邊「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">葱</td><td class="hanzi">蔥</td><td>中部「匆」vs「囱」部件</td></tr>
+      <tr><td class="hanzi">藴</td><td class="hanzi">蘊</td><td>中部「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">醖</td><td class="hanzi">醞</td><td>右邊「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">鋭</td><td class="hanzi">銳</td><td>右邊「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">閲</td><td class="hanzi">閱</td><td>中間「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">愠</td><td class="hanzi">慍</td><td>右邊「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">枴</td><td class="hanzi">柺</td><td>部件寫法不同</td></tr>
+      <tr><td class="hanzi">氲</td><td class="hanzi">氳</td><td>下部「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">蜕</td><td class="hanzi">蛻</td><td>右邊「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">媪</td><td class="hanzi">媼</td><td>右邊「昷」部件寫法不同</td></tr>
+      <tr><td class="hanzi">悦</td><td class="hanzi">悅</td><td>右邊「兑」部件寫法不同</td></tr>
+      <tr><td class="hanzi">囱</td><td class="hanzi">囪</td><td>框內部寫法不同</td></tr>
+    </tbody>
+  </table>
+
+  <h3>二、書寫方法（部首／結構）唔同</h3>
+  <p>呢類係部首位置或字嘅結構唔同，書寫方法因此有別，但字義相同。</p>
+  <table>
+    <thead>
+      <tr><th>標準正字</th><th>其他寫法</th><th>差異原因</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="hanzi">裏</td><td class="hanzi">裡</td><td>衣部（上下包住）vs 衤部（左邊旁），部首不同</td></tr>
+      <tr><td class="hanzi">峰</td><td class="hanzi">峯</td><td>「山」喺左邊 vs 喺上邊</td></tr>
+      <tr><td class="hanzi">群</td><td class="hanzi">羣</td><td>「君」喺左邊 vs 喺上邊</td></tr>
+      <tr><td class="hanzi">麵</td><td class="hanzi">麪</td><td>「麥」+「面」vs「麥」+「丏」，結構不同</td></tr>
+      <tr><td class="hanzi">罵</td><td class="hanzi">駡</td><td>「罒」部 vs「馬」部，部首不同</td></tr>
+    </tbody>
+  </table>
+
+  <h3>三、正體與簡化</h3>
+  <table>
+    <thead>
+      <tr><th>標準正字</th><th>其他寫法</th><th>差異原因</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="hanzi">台</td><td class="hanzi">臺</td><td>「台」為香港慣用寫法，「臺」為正體</td></tr>
+    </tbody>
+  </table>
+
+  <h3>四、讀音相同但意思不同的字（非異體，僅供參考）</h3>
+  <p>以下並非異體字，而是讀音相同、意義有別的不同字，本站會按字義分別收錄。</p>
+  <table>
+    <thead>
+      <tr><th>字</th><th>粵拼</th><th>用法</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="hanzi">着</td><td>zoek6</td><td>穿着、着急、着落</td></tr>
+      <tr><td class="hanzi">著</td><td>zyu3</td><td>著名、著作、顯著</td></tr>
+      <tr><td class="hanzi">絃</td><td>jin4</td><td>弓絃、琴絃（絲線之意）</td></tr>
+      <tr><td class="hanzi">弦</td><td>jin4</td><td>正弦、弓弦（數學／弓之意）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    資料來源：香港教育局《香港小學學習字詞表》（edbchinese.hk）為正字標準；異體字對照另參台灣教育部《異體字字典》及 OpenCC 香港繁體標準。本站為非官方教學輔助工具，與上述機構並無隸屬或合作關係。
+  </div>
+
+  <p style="margin-top:32px; color:var(--muted); font-size:0.85em;">
+    開源：<a href="https://github.com/forumdata-collab/chinese-worksheet" target="_blank" rel="noopener" style="color:var(--accent);">github.com/forumdata-collab/chinese-worksheet</a> · MIT License · 語言資料（開放粵語字典）CC-BY 3.0
+  </p>
+
+</div>
+</body>
+</html>

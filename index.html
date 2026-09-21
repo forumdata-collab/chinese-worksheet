@@ -1233,6 +1233,8 @@ details.advance-collapse summary:hover { color: var(--red); }
     <a href="https://ko-fi.com/forumdata" target="_blank" rel="noopener" style="color:#f59e0b;text-decoration:none;font-weight:600;">☕ 請我飲咖啡</a>
     <span class="sep">·</span>
     <a href="mailto:forumdata@gmail.com" style="color:#64748b;text-decoration:none;">✉️ 聯絡作者</a>
+    <span class="sep">·</span>
+    <a href="about.html" target="_blank" rel="noopener" style="color:#64748b;text-decoration:none;">📖 開發說明</a>
   </div>
 </div>
 
@@ -3236,6 +3238,11 @@ const S2T_DEFAULT = {发:'發',当:'當',复:'復',尽:'盡',团:'團',坛:'壇'
  弥:'彌',凄:'悽',卤:'滷',哗:'嘩',仑:'崙',尝:'嘗',并:'並',升:'升',蒙:'蒙',胡:'胡',别:'別',
  系:'繫',划:'劃',术:'術',准:'準',干:'幹'};
 
+// 香港正字歸一化：s2t 輸出（台灣異體）→ 香港標準正字（EDB 字詞表）。
+// 字級 SIM2T 同詞組 S2T_PHRASES 都輸出台灣慣用異體（說/衛/鉤/裡…），
+// 香港標準正字係另一批（説/衞/鈎/裏…）。喺最終輸出做全域替換最簡單可靠。
+const HK_VARIANT = {說:'説',衛:'衞',鉤:'鈎',敘:'敍',蘊:'藴',醞:'醖',銳:'鋭',閱:'閲',裡:'裏'};
+
 function toTraditional(input) {
   const chars = Array.from(input);
   let out = '';
@@ -3259,6 +3266,10 @@ function toTraditional(input) {
     if (cands && cands.length > 1 && S2T_DEFAULT[ch]) { out += S2T_DEFAULT[ch]; i++; continue; }
     // 5) unknown
     out += ch; i++;
+  }
+  // 6) HK variant normalization（台灣異體 → 香港正字）
+  for (const [variant, hk] of Object.entries(HK_VARIANT)) {
+    out = out.split(variant).join(hk);
   }
   return out;
 }
