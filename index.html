@@ -1687,6 +1687,16 @@ function medianPtAt(m, f) {
 // 統一數字字級（2026-09-18）：筆畫多嘅字全部數字用同一個基準級數，唔會一大一小。
 // DIGIT_SCALE = 用戶要求「所有數字再縮一個單位」（= SIZE_SCALES 一級 0.85）。
 const DIGIT_SCALE = 0.85;
+// 密字數字位置 override（0-based stroke index → 弧長 fraction）。
+// 呢啲字嘅相鄰/共線筆畫，避撞算法（側移+縮字）搵唔到 clean spot，人手指定更遠弧長位置。
+// （由 tools 搜尋腳本搵出最優 fraction；籌/鬱 嘅 49% 重疊係密字極限，fraction 都救唔到）
+const NUMBER_OVERRIDES = {
+  '繭': {8: 0.6},    // 第 9 筆（9/10 重疊 24%→0%）
+  '輛': {8: 0.32},   // 第 9 筆（9/13 重疊 52%→0%）
+  '騷': {11: 0.14},  // 第 12 筆（12/13 重疊 60%→0%）
+  '髒': {16: 0.8},   // 第 17 筆（17/18 重疊 65%→0%）
+  '齷': {6: 0.05},   // 第 7 筆（7/8 重疊 31%→11%）
+};
 function numberBaseScale(n) {
   return DIGIT_SCALE * (n > 8 ? Math.max(0.45, 1 - 0.028 * (n - 8)) : 1);
 }
@@ -1732,6 +1742,9 @@ function placeNumberLabels(medians, frame, hooks) {
   // further (SIZE_SCALES) so a clean on-stroke spot is more likely to exist.
   medians.forEach((m, i) => {
     const label = String(i + 1);
+    // Per-char per-stroke fraction override（密字共線筆畫嘅數字，指定一個更遠嘅弧長位置）
+    const ovFrac = (hooks && hooks.override) ? hooks.override(i) : null;
+    const fracs = ovFrac != null ? [ovFrac, ...FRACTIONS.filter(f => f !== ovFrac)] : FRACTIONS;
     // A digit must not dwarf the stroke it labels: on a thin/short stroke the global size
     // looks like a misplaced number (兒 #1 sits on a 25x40 stroke, 離 #8 on 55x40) rather
     // than a label. hooks.size(i) caps it to the stroke's own thickness; the floor keeps
@@ -1771,7 +1784,7 @@ function placeNumberLabels(medians, frame, hooks) {
     }
     scales: for (const scale of SIZE_SCALES) {
     const sizeS = Math.max(size * scale, fontSize * 0.3);
-    for (const f of FRACTIONS) {
+    for (const f of fracs) {
       const pt = medianPtAt(m, f);
       if (!pt) continue;
       const bx = pt.x, by = flipC - pt.y;
@@ -1920,7 +1933,7 @@ function glyphFrame(rec) {
 
 // Build the display SVG for one glyph record. Ink is ~62% of the box (matches the old
 // font glyph look). Stroke numbers are added afterwards by addGlyphNumbers().
-function hkGlyphSvg(rec) {
+function hkGlyphSvg(rec, ch) {
   const frame = glyphFrame(rec);
   if (!frame) return null;
 
@@ -1942,7 +1955,7 @@ function hkGlyphSvg(rec) {
   svg.appendChild(g);
 
   // numbers are placed later, once this SVG is in the document — see addGlyphNumbers
-  svg._glyphMeta = { ...frame, strokeEls, medians: rec.m };
+  svg._glyphMeta = { ...frame, strokeEls, medians: rec.m, ch };
   return svg;
 }
 
@@ -2002,6 +2015,11 @@ function addGlyphNumbers(svg) {
       }
       return false;
     },
+    // 密字數字位置 override（NUMBER_OVERRIDES）：指定某筆嘅優先弧長位置
+    override: (i) => {
+      const ov = meta.ch && NUMBER_OVERRIDES[meta.ch];
+      return ov && ov[i] != null ? ov[i] : null;
+    },
   };
   placeNumberLabels(medians, { fs, C }, hooks).forEach(p => {
     const sz = p.fs || fs;
@@ -2030,7 +2048,7 @@ async function installHKGlyphs(root) {
     const rec = recs.get(el.dataset.ch);
     if (!rec) return;
     const withNum = el.classList.contains('guide-glyph') && !!el.closest('.stroke-num-cell');
-    const svg = hkGlyphSvg(rec);
+    const svg = hkGlyphSvg(rec, el.dataset.ch);
     if (!svg) return;
     el.textContent = '';
     el.style.transform = '';           // font-based optical normalisation not needed

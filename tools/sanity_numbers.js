@@ -35,6 +35,20 @@ if (start < 0 || end < 0) {
 }
 eval(html.slice(start, end));
 
+// mirror index.html 嘅 NUMBER_OVERRIDES（eval 內 const 唔 leak 出嚟）
+const NUMBER_OVERRIDES = {
+  '繭': {8: 0.6},
+  '輛': {8: 0.32},
+  '騷': {11: 0.14},
+  '髒': {16: 0.8},
+  '齷': {6: 0.05},
+};
+// mirror numberBaseScale（eval 內 function declaration 唔 leak 出嚟）
+const DIGIT_SCALE = 0.85;
+function numberBaseScale(n) {
+  return DIGIT_SCALE * (n > 8 ? Math.max(0.45, 1 - 0.028 * (n - 8)) : 1);
+}
+
 // ---------------------------------------------------------------- geometry helpers
 const CMD_RE = /([MLQCHVAZ])([^MLQCHVAZ]*)/g;
 
@@ -117,6 +131,8 @@ function insidePolygon(poly, pt) {
 function checkGlyph(file, rec, opts) {
   const problems = [];
   let mild = 0;
+  // 密字 override：由 hex 檔名還原字元（NUMBER_OVERRIDES 以字為 key）
+  const ch = String.fromCodePoint(parseInt(file.replace('.json', ''), 16));
   const { box, C } = glyphBBox(rec);
   if (!(box > 0)) { problems.push('degenerate bbox'); return { problems }; }
   // NB: keep degenerate (single-point) medians — the app anchors those on their own ink
@@ -165,7 +181,13 @@ function checkGlyph(file, rec, opts) {
     inkPoint: inkPointFn,
     size: (i, digitCount) => {
       const thick = polyThick(i);
-      return Math.max(Math.min(fs, 1.8 * thick, 2.36 * thick / Math.max(digitCount, 1)), fs * 0.45);
+      const fsEff = fs * numberBaseScale(medians.length);
+      return Math.max(Math.min(fsEff, 1.8 * thick, 2.36 * thick / Math.max(digitCount, 1)), fsEff * 0.8);
+    },
+    // mirror NUMBER_OVERRIDES（與 addGlyphNumbers 一致）
+    override: (i) => {
+      const ov = NUMBER_OVERRIDES[ch];
+      return ov && ov[i] != null ? ov[i] : null;
     },
   };
   const placed = placeNumberLabels(medians, { fs, C }, hooks);
