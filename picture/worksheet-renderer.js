@@ -81,13 +81,16 @@ function worksheetHtml(model, styleKey) {
 // 落 image:每格 1 張(由 image-generator.js 出)。好處:單張失敗唔影響其他格。
 // ⚠️ CF 免費 tier 只有 1 個並行請求 → 必須串行逐張生成,唔可以 Promise.all(會 429/排隊)
 // ⚠️ 每張完成即更新 msg「正在生成圖片 X/6」→ 用戶見到進度,唔會以為「冇反應」。
+// 額度用盡(4006)時:全部圖即時降級做 placeholder + 一句提示,唔逐張等 30s 超時。
 async function installImages(sheetEl, examples, styleKey, onProgress) {
   const imgs = [...sheetEl.querySelectorAll('.pw-imgwrap img')];
+  const quotaHit = { found: false };
   let done = 0;
   for (const img of imgs) {
+    let url = null;
     try {
       const scene = img.dataset.scene;
-      const url = await imageFor({
+      const res = await imageFor({
         word: sheetEl.dataset.word,
         scene,
         caption: img.dataset.caption,
@@ -95,14 +98,27 @@ async function installImages(sheetEl, examples, styleKey, onProgress) {
         grade: sheetEl.dataset.grade,
         version: (window.SEMANTIC_VERSION || 'v1'),
       });
-      img.src = url;
-      img.removeAttribute('data-scene');
-    } catch (e) {
-      img.src = placeholderSvgFor('', styleKey);   // 兜底:唔整死張紙
-    }
+      url = res.url;
+      if (res.error && !quotaHit.found) {
+        // 4006 = 額度用盡 → 唔使逐張試,直接話俾用戶知
+        if (String(res.error).includes('4006')) quotaHit.found = true;
+      }
+    } catch (e) { /* fallthrough */ }
+    img.src = url || placeholderSvgFor(img.dataset.scene, styleKey);
+    img.removeAttribute('data-scene');
     done++;
-    if (onProgress) onProgress(done, imgs.length);
-    await new Promise(r => setTimeout(r, 120));   // 防限流,俾 worker 歇一歇
+    if (onProgress) onProgress(done, imgs.length, quotaHit);
+    await new Promise(r => setTimeout(r, 120));
+    // 額度用盡:之後嘅圖都唔使再 call API,直接 placeholder
+    if (quotaHit.found) {
+      for (const rest of imgs.slice(done)) {
+        rest.src = placeholderSvgFor(rest.dataset.scene, styleKey);
+        rest.removeAttribute('data-scene');
+        done++;
+        if (onProgress) onProgress(done, imgs.length, quotaHit);
+      }
+      break;
+    }
   }
 }
 

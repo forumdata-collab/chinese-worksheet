@@ -117,8 +117,15 @@ async function generate() {
 
   // 2) semantic:本地 hardcoded → AI(worker)→ 錯誤
   showMsg('⏳ 正在分析詞義…');
-  let semantic = semanticFor(word);
-  if (!semantic) semantic = await aiSemantic(word, grade);
+  let semantic = semanticFor(word) || null;
+  if (!semantic) {
+    const ai = await aiSemantic(word, grade);
+    if (ai && ai.quotaExhausted) {
+      showMsg('⚠️ 今日免費圖片額度已用完(明早 8 點重置)。', false);
+      return;
+    }
+    if (ai) semantic = ai;
+  }
   if (!semantic) {
     showMsg(`「${word}」暫時無法分析詞義，請稍後再試或換一個詞語。`, false);
     return;
@@ -135,8 +142,12 @@ async function generate() {
   // 4) render(圖片 async 逐張入,有 loading 提示)
   currentModel = await buildWorksheetModel(word, semantic, glyphRecs);
   // 圖片 6 張串行生成要 ~15-30s:逐張報進度,用戶見到「X/6」就知喺度做緊
-  await renderWorksheet(currentModel, style, (done, total) => {
-    showMsg(`⏳ 正在生成圖片 ${done}/${total}…`);
+  await renderWorksheet(currentModel, style, (done, total, quota) => {
+    if (quota && quota.found) {
+      showMsg('⚠️ 今日免費圖片額度已用完(明早 8 點重置)，現顯示示意圖', false);
+    } else {
+      showMsg(`⏳ 正在生成圖片 ${done}/${total}…`);
+    }
   });
   showMsg(semantic.source === 'ai' ? '✅ 已生成(詞義由 AI 分析)' : '✅ 已生成');
 }

@@ -85,10 +85,10 @@ function hasLocalSemantic(word) {
 }
 
 // Phase 2:AI 語義生成(經 picture-api worker,免費 CF 模型)→ JSON。失敗 fallback 本地。
-// ⚠️ 一定要 timeout:gpt-oss-120b 有時要 20-30s,用戶會以為「冇反應」。
+// ⚠️ 一定要 timeout:gpt-oss-20b 有時要 10-20s,用戶會以為「冇反應」。
 async function aiSemantic(word, grade) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 35000);
+  const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
     const r = await fetch('https://picture-api.forumdata.workers.dev/semantic', {
       method: 'POST',
@@ -97,6 +97,10 @@ async function aiSemantic(word, grade) {
       signal: ctrl.signal,
     });
     const d = await r.json();
+    // 額度用盡:回特殊標記,等 generate() 顯示專用訊息
+    if (d && d.error && String(d.error).includes('4006')) {
+      return { quotaExhausted: true };
+    }
     if (d && d.meaning && Array.isArray(d.examples) && d.examples.length >= 4) {
       // 例子少過 6 都照用(唔好因為差一張就成張紙失敗);多過 6 截返 6
       const ex = d.examples.slice(0, 6);

@@ -79,10 +79,10 @@ async function imageFor({ word, scene, caption, style, grade, version }) {
       body: JSON.stringify({ word, scene, style: style || 'line', grade: grade || 'P1', version: version || 'v1' }),
     });
     const d = await r.json();
-    if (d && d.url) return API_BASE + d.url;
+    if (d && d.url) return { url: API_BASE + d.url, error: null };
+    if (d && d.error) return { url: null, error: d.error };   // 額度用盡 / 生圖失敗 → 降級
   } catch (e) { /* fallthrough */ }
-  // 後備:本地 placeholder(唔整死張紙)
-  return placeholderSvgFor(scene, style);
+  return { url: null, error: 'network' };
 }
 
 if (typeof module !== 'undefined') module.exports = { STYLES, STYLE_KEYS, STYLE_LABELS, placeholderSvgFor, buildImagePrompt, imageFor };
