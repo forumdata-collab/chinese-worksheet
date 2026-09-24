@@ -70,8 +70,16 @@ let currentStyle = 'line';
 
 function showMsg(text, ok) {
   const m = document.getElementById('pwMsg');
+  const busy = text && text.startsWith('⏳');
   m.textContent = text || '';
-  m.className = 'pw-msg ' + (ok === false ? 'error' : '');
+  m.className = 'pw-msg ' + (ok === false ? 'error' : (busy ? 'busy' : 'ok'));
+  if (busy) {
+    // spinner + 文字:busy 訊息用 flex 排,spinner 喺前面
+    const sp = document.createElement('span');
+    sp.className = 'pw-spinner';
+    sp.setAttribute('aria-hidden', 'true');
+    m.prepend(sp);
+  }
 }
 
 function normalizeWord(raw) {
@@ -126,7 +134,10 @@ async function generate() {
 
   // 4) render(圖片 async 逐張入,有 loading 提示)
   currentModel = await buildWorksheetModel(word, semantic, glyphRecs);
-  await renderWorksheet(currentModel, style);
+  // 圖片 6 張串行生成要 ~15-30s:逐張報進度,用戶見到「X/6」就知喺度做緊
+  await renderWorksheet(currentModel, style, (done, total) => {
+    showMsg(`⏳ 正在生成圖片 ${done}/${total}…`);
+  });
   showMsg(semantic.source === 'ai' ? '✅ 已生成(詞義由 AI 分析)' : '✅ 已生成');
 }
 

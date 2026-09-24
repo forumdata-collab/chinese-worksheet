@@ -85,29 +85,36 @@ function hasLocalSemantic(word) {
 }
 
 // Phase 2:AI 語義生成(經 picture-api worker,免費 CF 模型)→ JSON。失敗 fallback 本地。
+// ⚠️ 一定要 timeout:gpt-oss-120b 有時要 20-30s,用戶會以為「冇反應」。
 async function aiSemantic(word, grade) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
     const r = await fetch('https://picture-api.forumdata.workers.dev/semantic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ word, grade: grade || 'P1' }),
+      signal: ctrl.signal,
     });
     const d = await r.json();
-    if (d && d.meaning && Array.isArray(d.examples) && d.examples.length === 6) {
+    if (d && d.meaning && Array.isArray(d.examples) && d.examples.length >= 4) {
+      // 例子少過 6 都照用(唔好因為差一張就成張紙失敗);多過 6 截返 6
+      const ex = d.examples.slice(0, 6);
       return {
         word,
         grade,
         meaning: d.meaning,
         version: 'v1',
         source: 'ai',
-        examples: d.examples.map((e, i) => ({
+        examples: ex.map((e, i) => ({
           id: String(i + 1).padStart(2, '0'),
           caption: String(e.caption || '').trim(),
           scene: String(e.scene || '').trim(),
         })),
       };
     }
-  } catch (e) { /* fallthrough */ }
+  } catch (e) { /* timeout / network / parse — fallthrough */ }
+  finally { clearTimeout(timer); }
   return null;
 }
 

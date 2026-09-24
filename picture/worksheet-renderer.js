@@ -80,8 +80,10 @@ function worksheetHtml(model, styleKey) {
 
 // 落 image:每格 1 張(由 image-generator.js 出)。好處:單張失敗唔影響其他格。
 // ⚠️ CF 免費 tier 只有 1 個並行請求 → 必須串行逐張生成,唔可以 Promise.all(會 429/排隊)
-async function installImages(sheetEl, examples, styleKey) {
+// ⚠️ 每張完成即更新 msg「正在生成圖片 X/6」→ 用戶見到進度,唔會以為「冇反應」。
+async function installImages(sheetEl, examples, styleKey, onProgress) {
   const imgs = [...sheetEl.querySelectorAll('.pw-imgwrap img')];
+  let done = 0;
   for (const img of imgs) {
     try {
       const scene = img.dataset.scene;
@@ -95,10 +97,12 @@ async function installImages(sheetEl, examples, styleKey) {
       });
       img.src = url;
       img.removeAttribute('data-scene');
-      await new Promise(r => setTimeout(r, 120));   // 防限流,俾 worker 歇一歇
     } catch (e) {
       img.src = placeholderSvgFor('', styleKey);   // 兜底:唔整死張紙
     }
+    done++;
+    if (onProgress) onProgress(done, imgs.length);
+    await new Promise(r => setTimeout(r, 120));   // 防限流,俾 worker 歇一歇
   }
 }
 
@@ -167,11 +171,11 @@ async function installBigGlyphs(sheetEl) {
 }
 
 // 主渲染:填入 #pwWorksheet 容器 → 異歩填字形 + 圖片
-async function renderWorksheet(model, styleKey) {
+async function renderWorksheet(model, styleKey, onProgress) {
   const box = document.getElementById('pwWorksheet');
   box.innerHTML = worksheetHtml(model, styleKey);
   installBigGlyphs(box);              // async,冇 await 都唔阻(字形逐個 pop)
-  await installImages(box, model.examples, styleKey);
+  await installImages(box, model.examples, styleKey, onProgress);
   return box;
 }
 
