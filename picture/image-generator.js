@@ -68,9 +68,20 @@ Requirements:
 - landscape composition`;
 }
 
-// 主入口:scene+style → 圖片 URL。Phase 1 回 placeholder,Phase 3 接 AI + cache。
+// 主入口:scene+style → 圖片 URL。API 後端(picture-api worker)生圖 + R2 cache。
+const API_BASE = 'https://picture-api.forumdata.workers.dev';
+
 async function imageFor({ word, scene, caption, style, grade, version }) {
-  // Phase 1:唔使 cache(placeholder 係本地生成,快過 cache)
+  try {
+    const r = await fetch(API_BASE + '/image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, scene, style: style || 'line', grade: grade || 'P1', version: version || 'v1' }),
+    });
+    const d = await r.json();
+    if (d && d.url) return API_BASE + d.url;
+  } catch (e) { /* fallthrough */ }
+  // 後備:本地 placeholder(唔整死張紙)
   return placeholderSvgFor(scene, style);
 }
 

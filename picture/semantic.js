@@ -84,9 +84,30 @@ function hasLocalSemantic(word) {
   return !!SEMANTIC_DB[word];
 }
 
-// Phase 2 預留:AI 語義生成(e.g. 透過 serverless / worker 代理)。
+// Phase 2:AI 語義生成(經 picture-api worker,免費 CF 模型)→ JSON。失敗 fallback 本地。
 async function aiSemantic(word, grade) {
-  // placeholder — Phase 2 接 serverless endpoint,叫唔到就 fallback 本地
+  try {
+    const r = await fetch('https://picture-api.forumdata.workers.dev/semantic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, grade: grade || 'P1' }),
+    });
+    const d = await r.json();
+    if (d && d.meaning && Array.isArray(d.examples) && d.examples.length === 6) {
+      return {
+        word,
+        grade,
+        meaning: d.meaning,
+        version: 'v1',
+        source: 'ai',
+        examples: d.examples.map((e, i) => ({
+          id: String(i + 1).padStart(2, '0'),
+          caption: String(e.caption || '').trim(),
+          scene: String(e.scene || '').trim(),
+        })),
+      };
+    }
+  } catch (e) { /* fallthrough */ }
   return null;
 }
 

@@ -37,11 +37,21 @@
 
 ## Phase 進度
 
-- [x] Phase 1 — Renderer(四個詞 hardcoded、placeholder 圖、A4 列印)
-- [ ] Phase 2 — AI 語義(接 serverless endpoint,失敗 fallback 本地)
-- [ ] Phase 3 — AI 單張插圖
-- [ ] Phase 4 — R2 cache
+- [x] Phase 1 — Renderer(四硬編詞、placeholder 圖、A4 列印)
+- [x] Phase 2 — AI 語義(經 picture-api worker gpt-oss-120b;失敗 fallback 本地四詞)
+- [x] Phase 3 — AI 單張插圖(經 picture-api worker flux-1-schnell 黑白線稿)
+- [x] Phase 4 — R2 cache(worker 內建,確定性 SHA-256 key,同價命中 0.1s)
 - [ ] Phase 5 — 進階(播放筆順 / 重新生單張 / 改 caption / 下載 PDF 等)
+
+## AI 後端(picture-api worker)
+
+`~/picture-api/`(獨立部署,`picture-api.forumdata.workers.dev`):
+- `POST /semantic` — gpt-oss-120b(CF 免費)→ meaning + 6 情境 JSON
+- `POST /image` — flux-1-schnell(CF 免費,~57.6 neurons/張)→ 存 R2 `pic-worksheets` → 派 `/image/<sha256>` URL
+- `GET /image/<sha256>` — R2 直派圖(Cache-Control immutable)
+- ⚠️ CF 免費 tier 限制:**每日 10,000 neurons(~170 張)**、**1 個並行請求**(前端已設串行 + 120ms gap)
+- 秘密(Cf key)只存 worker binding,前端零 secret(spec §25)
+- 認證後備:cf-manager DB 解密(`X-Auth-Email + X-Auth-Key`,入 skill cloudflare-workers-ai)
 
 ## 驗證(Phase 1)
 

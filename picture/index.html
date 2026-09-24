@@ -107,13 +107,15 @@ async function generate() {
     return;
   }
 
-  // 2) semantic:hardcoded 表 → AI(Phase 2)→ 錯誤
+  // 2) semantic:本地 hardcoded → AI(worker)→ 錯誤
+  showMsg('⏳ 正在分析詞義…');
   let semantic = semanticFor(word);
   if (!semantic) semantic = await aiSemantic(word, grade);
   if (!semantic) {
-    showMsg(`「${word}」未有收錄詞義，暫時只支援：快樂、分享、擺滿、度過。`, false);
+    showMsg(`「${word}」暫時無法分析詞義，請稍後再試或換一個詞語。`, false);
     return;
   }
+  showMsg('⏳ 正在生成圖片…');
 
   // 3) glyph recs
   const glyphRecs = new Map();
@@ -122,9 +124,10 @@ async function generate() {
     if (rec) glyphRecs.set(ch, rec);
   }));
 
-  // 4) render
+  // 4) render(圖片 async 逐張入,有 loading 提示)
   currentModel = await buildWorksheetModel(word, semantic, glyphRecs);
   await renderWorksheet(currentModel, style);
+  showMsg(semantic.source === 'ai' ? '✅ 已生成(詞義由 AI 分析)' : '✅ 已生成');
 }
 
 function regenerateImages() {

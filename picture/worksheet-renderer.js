@@ -78,10 +78,11 @@ function worksheetHtml(model, styleKey) {
   </article>`;
 }
 
-// 落 image:每格 1 張(由 image-generator.js 出)。好處:單張失敗唔影響其他格 
+// 落 image:每格 1 張(由 image-generator.js 出)。好處:單張失敗唔影響其他格。
+// ⚠️ CF 免費 tier 只有 1 個並行請求 → 必須串行逐張生成,唔可以 Promise.all(會 429/排隊)
 async function installImages(sheetEl, examples, styleKey) {
   const imgs = [...sheetEl.querySelectorAll('.pw-imgwrap img')];
-  await Promise.all(imgs.map(async img => {
+  for (const img of imgs) {
     try {
       const scene = img.dataset.scene;
       const url = await imageFor({
@@ -94,10 +95,11 @@ async function installImages(sheetEl, examples, styleKey) {
       });
       img.src = url;
       img.removeAttribute('data-scene');
+      await new Promise(r => setTimeout(r, 120));   // 防限流,俾 worker 歇一歇
     } catch (e) {
       img.src = placeholderSvgFor('', styleKey);   // 兜底:唔整死張紙
     }
-  }));
+  }
 }
 
 // 大楷字形:用中線畫「可描紅」嘅空心筆畫(非填充輪廓),學生可以沿線填色。
