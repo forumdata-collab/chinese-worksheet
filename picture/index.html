@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="中文詞語圖解工作紙生成器：輸入中文詞語，即時生成 A4 印刷版認字工作紙，含香港標準字形、筆順數字、六幅情境插圖。">
+<title>中文詞語圖解工作紙 · chineseword</title>
+<link rel="stylesheet" href="picture.css">
+<script>window.GLYPH_DIR = '../glyphs/'; window.NS = 'http://www.w3.org/2000/svg';</script>
+<script src="../glyph-engine.js?v=2"></script>
+<script src="../data.js?v=1790227862"></script>
+<script src="../hk_order.js?v=2"></script>
+<script src="../stroke_seq.js?v=3"></script>
+</head>
+<body>
+
+<div class="pw-toolbar no-print">
+  <div class="pw-home"><a href="../">← 主站</a></div>
+  <div class="pw-title-sm">中文詞語圖解工作紙</div>
+  <div class="pw-spacer"></div>
+</div>
+
+<div class="pw-controls no-print">
+  <div class="pw-field">
+    <label for="pwWord">輸入中文詞語</label>
+    <input id="pwWord" type="text" value="快樂" maxlength="4" placeholder="例：快樂" autocomplete="off">
+  </div>
+  <div class="pw-field">
+    <label for="pwGrade">年級</label>
+    <select id="pwGrade">
+      <option value="P1" selected>P1</option>
+      <option value="P2">P2</option>
+      <option value="P3">P3</option>
+      <option value="P4">P4</option>
+      <option value="P5">P5</option>
+      <option value="P6">P6</option>
+    </select>
+  </div>
+  <div class="pw-field">
+    <label for="pwStyle">圖片風格</label>
+    <select id="pwStyle">
+      <option value="line" selected>黑白線稿</option>
+      <option value="color">彩色兒童插畫</option>
+      <option value="photo">真實照片</option>
+    </select>
+  </div>
+  <button class="pw-generate" id="pwGen" type="button">✨ 產生工作紙</button>
+</div>
+
+<div class="pw-actions no-print">
+  <button type="button" class="pw-print" onclick="printSheet()">🖨️ 列印 / PDF</button>
+  <button type="button" onclick="regenerateImages()">🔄 重新產生圖片</button>
+</div>
+<div class="pw-msg" id="pwMsg"></div>
+
+<div class="pw-stage">
+  <div id="pwWorksheet"></div>
+</div>
+
+<script src="semantic.js"></script>
+<script src="image-generator.js"></script>
+<script src="cache.js"></script>
+<script src="worksheet-renderer.js"></script>
+<script>
+'use strict';
+
+// ── 主流程:讀輸入 → 驗證字形 → semantic → render ──
+let currentModel = null;
+let currentStyle = 'line';
+
+function showMsg(text, ok) {
+  const m = document.getElementById('pwMsg');
+  m.textContent = text || '';
+  m.className = 'pw-msg ' + (ok === false ? 'error' : '');
+}
+
+function normalizeWord(raw) {
+  // 轉繁體(借用主站 s2t;冇就原字)+ 去空格
+  let w = parseWord(raw);
+  if (!w) return '';
+  if (typeof toTraditional === 'function') w = toTraditional(w);
+  return w.replace(/[，。、！？,.!?；;：:]/g, '');
+}
+
+async function generate() {
+  const raw = document.getElementById('pwWord').value;
+  const grade = document.getElementById('pwGrade').value;
+  const style = document.getElementById('pwStyle').value;
+  currentStyle = style;
+  showMsg('');
+
+  const word = normalizeWord(raw);
+  if (!word) { showMsg('請輸入中文詞語。', false); return; }
+  if (word.length > 4) { showMsg('請輸入 4 字以內的詞語。', false); return; }
+
+  // 1) 驗證每個字有 glyph / 筆順資料
+  const missing = [];
+  for (const ch of word) {
+    const rec = await hkGlyph(ch);
+    if (!rec || !rec.s || !rec.s.length) {
+      const seq = (window.STROKE_SEQ || {})[ch];
+      if (!seq) missing.push(ch);
+    }
+  }
+  if (missing.length) {
+    showMsg(`「${missing.join('」「')}」暫時未有香港標準字形／筆順資料。`, false);
+    return;
+  }
+
+  // 2) semantic:hardcoded 表 → AI(Phase 2)→ 錯誤
+  let semantic = semanticFor(word);
+  if (!semantic) semantic = await aiSemantic(word, grade);
+  if (!semantic) {
+    showMsg(`「${word}」未有收錄詞義，暫時只支援：快樂、分享、擺滿、度過。`, false);
+    return;
+  }
+
+  // 3) glyph recs
+  const glyphRecs = new Map();
+  await Promise.all(word.split('').map(async ch => {
+    const rec = await hkGlyph(ch);
+    if (rec) glyphRecs.set(ch, rec);
+  }));
+
+  // 4) render
+  currentModel = await buildWorksheetModel(word, semantic, glyphRecs);
+  await renderWorksheet(currentModel, style);
+}
+
+function regenerateImages() {
+  if (!currentModel) return;
+  // 清走圖片 src → 重新 install(placeholder 版即時換;AI 版會甩 cache)
+  document.querySelectorAll('#pwWorksheet .pw-imgwrap img').forEach(img => {
+    img.removeAttribute('src');
+  });
+  installImages(document.querySelector('#pwWorksheet'), currentModel.examples, currentStyle);
+}
+
+document.getElementById('pwGen').addEventListener('click', generate);
+document.getElementById('pwWord').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+generate();
+</script>
+</body>
+</html>

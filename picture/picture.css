@@ -1,0 +1,123 @@
+/* 中文詞語圖解工作紙 — picture.css
+   A4 直向 210×297mm;所有尺寸用 mm;列印零邊距。 */
+:root {
+  --pw-green: #2e7d5b;
+  --pw-green-soft: #e8f3ee;
+  --pw-border: #b8d9cb;
+  --pw-ink: #1f2937;
+  --pw-dim: #6b7280;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  margin: 0;
+  color: var(--pw-ink);
+  background: linear-gradient(135deg, #f3f6f4, #e7efea);
+  min-height: 100vh;
+}
+
+/* ── 頂部工具列(唔會印出嚟) ── */
+.pw-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; background: #fff;
+  border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 10;
+  flex-wrap: wrap;
+}
+.pw-toolbar .pw-home a {
+  color: var(--pw-green); text-decoration: none; font-size: 14px; font-weight: 600;
+}
+.pw-toolbar .pw-home a:hover { text-decoration: underline; }
+.pw-toolbar .pw-title-sm { font-weight: 700; font-size: 15px; }
+.pw-toolbar .pw-spacer { flex: 1; }
+
+/* ── 控制面板 ── */
+.pw-controls {
+  max-width: 860px; margin: 20px auto 0; padding: 0 16px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;
+}
+.pw-field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+.pw-field input, .pw-field select {
+  width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 15px; background: #fff;
+}
+.pw-field input:focus, .pw-field select:focus { outline: 2px solid var(--pw-green); border-color: var(--pw-green); }
+.pw-generate {
+  padding: 8px 18px; border: none; border-radius: 8px; background: var(--pw-green);
+  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.pw-generate:hover { background: #256b4d; }
+
+.pw-actions {
+  max-width: 860px; margin: 14px auto 0; padding: 0 16px; display: flex; gap: 8px;
+}
+.pw-actions button {
+  padding: 7px 14px; border: 1px solid #cbd5d1; border-radius: 8px; background: #fff;
+  font-size: 13px; cursor: pointer;
+}
+.pw-actions button:hover { border-color: var(--pw-green); color: var(--pw-green); }
+.pw-actions button.pw-print { background: var(--pw-green); color: #fff; border-color: var(--pw-green); font-weight: 600; }
+
+.pw-msg { max-width: 860px; margin: 8px auto 0; padding: 0 16px; font-size: 13px; }
+.pw-msg.error { color: #b91c1c; }
+.pw-msg.ok { color: var(--pw-green); }
+
+/* ── 工作紙容器(全屏)A4 ── */
+.pw-stage { padding: 20px; display: flex; justify-content: center; }
+#pwWorksheet { margin: 0 auto; }
+
+/* ── A4 工作紙(印刷重點) ── */
+.pw-sheet {
+  width: 210mm; height: 297mm; background: #fff; color: var(--pw-ink);
+  padding: 12mm 14mm; display: flex; flex-direction: column;
+  border: 0; outline: 1px solid #e5e7eb; /* 屏幕睇邊界,列印時消失 */
+}
+.pw-head { display: flex; align-items: center; justify-content: space-between; }
+.pw-title { font-size: 22pt; font-weight: 800; color: var(--pw-green); letter-spacing: 2px; }
+.pw-level { font-size: 12pt; color: var(--pw-dim); }
+.pw-question { margin: 8mm 0 1mm; font-size: 13pt; font-weight: 700; }
+.pw-instr { margin: 0 0 6mm; font-size: 11pt; color: var(--pw-dim); }
+
+/* 大楷字形:兩字並排,輪廓 + 筆順數字 */
+.pw-bigchars { display: flex; gap: 8mm; justify-content: center; margin: 0 0 5mm; }
+.pw-bigchar { text-align: center; }
+.pw-big-glyph { display: inline-block; width: 44mm; height: 44mm; border: 1.5px solid var(--pw-green); border-radius: 3mm; background: #fcfdfc; }
+.pw-big-svg { width: 100%; height: 100%; }
+/* 中線描紅字:等粗 + 圓頭。stroke-width 由 JS 按 viewBox box 比例寫成 attribute(螢幕/列印自動縮放) */
+.pw-big-svg .pw-trace-line { fill: none; stroke: #4b5563; }
+.pw-big-svg text { fill: #c0392b; font-weight: 700; }
+.pw-strokecount { display: block; margin-top: 2mm; font-size: 10pt; color: var(--pw-dim); }
+
+.pw-meaning { text-align: center; font-size: 12pt; color: #374151; margin: 2mm 0 6mm; padding: 3mm; background: var(--pw-green-soft); border-radius: 3mm; }
+
+/* 3×2 插圖格 */
+.pw-imggrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6mm 8mm; flex: 1; }
+.pw-imgcell { margin: 0; text-align: center; display: flex; flex-direction: column; }
+.pw-imgwrap {
+  flex: 1; border: 1.5px solid var(--pw-border); border-radius: 4mm; overflow: hidden;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  min-height: 0;
+}
+.pw-imgwrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pw-imgcell figcaption { margin-top: 2mm; font-size: 13pt; font-weight: 700; color: #1f2937; }
+
+.pw-foot { margin-top: 6mm; font-size: 9pt; color: #9ca3af; text-align: center; border-top: 1px dashed #d1d5db; padding-top: 3mm; }
+
+/* ── 列印:A4 零邊距,隱藏工具列 ── */
+@page { size: A4 portrait; margin: 0; }
+@media print {
+  body { background: #fff; }
+  .pw-toolbar, .pw-controls, .pw-actions, .pw-msg { display: none !important; }
+  .pw-stage { padding: 0; }
+  .pw-sheet {
+    width: 210mm; height: 297mm; outline: 0;
+    page-break-after: always;
+  }
+}
+
+/* ── 手機:控制 + 預覽 直排 ── */
+@media (max-width: 700px) {
+  .pw-controls { grid-template-columns: 1fr; }
+  .pw-sheet { transform-origin: top left; }
+}
