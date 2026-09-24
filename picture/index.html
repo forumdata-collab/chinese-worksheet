@@ -51,6 +51,10 @@
   <button type="button" class="pw-print" onclick="printSheet()">🖨️ 列印 / PDF</button>
   <button type="button" onclick="regenerateImages()">🔄 重新產生圖片</button>
 </div>
+<div class="pw-suggest no-print" id="pwSuggest" hidden>
+  <span class="pw-suggest-label">建議詞(已生成過,秒出):</span>
+  <span id="pwSuggestChips"></span>
+</div>
 <div class="pw-msg" id="pwMsg"></div>
 
 <div class="pw-stage">
@@ -161,8 +165,31 @@ function regenerateImages() {
   installImages(document.querySelector('#pwWorksheet'), currentModel.examples, currentStyle);
 }
 
+// ── 建議詞:本地 hardcoded 四詞 + worker 已生成過嘅詞(語義/圖片有 R2 cache → 秒出)──
+function loadSuggestWords() {
+  const chipsEl = document.getElementById('pwSuggestChips');
+  const box = document.getElementById('pwSuggest');
+  const local = Object.keys(SEMANTIC_DB || {});
+  fetch('https://picture-api.forumdata.workers.dev/words')
+    .then(r => r.json())
+    .then(d => {
+      const words = [...new Set([...local, ...(d.words || [])])];
+      if (!words.length) return;
+      chipsEl.innerHTML = words.map(w => `<button type="button" class="pw-chip" data-w="${w}">${w}</button>`).join('');
+      chipsEl.querySelectorAll('.pw-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('pwWord').value = btn.dataset.w;
+          generate();
+        });
+      });
+      box.hidden = false;
+    })
+    .catch(() => { box.hidden = true; });
+}
+
 document.getElementById('pwGen').addEventListener('click', generate);
 document.getElementById('pwWord').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+loadSuggestWords();
 generate();
 </script>
 </body>

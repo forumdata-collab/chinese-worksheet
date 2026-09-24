@@ -59,6 +59,19 @@ body {
 .pw-actions button:hover { border-color: var(--pw-green); color: var(--pw-green); }
 .pw-actions button.pw-print { background: var(--pw-green); color: #fff; border-color: var(--pw-green); font-weight: 600; }
 
+/* 建議詞 chips:已生成過嘅詞,一撳即出 */
+.pw-suggest {
+  max-width: 860px; margin: 10px auto 0; padding: 0 16px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
+}
+.pw-suggest-label { color: var(--pw-dim); font-size: 12px; }
+.pw-chip {
+  padding: 5px 12px; border: 1px solid var(--pw-border); border-radius: 14px;
+  background: #fff; color: var(--pw-green); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.pw-chip:hover { background: var(--pw-green-soft); border-color: var(--pw-green); }
+
 .pw-msg { max-width: 860px; margin: 8px auto 0; padding: 0 16px; font-size: 13px; }
 .pw-msg.error { color: #b91c1c; }
 .pw-msg.ok { color: var(--pw-green); }
