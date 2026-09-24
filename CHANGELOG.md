@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.24] - 2026-09-24
+
+### Added
+- **20 個粵語常用字補全讀音**（之前有 twpen glyph 但 CHAR_DB 冇讀音/筆畫 → 卡片空白）：乜佢冇冧咁咗咩哋喺嗰嘅嘜嘞嘢嘥噉嚟攞沚睇。粵音以 CUHK《粵語審音配詞字庫》為準（佢 keoi5 / 冇 mou5 / 咁 gam3 / 睇 tai2 等，主讀音跟「異讀字」註記；12 個 HKSCS 字 CUHK 網上搜尋唔收，用 Unihan kCantonese + Wiktionary 覆核，攞 修正為 lo2），拼音用 Unihan kMandarin，筆畫數跟 glyph 實際筆數（台灣標準）。CHAR_DB 5,536 → 5,556 字，data.js cache `?v` 更新。
+- **「逋」（U+900B）補全字形 + 資料**：EDB / HanziWriter 均無資料，由 twpen.com（台灣教育部標準）breakdown PNG 逆向成真 glyph（11 筆，台灣標準計 辶 4 筆；Unihan/zdic 計 10 筆）→ `glyphs/900b.json`。補讀音入 `data.js`（jy=bou1, py=bū, s=11 跟台灣標準，CHAR_DB 5,535 → 5,536 字）。glyphs cache `?v=19 → v=20`。
+- 字形來源統計更新：twpen 197 → 198 字（build_provenance 4,716 → 4,717 glyph）。
+
 ## [1.2.23] - 2026-09-19
 
 ### Changed

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
 <link href="fonts/lxgw.css" rel="stylesheet">
-<script src="data.js?v=1788925874"></script>
+<script src="data.js?v=1790227862"></script>
 <script src="hk_order.js?v=2"></script>
 <script src="stroke_seq.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
@@ -1626,7 +1626,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`glyphs/${hex}.json?v=19`)
+  const p = fetch(`glyphs/${hex}.json?v=20`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null);
   _hkGlyphCache.set(ch, p);
