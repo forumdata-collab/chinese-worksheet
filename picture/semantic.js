@@ -88,7 +88,7 @@ function hasLocalSemantic(word) {
 // ⚠️ 一定要 timeout:gpt-oss-120b 有時要 20-30s,用戶會以為「冇反應」。
 async function aiSemantic(word, grade) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20000);
+  const timer = setTimeout(() => ctrl.abort(), 35000);
   try {
     const r = await fetch('https://picture-api.forumdata.workers.dev/semantic', {
       method: 'POST',
