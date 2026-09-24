@@ -80,7 +80,10 @@ async function imageFor({ word, scene, caption, style, grade, version }) {
     });
     const d = await r.json();
     if (d && d.url) return { url: API_BASE + d.url, error: null };
-    if (d && d.error) return { url: null, error: d.error };   // 額度用盡 / 生圖失敗 → 降級
+    if (d && (d.error || d.detail)) {
+      // ⚠️ worker 可能回 {error, detail} — 4006 可能喺 detail,合併檢查
+      return { url: null, error: String(d.error || '') + ' ' + String(d.detail || '') };
+    }
   } catch (e) { /* fallthrough */ }
   return { url: null, error: 'network' };
 }

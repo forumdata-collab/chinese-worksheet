@@ -98,7 +98,8 @@ async function aiSemantic(word, grade) {
     });
     const d = await r.json();
     // 額度用盡:回特殊標記,等 generate() 顯示專用訊息
-    if (d && d.error && String(d.error).includes('4006')) {
+    // ⚠️ worker 回 {error:'semantic generation failed', detail:'AI.run: 4006: …'} — 4006 喺 detail
+    if (d && (String(d.error) + String(d.detail || '')).includes('4006')) {
       return { quotaExhausted: true };
     }
     if (d && d.meaning && Array.isArray(d.examples) && d.examples.length >= 4) {
