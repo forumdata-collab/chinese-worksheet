@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] - 2026-09-27
+
+### Changed
+- **筆順歌 BGM 改用本站錄音**：改用用戶提供的錄音（`bgm/bishun-song-v2.mp3`，79.7s，638KB 64kbps mono 22050Hz）。移除 YouTube 版本檔案（`bgm/bishun-song.mp3`）及頁腳「背景音樂」credit 兩處（靜態 `#wsFooter` + `setWsFooter()`），不再引用外部影片來源。
+
 ## [1.3.0] - 2026-09-27
 
 ### Added
