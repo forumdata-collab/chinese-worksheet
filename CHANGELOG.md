@@ -8,6 +8,10 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - **示範格大小選項（`#optBigDemo`）**：新增兩級特大 2×2 示範格——「特大 2×2（只示範格）」（第一格 2×2 大示範格，其餘練習格標準大小，向右排）及「特大 2×2（示範+描紅）」（所有格 2×2 同大，向右排列）。預設「標準」不變。
 - **列印 A4 版式改動**：字資訊頂置（佔整行 + 底下分隔線）、字卡改為垂直堆疊、字與字之間以實線分隔（隔行分隔線）。適用於每字練習模式（word layout）。
 
+### Fixed
+- **perRow + 特大格字級 double-count**：`@supports (container-type)` 下 `--cell-guide-font: 82cqw` 已按格仔自身闊度（2×）計，big-demo 規則再 `calc(2 * ...)` 令描紅字塞爆格仔（實測 266px in 162px cell，overflow 52px）。修法：perRow 下特大格改用 `var(--cell-guide-font)`（唔再乘 2），字/格比例回復 0.82。
+- **big-demo 描紅格向右延伸先換行**：grid 由固定 4 欄改 `repeat(auto-fill)`，描紅格排滿一行先換行，唔會跌落示範格下面。
+
 ## [1.3.1] - 2026-09-27
 
 ### Changed

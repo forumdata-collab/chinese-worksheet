@@ -1016,6 +1016,12 @@ details.advance-collapse summary:hover { color: var(--red); }
     --cell-font: 82cqw;
     --cell-guide-font: 82cqw;
   }
+  /* 特大示範格喺 perRow 下：--cell-guide-font 已係 cqw（跟格仔自身 2× 闊度計），
+     唔可以再乘 2（會 double-count → 字塞爆格仔，2026-09-27 實測 266px in 162px cell） */
+  .practice-row[data-perrow].big-demo .practice-cell.is-big-demo .guide-char,
+  .practice-row[data-perrow].big-all .practice-cell .guide-char {
+    font-size: var(--cell-guide-font) !important;
+  }
 }
 </style>
 </head>
