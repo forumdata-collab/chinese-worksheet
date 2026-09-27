@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-09-27
+
+### Added
+- **筆順歌背景音樂（預設關閉）**：頁首 🎵 筆順歌 按鈕，循環播放《筆順歌》（歌詞版 MV，迦密愛禮信小學 CALPS 於 YouTube 發佈）。音檔由 YouTube 下載壓縮至 986KB（64kbps mono MP3，原 2.25MB）；`<audio preload="none">` 唔用唔下載，唔拖慢首載。播放狀態記 localStorage `cw.bgm`。
+- 頁腳「資料來源與聲明」新增**背景音樂**一欄，標明來源 YouTube 影片連結，版權屬原製作單位。
+
+### 備註
+- 本機直連 IP 被 YouTube bot gate 封鎖；需 `--proxy socks5://127.0.0.1:1080`（WARP 出口）先可以 yt-dlp 取流。bgutil-pot 端口已由 4499 更正為 4416。
+
 ## [1.2.24] - 2026-09-24
 
 ### Added

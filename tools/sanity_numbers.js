@@ -26,16 +26,21 @@ const LIST_LIMIT = (() => {
 const VERBOSE = process.argv.includes('--verbose');
 
 // ---------------------------------------------------------------- load shipping code
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// The stroke-number solver lives in the shared glyph engine (extracted from index.html
+// on 2026-09-24), NOT index.html any more. Point the eval at the file that actually
+// ships the code, or this check silently dies with a FATAL and stops guarding the
+// number layer.
+const ENGINE = 'glyph-engine.js';
+const html = fs.readFileSync(path.join(ROOT, ENGINE), 'utf8');
 const start = html.indexOf('// arc-length point at fraction f');
 const end = html.indexOf('// Build the display SVG for one glyph record');
 if (start < 0 || end < 0) {
-  console.error('FATAL: could not locate placeNumberLabels() in index.html (markers moved?)');
+  console.error(`FATAL: could not locate placeNumberLabels() in ${ENGINE} (markers moved?)`);
   process.exit(2);
 }
 eval(html.slice(start, end));
 
-// mirror index.html 嘅 NUMBER_OVERRIDES（eval 內 const 唔 leak 出嚟）
+// mirror the engine's NUMBER_OVERRIDES（eval 內 const 唔 leak 出嚟）
 const NUMBER_OVERRIDES = {
   '繭': {8: 0.6},
   '輛': {8: 0.32},
