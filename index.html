@@ -257,6 +257,57 @@ body {
 .ws-rhyme .rhyme-item .ex { color: #888; font-size: 0.92em; }
 @media print { .ws-rhyme { font-size: 0.72em; line-height: 1.7; } }
 
+/* ===== 示範格特大 2×2 + 字資訊頂置 + 隔行分隔線 + 描紅格右置 ===== */
+.practice-row.big-demo {
+  display: grid;
+  grid-template-columns: repeat(4, var(--cell-practice, 96px));
+  grid-auto-rows: var(--cell-practice, 96px);
+}
+.practice-row.big-demo .practice-cell.is-big-demo {
+  grid-column: 1 / span 2;
+  grid-row: 1 / span 2;
+  width: calc(2 * var(--cell-practice, 96px));
+  height: calc(2 * var(--cell-practice, 96px));
+}
+.practice-row.big-demo .practice-cell.is-big-demo .guide-char {
+  font-size: calc(2 * var(--cell-guide-font, 58px));
+}
+/* 示範＋描紅全部 2×2，向右排列 */
+.practice-row.big-all {
+  display: flex;
+  flex-wrap: wrap;
+}
+.practice-row.big-all .practice-cell {
+  width: calc(2 * var(--cell-practice, 96px));
+  height: calc(2 * var(--cell-practice, 96px));
+}
+.practice-row.big-all .practice-cell .guide-char {
+  font-size: calc(2 * var(--cell-guide-font, 58px));
+}
+/* 字資訊頂置：info 佔整行，底下跟分隔線；描紅格喺大示範格右方 */
+#wsContent { display: block !important; }
+.char-card { display: block !important; }
+.char-info { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1.5px solid #E3CDCD; }
+.char-card .practice-row { margin-top: 4px; }
+@media print {
+  .practice-row.big-demo .practice-cell.is-big-demo {
+    width: calc(2 * var(--cell-practice)) !important;
+    height: calc(2 * var(--cell-practice)) !important;
+  }
+  .practice-row.big-demo .practice-cell.is-big-demo .guide-char {
+    font-size: calc(2 * var(--cell-guide-font)) !important;
+  }
+  .practice-row.big-all .practice-cell {
+    width: calc(2 * var(--cell-practice)) !important;
+    height: calc(2 * var(--cell-practice)) !important;
+  }
+  .practice-row.big-all .practice-cell .guide-char {
+    font-size: calc(2 * var(--cell-guide-font)) !important;
+  }
+  /* 隔行分隔線：字同字之間用實線隔開 */
+  .char-card + .char-card { border-top: 1px solid #E3CDCD; padding-top: 14px; margin-top: 14px; }
+}
+
 /* ===== CHARACTER CARD ===== */
 .char-card {
   margin-bottom: 22px;
@@ -1180,6 +1231,14 @@ details.advance-collapse summary:hover { color: var(--red); }
           </select>
         </div>
         <div class="opt-group">
+          <label>示範格大小</label>
+          <select id="optBigDemo">
+            <option value="no" selected>標準</option>
+            <option value="big">特大 2×2（只示範格）</option>
+            <option value="all">特大 2×2（示範+描紅）</option>
+          </select>
+        </div>
+        <div class="opt-group">
           <div class="toggle-row">
             <input type="checkbox" id="optStrokePage">
             <label for="optStrokePage">附加筆順工作紙（列印）</label>
@@ -1392,6 +1451,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const demoOld = fmtOk.includes(saved.demoFormat) ? saved.demoFormat
         : (saved.arrow === true ? 'num+arrow' : (saved.strokeNum === false ? 'plain' : 'num'));
       document.getElementById('optDemoFormat').value = demoOld;
+      if (['no','big','all'].includes(saved.bigDemo)) document.getElementById('optBigDemo').value = saved.bigDemo;
       document.getElementById('optTraceFormat').value =
         fmtOk.includes(saved.traceFormat) ? saved.traceFormat
         : (saved.arrow === true ? 'num+arrow' : (saved.strokeNum === false ? 'plain' : 'num'));
@@ -1531,6 +1591,7 @@ function readOptions() {
     size: $('optSize').value,
     guideStyle: $('optGuideStyle').value,
     guideCount: guideCount,
+    bigDemo: $('optBigDemo').value,
     strokePage: $('optStrokePage').checked,
     perRow: $('optPerRow').value,
     printSize: $('optPrintSize').value,
@@ -1610,6 +1671,7 @@ function generate() {
     strokeNum: opts.strokeNum,
     arrow: opts.arrow,
     demoFormat: opts.demoFormat || 'num',
+    bigDemo: opts.bigDemo || 'no',
     traceFormat: opts.traceFormat || 'num',
     dedup: opts.dedup,
     title: opts.title || '練習簿',
@@ -1801,10 +1863,13 @@ function charCardHtml(ch, o, cardIdx) {
   // Practice grids
   if (o.practice > 0) {
     const perRowAttr = o.perRow !== 'auto' ? ` data-perrow="${o.perRow}" style="--n:${o.perRow}"` : '';
-    html += `<div class="practice-row"${perRowAttr}>`;
+    const bigAll = o.bigDemo === 'all' && o.layout === 'word';
+    const bigDemo = (o.bigDemo === 'big' || bigAll) && o.layout === 'word';
+    html += `<div class="practice-row${bigAll ? ' big-all' : (bigDemo ? ' big-demo' : '')}"${perRowAttr}>`;
     const gcount = guideRowCount(o);
     for (let r = 0; r < o.practice; r++) {
-      html += traceCellHtml(ch, 'practice-cell', cellFlags(o, { guide: r < gcount, isFirst: r === 0 }), r % 3);
+      const cellCls = (bigDemo && (bigAll || r === 0)) ? 'practice-cell is-big-demo' : 'practice-cell';
+      html += traceCellHtml(ch, cellCls, cellFlags(o, { guide: r < gcount, isFirst: r === 0 }), r % 3);
     }
     html += `</div>`;
   }

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.2] - 2026-09-27
+
+### Added
+- **示範格大小選項（`#optBigDemo`）**：新增兩級特大 2×2 示範格——「特大 2×2（只示範格）」（第一格 2×2 大示範格，其餘練習格標準大小，向右排）及「特大 2×2（示範+描紅）」（所有格 2×2 同大，向右排列）。預設「標準」不變。
+- **列印 A4 版式改動**：字資訊頂置（佔整行 + 底下分隔線）、字卡改為垂直堆疊、字與字之間以實線分隔（隔行分隔線）。適用於每字練習模式（word layout）。
+
 ## [1.3.1] - 2026-09-27
 
 ### Changed
