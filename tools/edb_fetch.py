@@ -19,7 +19,15 @@ def wpath(*parts):
 HDRS = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'User-Agent': 'Mozilla/5.0'}
 
+def idfile(v):
+    """EDB id → 檔名：數字補零 4 位，ZC#### 原樣。"""
+    return f'{int(v):04d}.js' if str(v).isdigit() else f'{v}.js'
+
+
 def folder_for(idv):
+    if isinstance(idv, str) and not idv.isdigit():
+        return '4001-ZC'
+    idv = int(idv)
     if idv > 4000:
         return '4001-ZC'
     lo = ((idv - 1) // 1000) * 1000 + 1
@@ -33,18 +41,23 @@ def fetch_id(ch):
             req = urllib.request.Request('https://www.edbchinese.hk/lexlist_ch/result.jsp', data=data, headers=HDRS)
             with urllib.request.urlopen(req, timeout=25) as resp:
                 txt = resp.read().decode('utf-8', 'replace')
-            m = re.search(r'stkdemo_js/([^/"\']+)/(\d+)\.html', txt)
-            return ch, (int(m.group(2)) if m else None), None
+            m = re.search(r'stkdemo_js/([^/"\']+)/([A-Za-z0-9]+)\.html', txt)
+            if not m:
+                return ch, None, None
+            raw = m.group(2)
+            # 兩種 id 形式：數字（補零成 4 位）同 ZC#### （2026-10 發現，4001-ZC 檔夾）
+            idv = raw.zfill(4) if raw.isdigit() else raw
+            return ch, idv, None
         except Exception as e:
             if attempt == 2:
                 return ch, None, str(e)[:50]
             time.sleep(0.8)
 
 def dl_js(ch, idv):
-    fn = fwpath('edb_strokes', '{idv:04d}.js')
+    fn = wpath('edb_strokes', idfile(idv))
     if os.path.exists(fn) and os.path.getsize(fn) > 100:
         return idv, 'cached'
-    url = f'https://www.edbchinese.hk/EmbziciwebRes/stkdemo_js/{folder_for(idv)}/{idv:04d}.js'
+    url = f'https://www.edbchinese.hk/EmbziciwebRes/stkdemo_js/{folder_for(idv)}/{idfile(idv)}'
     for attempt in range(3):
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -91,8 +104,8 @@ def main():
 
     if stage in ('dl', 'all'):
         todo = [(ch, idv) for ch, idv in mapping.items()
-                if not (os.path.exists(fwpath('edb_strokes', '{idv:04d}.js'))
-                        and os.path.getsize(fwpath('edb_strokes', '{idv:04d}.js')) > 100)]
+                if not (os.path.exists(wpath('edb_strokes', idfile(idv)))
+                        and os.path.getsize(wpath('edb_strokes', idfile(idv))) > 100)]
         print(f'to download: {len(todo)}', flush=True)
         ok = 0
         for ch, idv in todo:

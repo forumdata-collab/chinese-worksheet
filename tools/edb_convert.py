@@ -22,6 +22,11 @@ def wpath(*parts):
     return _os.path.join(WORK, *parts)
 
 
+def idfile(v):
+    """EDB id → 檔名：數字補零成 4 位，ZC#### 原樣（2026-10 新增）。"""
+    return f'{int(v):04d}.js' if str(v).isdigit() else f'{v}.js'
+
+
 
 
 def _load_db_counts():
@@ -364,7 +369,7 @@ if __name__ == '__main__':
     mapping = json.load(open(wpath('edb_id_map.json')))['mapping']
     out, errors, swapped_chars = {}, [], []
     for n, (ch, idv) in enumerate(mapping.items()):
-        fn = wpath('edb_strokes', '%04d.js') % idv
+        fn = wpath('edb_strokes', idfile(idv))
         if not os.path.exists(fn):
             errors.append((ch, idv, 'no file'))
             continue

@@ -7,7 +7,6 @@ bbox onto that char's hanzi-writer-data ink bbox (uniform scale + centre align).
 Display is unaffected (the display SVG normalises by its own ink bbox).
 """
 import json, os, re, sys, statistics
-sys.path.insert(0, '/tmp')
 from svgpathtools import parse_path
 # --- work directory (all scratch data lives here; CW_WORK overrides) ---------
 import os as _os

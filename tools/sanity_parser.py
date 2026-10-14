@@ -24,7 +24,6 @@ import sys
 from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, '/tmp')
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STROKES = '/tmp/edb_strokes'

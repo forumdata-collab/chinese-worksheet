@@ -4,7 +4,6 @@ Output: /home/ubuntu/chinese-worksheet/glyphs/<hex>.json
         {"s": [stroke path...], "m": [[[x,y],...] ...]}   (EDB 1080-space, y-down)
 """
 import json, os, sys, time
-sys.path.insert(0, '/tmp')
 from edb_median import medians_for
 from edb_stages import parse as parse_stages, centroid
 # --- work directory (all scratch data lives here; CW_WORK overrides) ---------
@@ -12,6 +11,11 @@ import os as _os
 WORK = _os.environ.get('CW_WORK', '/tmp')
 def wpath(*parts):
     return _os.path.join(WORK, *parts)
+
+
+def idfile(v):
+    """EDB id → 檔名：數字補零成 4 位，ZC#### 原樣（2026-10 新增）。"""
+    return f'{int(v):04d}.js' if str(v).isdigit() else f'{v}.js'
 
 
 
@@ -43,7 +47,7 @@ for i, ch in enumerate(chars):
         jid = IDMAP.get(ch)
         if jid is not None:
             try:
-                stages = parse_stages(STROKE_DIR + f'{jid:04d}.js')
+                stages = parse_stages(STROKE_DIR + idfile(jid))
             except Exception:
                 stages = []
             for si, st in enumerate(stages):

@@ -49,7 +49,7 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`${glyphDir()}${hex}.json?v=20`)
+  const p = fetch(`${glyphDir()}${hex}.json?v=21`)
     .then(r => (r.ok ? r.json() : null))
     .catch(() => null)
     .then(rec => { if (rec) _hkGlyphData.set(ch, rec); return rec; });

@@ -1,6 +1,5 @@
 """Extract per-stroke stage centroids from EDB JS (stage 1 = pen start region)."""
 import re, json, os, sys
-sys.path.insert(0, '/tmp')
 from createjs_decode import decode_createjs_path
 from PIL import Image, ImageDraw
 import numpy as np

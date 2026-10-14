@@ -3,7 +3,6 @@ import json, math, sys
 import numpy as np
 from PIL import Image, ImageDraw
 from svgpathtools import parse_path
-sys.path.insert(0, '/tmp')
 from zs_thin import thin
 # --- work directory (all scratch data lives here; CW_WORK overrides) ---------
 import os as _os

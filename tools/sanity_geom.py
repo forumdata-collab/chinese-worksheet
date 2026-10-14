@@ -20,7 +20,6 @@ Needs: /tmp/edb_strokes/*.js (raw animations), /tmp/hw_cache/*.json,
 """
 import json, os, re, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, '/tmp')
 from edb_convert import parse_edb_js, group_to_svg
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
