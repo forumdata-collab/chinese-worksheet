@@ -43,6 +43,7 @@ function hkCharDataLoader(ch, onComplete, onError) {
 // outlines (1080-space) plus skeleton centrelines, IN STORED Y-UP SPACE.
 // Displayed via a flipped <g> so SVG (y-down) shows the character the right way up.
 const _hkGlyphCache = new Map();
+const _hkGlyphData = new Map();   // 已載入 glyph 嘅資料（同步讀筆數用）
 function glyphDir() { return window.GLYPH_DIR || 'glyphs/'; }
 function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
@@ -50,7 +51,8 @@ function hkGlyph(ch) {
   const hex = ch.codePointAt(0).toString(16);
   const p = fetch(`${glyphDir()}${hex}.json?v=20`)
     .then(r => (r.ok ? r.json() : null))
-    .catch(() => null);
+    .catch(() => null)
+    .then(rec => { if (rec) _hkGlyphData.set(ch, rec); return rec; });
   _hkGlyphCache.set(ch, p);
   return p;
 }
@@ -620,6 +622,10 @@ function appendStrokeArrows(svg, medians, C, box) {
 
 function strokeCountOf(ch) {
   const seq = strokeSeqInfo(ch);
+  // 教育局字形已載入時，一律以字形真實筆數為準（CHAR_DB.s 曾用 Unihan 大陸標準，
+  // 對 EDB 字可以差 1–6 筆：辶 3/4、艹 3/4、阝 2/3、糹 3/6、麵 20/15 …）。
+  const rec = _hkGlyphData.get(ch);
+  if (rec && rec.s && rec.s.length) return { count: rec.s.length, seq };
   const db = (window.CHAR_DB || {})[ch];
   const n = db && db.s ? db.s : (seq ? seq.count : 0);
   if (!n) return null;
