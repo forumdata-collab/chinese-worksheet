@@ -26,7 +26,7 @@ GLYPHS = os.path.join(ROOT, 'glyphs')
 OUT = os.path.join(ROOT, 'data', 'glyph_sources.json')
 
 # 2026-09-21 手動補嘅 26 個香港正字（glyph 由 EDB 動畫 copy/build，唔喺 edb_id_map）
-HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀'
+HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀峯'
 
 
 def load_edb_chars():

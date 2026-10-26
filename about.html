@@ -120,7 +120,7 @@
   <h2>開發邏輯</h2>
   <p>本站是一個純前端靜態網站（單一 HTML + 靜態資料檔），沒有後端、沒有資料庫、沒有追蹤。核心設計是「香港標準優先」：字形、筆順、讀音都以香港教育局標準為準，其餘來源只作後備。</p>
   <ul>
-    <li><strong>字形與筆順</strong>：香港教育局《香港小學學習字詞表》（edbchinese.hk）官方筆順動畫，逆向提取為向量輪廓（4,518 字）。字詞表未收錄之字，後備 HanziWriter（hanziwriter.org）通用筆順，其筆順次序另參漢典（zdic.net）及筆順字典（twpen.com）。</li>
+    <li><strong>字形與筆順</strong>：香港教育局《香港小學學習字詞表》（edbchinese.hk）官方筆順動畫，逆向提取為向量輪廓（4,525 字）。字詞表未收錄之字，後備 HanziWriter（hanziwriter.org）通用筆順，其筆順次序另參漢典（zdic.net）及筆順字典（twpen.com）。</li>
     <li><strong>讀音</strong>：粵拼取自開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音取自 pypinyin；筆畫數取自 Unicode Unihan。</li>
     <li><strong>簡繁轉換</strong>：以 OpenCC 詞組表為基礎，逐字轉換時再做「香港正字歸一化」，將台灣慣用異體統一成香港標準正字（詳見下節）。</li>
     <li><strong>字體</strong>：內建 LXGW WenKai TC（霞鶩文楷）自託管字體，無外部 Google Fonts 依賴。</li>
@@ -131,23 +131,23 @@
   <p>以下為本站的收錄數據（由自動化腳本統計，隨更新而變動）：</p>
 
   <div class="stat-figure">
-    <div class="stat-figure-title">字形與筆順來源（共 5,556 字）</div>
+    <div class="stat-figure-title">字形與筆順來源（共 5,557 字）</div>
     <div class="bar-segmented">
       <div class="bar-seg bar-edb" style="width:81%"></div>
       <div class="bar-seg bar-fallback" style="width:15%"></div>
       <div class="bar-seg bar-twpen" style="width:4%"></div>
     </div>
     <div class="legend">
-      <span><i class="dot-edb"></i>香港教育局官方筆順 4,519 字（81%）</span>
+      <span><i class="dot-edb"></i>香港教育局官方筆順 4,525 字（81%）</span>
       <span><i class="dot-fallback"></i>HanziWriter／字體後備 839 字（15%）</span>
-      <span><i class="dot-twpen"></i>台灣筆順字典後備 198 字（4%）</span>
+      <span><i class="dot-twpen"></i>台灣筆順字典後備 193 字（4%）</span>
     </div>
   </div>
 
   <div class="stat-figure">
     <div class="stat-figure-title">讀音與筆畫數覆蓋</div>
     <div class="stat-line">
-      收錄 <b>5,556</b> 個漢字，其中 <b>100%</b> 有粵拼及普通話拼音，<b>100%</b> 有筆畫數。
+      收錄 <b>5,557</b> 個漢字，其中 <b>100%</b> 有粵拼及普通話拼音，<b>100%</b> 有筆畫數。
     </div>
   </div>
 
@@ -204,7 +204,7 @@
     </thead>
     <tbody>
       <tr><td class="hanzi">裏</td><td class="hanzi">裡</td><td>衣部（上下包住）vs 衤部（左邊旁），部首不同</td></tr>
-      <tr><td class="hanzi">峰</td><td class="hanzi">峯</td><td>「山」在左邊 vs 在上邊</td></tr>
+      <tr><td class="hanzi">峯</td><td class="hanzi">峰</td><td>「山」在上邊 vs 在左邊（香港標準字形作「峯」）</td></tr>
       <tr><td class="hanzi">群</td><td class="hanzi">羣</td><td>「君」在左邊 vs 在上邊</td></tr>
       <tr><td class="hanzi">麵</td><td class="hanzi">麪</td><td>「麥」+「面」vs「麥」+「丏」，結構不同</td></tr>
       <tr><td class="hanzi">罵</td><td class="hanzi">駡</td><td>「网（罒）」部 vs「馬」部，部首不同</td></tr>
