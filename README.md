@@ -181,7 +181,8 @@ EDB 查詢頁面有兩個欄位直接標示邊個係正字：
 
 ## 🧪 品質與代碼健康（2026-09-19 審計）
 
-- **回歸測試套件 37 項**（headless chromium 注入 + `dispatchEvent('change')` 模擬真實操作，`--dump-dom` 讀結果）：輸入解析（半形標點／去重／簡轉繁）· 描紅格數 × 示範/練習格格式矩陣 · 7 款格線樣式 · 整句練習 · 筆順工作紙 · 默書版 · perRow 字級 · localStorage · 橫向溢出 · JS error。列印版面另測（`@media print` 規則強制生效 + A4 闊度）：無溢出、格 2.2cm 正確。
+- **回歸測試套件 69 項**（`tools/regression.py`，Playwright + headless Chromium，本機起 static server）：輸入解析（半形標點／去重／簡轉繁）· 描紅格數 × 示範／練習格格式矩陣 · 7 款格線樣式 · perRow 字級比例（0.82）· 特大示範格 · 整句練習 · 筆順工作紙 · 默書版（字卡＋整句＋筆順頁全部隱藏）· 異體字直出模式 · localStorage · 手機 viewport · 大量輸入· 橫向溢出（螢幕＋列印）· 4xx／JS 錯誤。執行：`~/venvs/chinese-worksheet-tools/bin/python tools/regression.py`。
+- **資料層審計**：`tools/audit_full.py`（CHAR_DB ↔ glyphs ↔ hk_order ↔ stroke_seq ↔ variants 交叉檢查）· `tools/audit_hw_fallback.py`（839 個無 EDB 字形字逐字確認 HanziWriter 有資料、筆畫數一致）· `tools/sanity_parser_sample.py`（隨機抽 80 個字重抓 EDB 動畫，驗證 parser 仍可重現出貨字形）。
 - **已修氣味**：Shotgun Surgery + Primitive Obsession（`GUIDE_STYLES` 單一真相表 + `<select>` 由 JS 生成）· Data Clumps（`cellFlags()`）· Long Parameter List（`addStepNumber` 物件參數）· Dead Code（死 CSS）。
 - **刻意保留**：`index.html` 單檔、無 build step（部署 = copy 檔案）—— Large Class 係設計取捨；`placeNumberLabels()`（184 行）係避碰演算法本體，硬拆反而令狀態更難追；`traceCellHtml()` 4 個參數（其中 `opts` 係 flags 物件）唔算 Long Parameter List。
 - **數字層全量審計（2026-09-21）**：`sanity_numbers.js` 4,715 字 / 57,767 數字 **0 碰撞、0 錨點離開自己筆畫**（`OK — no collisions`）。密字重疊靠兩手修：① 參數（`SIZE_SCALES` 加 0.36/0.3 + `numberBaseScale` 下限 0.45）；② `NUMBER_OVERRIDES` 逐字 override（繭/輛/騷/髒/齷 5 字指定更遠弧長位置）。另修正 sanity mirror 嘅 size cap drift（`fs`→`fsEff`、floor 0.45→0.8），消除籌/鬱嘅假重疊。

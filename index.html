@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
 <link href="fonts/lxgw.css" rel="stylesheet">
-<script src="data.js?v=1793001983"></script>
+<script src="data.js?v=1793004230"></script>
 <script src="hk_order.js?v=2"></script>
 <script src="stroke_seq.js?v=3"></script>
-<script src="glyph-engine.js?v=5"></script>
+<script src="glyph-engine.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
 <style>
@@ -2087,6 +2087,9 @@ function renderWorksheet() {
   html += strokePageHtml(o);
 
   content.innerHTML = html;
+  // 默書版要包住整份內容（字卡以外仲有整句練習、筆順工作紙），
+  // 只喺 .char-card 加 quiz-mode 會令句子描紅同筆順工作紙泄露答案。
+  content.classList.toggle('quiz-mode', !!o.quizMode);
 
   setWsFooter(o);
   normalizeGlyphs();
@@ -2205,6 +2208,8 @@ function toggleQuizMode() {
   document.querySelectorAll('.char-card').forEach(card => {
     card.classList.toggle('quiz-mode', quizMode);
   });
+  const content = document.getElementById('wsContent');
+  if (content) content.classList.toggle('quiz-mode', quizMode);
   // Keep state in sync after regenerate
   if (typeof currentOptions === 'object') currentOptions.quizMode = quizMode;
 }

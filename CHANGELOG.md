@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.4] - 2026-10-26
+
+### Fixed
+- **默書版（`#btnQuizMode`）洩漏答案**：`quiz-mode` class 只加在 `.char-card` 上，但「整句練習」描紅字與「筆順工作紙」都喺字卡之外 → 切到默書版時兩者照樣顯示（筆順頁直接印出全部筆順）。改為同時加在 `#wsContent`（render + toggle 兩處），CSS 的 `.quiz-mode .guide-char / .stroke-page / .stroke-num-svg` 才真正生效。
+- **33 個無 EDB 字形字的筆畫數少 1–2 筆**：`CHAR_DB.s` 取 Unihan kTotalStrokes（大陸計法：艹 3、辶 3、阝 2），但該批字的動畫來自 HanziWriter（香港／台灣計法：艹 4、辶 4、阝 3）→ 卡片「13畫」、筆順工作紙只出 13 格，第 14 筆永遠唔出現（例：蒔 13→14、蕎 15→16、髖 23→25）。全部改跟 HanziWriter 筆數，`sanity_data` 與 `audit_full` 現時 0 不一致。
+- **標點浪費一個 404 請求**：`installHKGlyphs()` 對「，。！？」都去 fetch `glyphs/XXXX.json`（EDB／HanziWriter 根本冇標點字形）→ console 每次生成都一堆 404。已喺引擎內用 `isPunct()` 過濾。
+
+### Added
+- `tools/regression.py`：69 項 Playwright 回歸套件（版面矩陣、比例、默書版、異體字直出、列印、手機、溢出、錯誤）。
+- `tools/audit_full.py`、`tools/audit_hw_fallback.py`、`tools/sanity_parser_sample.py`：資料層交叉審計、HanziWriter 覆蓋率、抽樣 parser 驗證（唔需要 /tmp/edb_strokes）。
+
 ## [1.3.3] - 2026-10-26
 
 ### Added

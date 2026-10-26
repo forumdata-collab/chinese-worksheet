@@ -473,7 +473,9 @@ function addGlyphNumbers(svg) {
 async function installHKGlyphs(root) {
   const els = [...root.querySelectorAll('.char-glyph[data-ch], .guide-glyph[data-ch]')];
   if (!els.length) return new Set();
-  const chars = [...new Set(els.map(e => e.dataset.ch))];
+  const chars = [...new Set(els.map(e => e.dataset.ch))]
+    // 標點冇字形資料（EDB/HW 都冇），唔應該浪費一個 404 請求
+    .filter(ch => !(typeof isPunct === 'function' && isPunct(ch)));
   const recs = new Map();
   await Promise.all(chars.map(async ch => {
     const rec = await hkGlyph(ch);
