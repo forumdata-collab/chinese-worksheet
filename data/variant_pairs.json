@@ -1,0 +1,385 @@
+{
+ "version": 1,
+ "generated": "2026-10-26",
+ "note": "同一字的另一寫法（字形檔案相同＝同一個 EDB 筆順動畫）。standard = EDB 動畫所畫的香港教育標準字形；own_glyph = 有冇該字自己的字形。",
+ "pairs": {
+  "7a0e": {
+   "char": "税",
+   "alts": [
+    "稅"
+   ],
+   "standard": "税",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "7a05": {
+   "char": "稅",
+   "alts": [
+    "税"
+   ],
+   "standard": "税",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "885b": {
+   "char": "衛",
+   "alts": [
+    "衞"
+   ],
+   "standard": "衞",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "885e": {
+   "char": "衞",
+   "alts": [
+    "衛"
+   ],
+   "standard": "衞",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "8471": {
+   "char": "葱",
+   "alts": [
+    "蔥"
+   ],
+   "standard": "葱",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "8525": {
+   "char": "蔥",
+   "alts": [
+    "葱"
+   ],
+   "standard": "葱",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "5e8a": {
+   "char": "床",
+   "alts": [
+    "牀"
+   ],
+   "standard": "牀",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "7240": {
+   "char": "牀",
+   "alts": [
+    "床"
+   ],
+   "standard": "牀",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "85f4": {
+   "char": "藴",
+   "alts": [
+    "蘊"
+   ],
+   "standard": "藴",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "860a": {
+   "char": "蘊",
+   "alts": [
+    "藴"
+   ],
+   "standard": "藴",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "919e": {
+   "char": "醞",
+   "alts": [
+    "醖"
+   ],
+   "standard": "醖",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "9196": {
+   "char": "醖",
+   "alts": [
+    "醞"
+   ],
+   "standard": "醖",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "6085": {
+   "char": "悅",
+   "alts": [
+    "悦"
+   ],
+   "standard": "悦",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "60a6": {
+   "char": "悦",
+   "alts": [
+    "悅"
+   ],
+   "standard": "悦",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "88e1": {
+   "char": "裡",
+   "alts": [
+    "裏"
+   ],
+   "standard": "裏",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "88cf": {
+   "char": "裏",
+   "alts": [
+    "裡"
+   ],
+   "standard": "裏",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "56f1": {
+   "char": "囱",
+   "alts": [
+    "囪"
+   ],
+   "standard": "囱",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "56ea": {
+   "char": "囪",
+   "alts": [
+    "囱"
+   ],
+   "standard": "囱",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "8131": {
+   "char": "脱",
+   "alts": [
+    "脫"
+   ],
+   "standard": "脱",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "812b": {
+   "char": "脫",
+   "alts": [
+    "脱"
+   ],
+   "standard": "脱",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "9264": {
+   "char": "鉤",
+   "alts": [
+    "鈎"
+   ],
+   "standard": "鈎",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "920e": {
+   "char": "鈎",
+   "alts": [
+    "鉤"
+   ],
+   "standard": "鈎",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "5aaa": {
+   "char": "媪",
+   "alts": [
+    "媼"
+   ],
+   "standard": "媪",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "5abc": {
+   "char": "媼",
+   "alts": [
+    "媪"
+   ],
+   "standard": "媪",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "514c": {
+   "char": "兌",
+   "alts": [
+    "兑"
+   ],
+   "standard": "兑",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "5151": {
+   "char": "兑",
+   "alts": [
+    "兌"
+   ],
+   "standard": "兑",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "81e5": {
+   "char": "臥",
+   "alts": [
+    "卧"
+   ],
+   "standard": "卧",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "5367": {
+   "char": "卧",
+   "alts": [
+    "臥"
+   ],
+   "standard": "卧",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "5cef": {
+   "char": "峯",
+   "alts": [
+    "峰"
+   ],
+   "standard": "峯",
+   "relation": "部件位置變體",
+   "own_glyph": false
+  },
+  "5cf0": {
+   "char": "峰",
+   "alts": [
+    "峯"
+   ],
+   "standard": "峯",
+   "relation": "部件位置變體",
+   "own_glyph": true
+  },
+  "95b2": {
+   "char": "閲",
+   "alts": [
+    "閱"
+   ],
+   "standard": "閲",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "95b1": {
+   "char": "閱",
+   "alts": [
+    "閲"
+   ],
+   "standard": "閲",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "654d": {
+   "char": "敍",
+   "alts": [
+    "敘"
+   ],
+   "standard": "敍",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "6558": {
+   "char": "敘",
+   "alts": [
+    "敍"
+   ],
+   "standard": "敍",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "8aaa": {
+   "char": "說",
+   "alts": [
+    "説"
+   ],
+   "standard": "説",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "8aac": {
+   "char": "説",
+   "alts": [
+    "說"
+   ],
+   "standard": "説",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "92ed": {
+   "char": "鋭",
+   "alts": [
+    "銳"
+   ],
+   "standard": "鋭",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "92b3": {
+   "char": "銳",
+   "alts": [
+    "鋭"
+   ],
+   "standard": "鋭",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "6237": {
+   "char": "户",
+   "alts": [
+    "戶"
+   ],
+   "standard": "户",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "6236": {
+   "char": "戶",
+   "alts": [
+    "户"
+   ],
+   "standard": "户",
+   "relation": "同字異寫",
+   "own_glyph": true
+  },
+  "6eab": {
+   "char": "溫",
+   "alts": [
+    "温"
+   ],
+   "standard": "温",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "6e29": {
+   "char": "温",
+   "alts": [
+    "溫"
+   ],
+   "standard": "温",
+   "relation": "同字異寫",
+   "own_glyph": false
+  }
+ }
+}

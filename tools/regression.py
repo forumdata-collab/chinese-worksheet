@@ -299,7 +299,31 @@ def main():
           return p ? p.getAttribute('d').slice(0, 40) : null; }""")
         check('12 variant mode: HK 正字説 keeps EDB glyph', got, shuo_hk)
 
-        # ---------- 13. simplified -> traditional ----------
+        # ---------- 12b. 字形語意層：來源碼、筆數層級、另一寫法行 ----------
+        h.generate(pg, '峰蒔', {'optVariant': False}, wait=2600)
+        labels = pg.evaluate("""() => {
+          const card = c => ({
+            meta: (c.querySelector('.meta-row') || {}).textContent || '',
+            badge: [...c.querySelectorAll('.src-badge')].map(b => b.dataset.src),
+            form: (c.querySelector('.form-row') || {}).textContent || ''
+          });
+          return {
+            option: document.querySelector('label[for=optVariant]').textContent,
+            cards: [...document.querySelectorAll('.char-card')].map(card)
+          };
+        }""")
+        check('12b option label', labels['option'].strip(), '顯示我輸入的寫法')
+        check('12b EDB card meta', '香港教育標準' in labels['cards'][0]['meta'], True, labels['cards'][0])
+        check('12b EDB badge', labels['cards'][0]['badge'], ['EDB'])
+        check('12b fallback card uses 參考字形',
+              '參考字形' in labels['cards'][1]['meta'], True, labels['cards'][1])
+        check('12b fallback badge', labels['cards'][1]['badge'], ['HW'])
+        check('12b 峰 form row (standard shown)',
+              labels['cards'][0]['form'], '字形：峯（香港教育標準）｜峰（你的輸入）')
+        h.generate(pg, '峰', {'optVariant': True}, wait=2400)
+        on_form = pg.evaluate("""() => (document.querySelector('.form-row') || {}).textContent || ''""")
+        check('12b 峰 form row (own form shown)',
+              on_form, '字形：峰（你的寫法）｜峯（香港教育標準）')
         h.generate(pg, '发展头发干杯皇后什么', {'optS2T': True, 'optVariant': False}, wait=1500)
         conv = pg.evaluate("() => document.getElementById('inputText').value")
         check('13 s2t conversion', conv, '發展頭髮乾杯皇后什麼', conv)

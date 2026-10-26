@@ -399,6 +399,24 @@ body {
   gap: 12px;
 }
 .meta-row span { display: inline-flex; align-items: center; gap: 3px; }
+/* 來源碼：極短標示，詳細說明放 title／教師附錄（顧問建議：分層標示） */
+.src-badge {
+  font-size: 0.82em;
+  letter-spacing: 0.03em;
+  padding: 0 4px;
+  border: 1px solid #cfd6dd;
+  border-radius: 3px;
+  color: #6a7480;
+  background: #fff;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+/* 同一字的另一寫法（雙軌呈現，不靜默改字） */
+.form-row {
+  font-size: 0.78em;
+  color: #8a8f98;
+  margin-top: 3px;
+  line-height: 1.5;
+}
 
 /* ===== PRACTICE GRIDS ===== */
 .practice-row {
@@ -1201,7 +1219,7 @@ details.advance-collapse summary:hover { color: var(--red); }
         <div class="opt-group">
           <div class="toggle-row">
             <input type="checkbox" id="optVariant">
-            <label for="optVariant" title="勾選後字形跟着輸入字：峰（山在左）／峯（山在上）各自成形，不歸一為香港正字">直出異體字</label>
+            <label for="optVariant" title="勾選後字形跟着你輸入的字；預設示範香港教育標準寫法">顯示我輸入的寫法</label>
           </div>
         </div>
         <div class="opt-group">
@@ -1429,6 +1447,25 @@ const NS = 'http://www.w3.org/2000/svg';
 const SIZE_PX = { xs: 56, sm: 72, md: 96, lg: 128 };
 // 字與框比例：字形墨跡佔格 82%（螢幕與列印一致）
 const GLYPH_RATIO = 0.82;
+
+// ===== 字形語意層（顧問建議：不要靜默改字）=====
+// GLYPH_SOURCES: hex → 'EDB'｜'twpen'（有值但無檔案 = HanziWriter 後備）
+// VARIANT_PAIRS: hex → { alts, standard, relation, own_glyph }（同一字的另一寫法）
+let GLYPH_SOURCES = {};
+let VARIANT_PAIRS = {};
+function loadGlyphMeta() {
+  Promise.all([
+    fetch('data/glyph_sources.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
+    fetch('data/variant_pairs.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
+  ]).then(([gs, vp]) => {
+    if (gs) GLYPH_SOURCES = gs.glyphs || {};
+    if (vp) VARIANT_PAIRS = vp.pairs || {};
+    // 已產生工作紙就重畫一次，令來源標示／另一寫法即時出現
+    if (document.querySelector('.char-card')) renderWorksheet();
+  });
+}
+loadGlyphMeta();
+
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -1856,11 +1893,51 @@ function charCardHtml(ch, o, cardIdx) {
 
   // Meta info
   let metaParts = [];
-  if (o.strokes && d.s) metaParts.push(`✏️ ${d.s}畫`);
+  if (o.strokes && d.s) {
+    const hex = ch.codePointAt(0).toString(16);
+    const src = GLYPH_SOURCES[hex] || (window.CHAR_DB[ch] ? 'HW' : null);
+    const tier = src === 'EDB' ? '香港教育標準' : (src ? '參考字形' : '');
+    metaParts.push(`✏️ ${tier ? tier + ' ' : ''}${d.s}畫`);
+    if (src) {
+      const code = src === 'EDB' ? 'EDB' : (src === 'twpen' ? 'TW' : 'HW');
+      const label = src === 'EDB'
+        ? '字形來源：香港教育局《香港小學學習字詞表》'
+        : (src === 'twpen'
+          ? '字形來源：台灣教育部《筆順字典》，非香港官方字形'
+          : '字形來源：HanziWriter 通用字形，非香港官方字形');
+      metaParts.push(`<span class="src-badge" data-src="${code}" title="${label}">${code}</span>`);
+    }
+  }
   if (d.si) metaParts.push(`簡體：${esc(d.si)}`);
   if (metaParts.length) {
     html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
   }
+
+  // 「同一字的另一寫法」——避免用戶以為系統靜默改字（顧問建議：雙軌呈現）
+  const vp = VARIANT_PAIRS[ch.codePointAt(0).toString(16)];
+  if (vp) {
+    const own = !!(o.variant && vp.own_glyph);
+    const std = vp.standard;
+    const shown = own ? ch : std;
+    let other, otherLabel;
+    if (own) {
+      other = std;
+      otherLabel = '香港教育標準';
+    } else if (ch !== std) {
+      other = ch;                 // 示範標準字形，同時標明用戶輸入的是另一寫法
+      otherLabel = '你的輸入';
+    } else {
+      other = vp.alts[0] || '';
+      otherLabel = '另一常見寫法';
+    }
+    const shownLabel = own ? '你的寫法' : '香港教育標準';
+    const tip = `${vp.relation}：本站示範「${std}」${own ? '，已按你的輸入顯示' : ''}`
+      + `；如要跟着輸入字顯示，可勾選「顯示我輸入的寫法」`
+      + (!vp.own_glyph ? '（此字暫未提供另一寫法字形）' : '');
+    html += `<div class="form-row" title="${esc(tip)}">字形：${esc(shown)}（${shownLabel}）`
+      + (other ? `｜${esc(other)}（${otherLabel}）` : '') + `</div>`;
+  }
+
 
   // Action bar (screen only) — 標點無筆順資料，唔顯示按鈕
   if (!isPunct(ch)) {
