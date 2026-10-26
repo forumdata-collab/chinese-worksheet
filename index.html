@@ -306,6 +306,8 @@ body {
   }
   /* 隔行分隔線：字同字之間用實線隔開 */
   .char-card + .char-card { border-top: 1px solid #E3CDCD; padding-top: 14px; margin-top: 14px; }
+  /* 又讀只作教師參考，唔印落工作紙 */
+  .alt-readings { display: none !important; }
 }
 
 /* ===== CHARACTER CARD ===== */
@@ -374,6 +376,25 @@ body {
   font-size: 0.8em;
   color: #888;
 }
+/* 又讀：預設收起，點開才顯示；列印不顯示（顧問 Q6） */
+.alt-readings {
+  font-size: 0.78em;
+  color: #8a8f98;
+  margin-top: 2px;
+}
+.alt-readings summary {
+  cursor: pointer;
+  color: #9a9a9a;
+  list-style: none;
+  display: inline-block;
+  border-bottom: 1px dotted #c9c9c9;
+  line-height: 1.4;
+}
+.alt-readings summary::-webkit-details-marker { display: none; }
+.alt-readings summary::after { content: " ▾"; font-size: 0.9em; }
+.alt-readings[open] summary { color: #6a7480; }
+.alt-readings[open] summary::after { content: " ▴"; }
+.alt-readings > div { margin-top: 2px; }
 .play-btn {
   background: none;
   border: 1.5px solid #ccc;
@@ -1872,9 +1893,6 @@ function charCardHtml(ch, o, cardIdx) {
     html += `<div class="reading-row">`;
     html += `<span class="reading-label canto">粵拼</span>`;
     html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
-    if (d.jy2 && d.jy2.length) {
-      html += `<span class="reading-alt">又讀：${d.jy2.map(jyutpingHtml).join('、')}</span>`;
-    }
     html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
     html += `</div>`;
   }
@@ -1884,11 +1902,23 @@ function charCardHtml(ch, o, cardIdx) {
     html += `<div class="reading-row">`;
     html += `<span class="reading-label">拼音</span>`;
     html += `<span class="reading-value">${esc(d.py)}</span>`;
-    if (d.py2 && d.py2.length) {
-      html += `<span class="reading-alt">又讀：${esc(d.py2.join('、'))}</span>`;
-    }
     html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
     html += `</div>`;
+  }
+
+  // 又讀：預設收起（顧問 Q6：主讀一行，其餘折叠；列印不顯示）
+  {
+    const alts = [];
+    if (o.canto && d.jy2 && d.jy2.length) {
+      alts.push(`粵拼又讀：${d.jy2.map(jyutpingHtml).join('、')}`);
+    }
+    if (o.pinyin && d.py2 && d.py2.length) {
+      alts.push(`拼音又讀：${esc(d.py2.join('、'))}`);
+    }
+    if (alts.length) {
+      html += `<details class="alt-readings"><summary>又讀</summary>`
+        + `<div>${alts.join('　')}</div></details>`;
+    }
   }
 
   // Meta info

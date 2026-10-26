@@ -324,6 +324,31 @@ def main():
         on_form = pg.evaluate("""() => (document.querySelector('.form-row') || {}).textContent || ''""")
         check('12b 峰 form row (own form shown)',
               on_form, '字形：峰（你的寫法）｜峯（香港教育標準）')
+        # ---------- 12c. 又讀折疊（顧問 Q6） ----------
+        h.generate(pg, '說睇', {'optVariant': False}, wait=2600)
+        alt = pg.evaluate("""() => {
+          const cards = [...document.querySelectorAll('.char-card')];
+          return cards.map(c => {
+            const d = c.querySelector('.alt-readings');
+            return {ch: c.dataset.char, has: !!d, open: d ? d.open : null,
+                    text: d ? (d.querySelector('div') || {}).textContent || '' : '',
+                    inline: c.querySelectorAll('.reading-alt').length};
+          });
+        }""")
+        check('12c 又讀 block exists', [c['has'] for c in alt], [True, True])
+        check('12c 又讀 collapsed by default', [c['open'] for c in alt], [False, False])
+        check('12c 又讀 no inline duplicates', [c['inline'] for c in alt], [0, 0])
+        check_true('12c 又讀 text', '粵拼又讀' in alt[0]['text'], alt[0]['text'])
+        opened = pg.evaluate("""() => { const d = document.querySelector('.alt-readings');
+          d.open = true; return d.open; }""")
+        check('12c 又讀 opens', opened, True)
+        pg.emulate_media(media='print')
+        pg.wait_for_timeout(300)
+        check('12c 又讀 hidden in print',
+              pg.evaluate("() => getComputedStyle(document.querySelector('.alt-readings')).display"),
+              'none')
+        pg.emulate_media(media='screen')
+
         h.generate(pg, '发展头发干杯皇后什么', {'optS2T': True, 'optVariant': False}, wait=1500)
         conv = pg.evaluate("() => document.getElementById('inputText').value")
         check('13 s2t conversion', conv, '發展頭髮乾杯皇后什麼', conv)
