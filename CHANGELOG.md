@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.3] - 2026-10-26
+
+### Added
+- **「直出異體字」選項（`#optVariant`，預設關）**：勾選後字形跟着輸入字，不再一律歸一為香港正字——輸入「峰」出「山」在左的峰形（`glyphs/variants/5cf0.json`，字形取自 HanziWriter 通用字形），輸入「峯」出「山」在上的峯形（EDB 香港正字）。切換選項即時重生（清字形 cache），筆順數字／筆順彈窗／筆順工作紙同步跟隨。
+- `glyphs/variants/` 目錄：異體字直出模式用的字形，未收錄的字自動回落標準 glyph。
+
+### Fixed
+- **「峯」顯示未收錄**：EDB id 1107 正字為「峯」（「峰」是異體，查「峰」會 redirect），但 CHAR_DB 只有「峰」→ 輸入峯時冇讀音、冇筆畫數，卡片顯示未收錄。已補 `glyphs/5cef.json` + CHAR_DB（粵拼 fung1／拼音 fēng／10 畫），並加入 `build_provenance.py` 的 `HK_NEW_CHARS`。
+- **about.html 異體字表方向寫反**：改為「峯（香港標準）／峰（其他寫法）」，並更新統計數字（5,557 字，EDB 4,525）。
+
 ## [1.3.2] - 2026-09-27
 
 ### Added

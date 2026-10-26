@@ -8,7 +8,7 @@
 <script src="data.js?v=1793001983"></script>
 <script src="hk_order.js?v=2"></script>
 <script src="stroke_seq.js?v=3"></script>
-<script src="glyph-engine.js?v=4"></script>
+<script src="glyph-engine.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
 <style>
@@ -1200,6 +1200,12 @@ details.advance-collapse summary:hover { color: var(--red); }
         </div>
         <div class="opt-group">
           <div class="toggle-row">
+            <input type="checkbox" id="optVariant">
+            <label for="optVariant" title="勾選後字形跟着輸入字：峰（山在左）／峯（山在上）各自成形，不歸一為香港正字">直出異體字</label>
+          </div>
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row">
             <label for="audioRate">朗讀語速</label>
             <input type="range" id="audioRate" min="0.4" max="1.5" step="0.1" value="0.9"
                    style="width:80px;" title="語音語速">
@@ -1470,6 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (saved.name) document.getElementById('optName').value = saved.name;
       if (saved.date) document.getElementById('optDate').value = saved.date;
       document.getElementById('optS2T').checked = saved.s2t === true;
+      document.getElementById('optVariant').checked = saved.variant === true;   // default 關（跟香港正字）
       if (saved.layout && ['word','word+sentence','sentence'].includes(saved.layout)) {
         document.getElementById('optLayout').value = saved.layout;
       }
@@ -1616,6 +1623,7 @@ function readOptions() {
     name: $('optName').value,
     date: $('optDate').value,
     s2t: $('optS2T').checked,
+    variant: $('optVariant').checked,
     layout: $('optLayout').value,
     sentenceTimes: parseInt($('optSentenceTimes').value) || 2,
     quizMode: quizMode
@@ -1684,6 +1692,7 @@ function generate() {
     name: opts.name,
     date: opts.date,
     s2t: opts.s2t,
+    variant: opts.variant === true,
     layout: layout,
     sentenceTimes: (layout !== 'word') ? (parseInt(opts.sentenceTimes) || 2) : 0,
     quizMode: opts.quizMode,
@@ -2053,6 +2062,13 @@ function renderWorksheet() {
   const o = currentOptions;
   const ws = document.getElementById('worksheet');
   const content = document.getElementById('wsContent');
+
+  // 直出異體字：字形跟着輸入字（峰／峯 各自成形）。模式一變就要清字形 cache，否則會沿用上一模式嘅字形。
+  const wantVariant = o.variant === true;
+  if (window.CW_VARIANT_GLYPH !== wantVariant) {
+    window.CW_VARIANT_GLYPH = wantVariant;
+    clearGlyphCache();
+  }
 
   applyCellSizes(ws, o);
   applyGuideStyle(ws, o);   // 樣式表見 GUIDE_STYLES

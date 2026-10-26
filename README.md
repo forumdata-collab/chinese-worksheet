@@ -12,7 +12,7 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 | Feature | Description |
 |---------|-------------|
 | 🖊️ Stroke order | Animated per-stroke playback + interactive 試寫 (draw-along quiz), **following the 香港小學學習字詞表 stroke-order standard** |
-| 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (4,519 chars) instead of a generic font |
+| 🔤 HK standard glyphs | Characters render using the 教育局 (HK EDB) standard glyph outlines (4,525 chars) instead of a generic font |
 | 🔢 Stroke-order digits | Numbered strokes (1…n) overlaid on the first tracing cell, placed **a fifth of the way along each stroke from its start**, with **one uniform digit size per character** (dense characters scale down as a whole instead of mixing big and small digits) — the strokeorder.com.tw look |
 | ➡️ Stroke direction arrows | Optional (off by default): dotted centreline + arrowhead per stroke, at the stroke's end, showing the writing direction |
 | 📝 練習模式 (3 modes) | 每字練習 (default) · 每字 + 整句 · 整句練習 — sentence copybook adds a 描紅 model row plus N blank rows (次數 adjustable) |
@@ -34,7 +34,7 @@ An interactive, print-ready Chinese character practice worksheet generator. Inpu
 
 ### Data coverage
 
-- **5,556 common Traditional Chinese characters**, each with Jyutping, Pinyin, stroke count, simplified form
+- **5,557 common Traditional Chinese characters**, each with Jyutping, Pinyin, stroke count, simplified form
 - **518 polyphonic groups** with alternate readings
 - Sources: [開放粵語字典](https://kaifangcidian.com) (CC-BY 3.0), pypinyin, Unicode Unihan (kTotalStrokes), OpenCC
 

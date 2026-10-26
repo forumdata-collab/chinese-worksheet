@@ -45,12 +45,24 @@ function hkCharDataLoader(ch, onComplete, onError) {
 const _hkGlyphCache = new Map();
 const _hkGlyphData = new Map();   // 已載入 glyph 嘅資料（同步讀筆數用）
 function glyphDir() { return window.GLYPH_DIR || 'glyphs/'; }
+
+// 「直出異體字」模式：window.CW_VARIANT_GLYPH = true 時，以下字改用 glyphs/variants/ 嘅字形
+// （即跟着輸入字嘅寫法出，唔歸一成香港正字）。目前只有 峰（山在左，HanziWriter 通用字形）。
+const VARIANT_GLYPHS = { '5cf0': 1 };
+function variantMode(ch) {
+  return !!(window.CW_VARIANT_GLYPH && VARIANT_GLYPHS[ch.codePointAt(0).toString(16)]);
+}
+function clearGlyphCache() { _hkGlyphCache.clear(); _hkGlyphData.clear(); }
+
 function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const p = fetch(`${glyphDir()}${hex}.json?v=22`)
-    .then(r => (r.ok ? r.json() : null))
+  const std = () => fetch(`${glyphDir()}${hex}.json?v=22`).then(r => (r.ok ? r.json() : null));
+  const load = variantMode(ch)
+    ? () => fetch(`${glyphDir()}variants/${hex}.json?v=1`).then(r => (r.ok ? r.json() : std()))
+    : std;
+  const p = load()
     .catch(() => null)
     .then(rec => { if (rec) _hkGlyphData.set(ch, rec); return rec; });
   _hkGlyphCache.set(ch, p);
