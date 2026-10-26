@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>中文筆順練習簿平台：字形與筆順判斷框架說明</title>
+<style>
+  :root { --ink:#1c1c1c; --muted:#5b6470; --line:#d9dee5; --accent:#1f4e79; --soft:#f4f6f8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; color:var(--ink);
+         font-family:"LXGW WenKai TC","Noto Serif CJK TC","Songti TC","PingFang HK","Microsoft JhengHei",serif;
+         line-height:1.85; font-size:16.5px; }
+  .page { max-width: 860px; margin: 28px auto 60px; background:#fff; padding: 52px 64px 64px;
+          box-shadow: 0 2px 18px rgba(20,30,50,.08); border-radius: 2px; }
+  h1 { font-size: 1.75em; line-height:1.4; margin:0 0 .2em; letter-spacing:.02em; }
+  h1 + p { color:var(--muted); font-size:.95em; }
+  h2 { font-size: 1.28em; margin: 2.1em 0 .7em; padding-bottom:.32em; border-bottom:2px solid var(--accent); color:var(--accent); }
+  h3 { font-size: 1.08em; margin: 1.6em 0 .5em; color:#22303d; }
+  p { margin: .8em 0; text-align: justify; }
+  ul, ol { padding-left: 1.5em; margin: .6em 0; }
+  li { margin: .3em 0; }
+  strong { color:#0f2d4a; }
+  hr { border:0; border-top:1px solid var(--line); margin:2.2em 0; }
+  table { border-collapse: collapse; width:100%; margin: 1em 0; font-size:.93em; }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background: var(--soft); font-weight:600; }
+  code { background:var(--soft); padding:.1em .35em; border-radius:3px; font-size:.88em;
+         font-family:"SFMono-Regular",Consolas,monospace; }
+  blockquote { margin:1em 0; padding:.6em 1em; border-left:3px solid var(--accent); background:var(--soft); color:#33414f; }
+  em { color:var(--muted); }
+  @media print {
+    body { background:#fff; font-size:11.5pt; }
+    .page { box-shadow:none; margin:0; padding:0 8mm; max-width:none; }
+    h2 { page-break-after: avoid; }
+    table, li { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>中文筆順練習簿平台：字形與筆順判斷框架說明</h1>
+<p><strong>用途</strong>：供語言學顧問審閱本站目前的判字邏輯、已遇到的爭議個案，以及需要專業裁定的問題。
+<strong>版本</strong>：2026-10-26｜<strong>對象</strong>：語文教學／文字學／港式中文顧問
+<strong>網站</strong>：chineseword.we1co.me（香港小學中文筆順工作紙產生器）
+<strong>原始碼／資料</strong>：github.com/forumdata-collab/chinese-worksheet（含字形資料、驗證腳本）</p>
+<hr />
+<h2>一、系統定位</h2>
+<p>本站不是一般「字型排版」工具，而是一個<strong>以香港教育局字形與筆順為權威來源的練字簿產生器</strong>。使用者輸入文字，系統輸出可列印的 A4 工作紙，內含：</p>
+<ul>
+<li>每字示範格（教育局字形輪廓）</li>
+<li>描紅格（可選 1 格／2 格／全部格）</li>
+<li>筆順數字（每筆起筆位置編號）</li>
+<li>可列印的「筆順工作紙」（第 1 格顯示首 1 筆、第 2 格顯示首 2 筆……）</li>
+<li>粵拼／普通話拼音、筆畫數、簡體對照</li>
+<li>默書版（隱藏所有字形提示）</li>
+</ul>
+<p>系統的核心資產不是介面，而是<strong>資料層</strong>：每個字的字形輪廓、骨架中線、筆順次序、筆畫數、讀音、來源。</p>
+<hr />
+<h2>二、資料流與四層架構</h2>
+<h3>1. 來源層（Authority Sources）</h3>
+<table>
+<thead>
+<tr>
+<th>來源</th>
+<th>用途</th>
+<th>涵蓋</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>香港教育局《香港小學學習字詞表》（EDB，edbchinese.hk）</td>
+<td><strong>字形＋筆順的第一權威</strong></td>
+<td>4,525 字（官方筆順動畫逆向成向量輪廓與中線）</td>
+</tr>
+<tr>
+<td>台灣教育部《筆順字典》（twpen.com）</td>
+<td>EDB 未收字之字形與筆順</td>
+<td>193 字（由分解圖逆向）</td>
+</tr>
+<tr>
+<td>HanziWriter／Make Me a Hanzi</td>
+<td>無上述字形時的通用字形與筆順</td>
+<td>839 字（後備）</td>
+</tr>
+<tr>
+<td>漢典（zdic.net）「笔顺编号」</td>
+<td>無動畫字之筆順次序（筆畫類型序）</td>
+<td>後備參考</td>
+</tr>
+<tr>
+<td>香港中文大學《粵語審音配詞字庫》</td>
+<td>粵音第一權威（含異讀）</td>
+<td>Big5 範圍</td>
+</tr>
+<tr>
+<td>Unicode Unihan（kTotalStrokes / kMandarin / kCantonese）</td>
+<td>筆畫數與普通話拼音</td>
+<td>HKSCS 字後備</td>
+</tr>
+<tr>
+<td>開放粵語字典（CC-BY 3.0）</td>
+<td>粵拼基礎資料</td>
+<td>全站</td>
+</tr>
+<tr>
+<td>OpenCC（STPhrases）</td>
+<td>簡→繁詞組表來源</td>
+<td>詞組轉換</td>
+</tr>
+</tbody>
+</table>
+<h3>2. 字形層</h3>
+<p>每個字一個 JSON：<code>glyphs/&lt;Unicode hex&gt;.json</code>，內容為</p>
+<ul>
+<li><code>s</code>：逐筆的封閉輪廓路徑（SVG path），<strong>已轉為 y-up 儲存</strong></li>
+<li><code>m</code>：逐筆骨架中線（數字定位與書寫動畫用）</li>
+</ul>
+<p>另有 <code>glyphs/variants/&lt;hex&gt;.json</code>：異體字「直出字形」用的替代字形（見 P1、P4）。</p>
+<h3>3. 應用層</h3>
+<p>字形只在瀏覽器端組裝：SVG viewBox 取墨跡邊界、<code>transform</code> 翻轉回顯示座標、筆順數字按中線弧長 20% 定位並避碰。字格、導線、列印尺寸全部用 CSS 變數控制（螢幕與列印同一套比例，實測墨跡＝格寬 82%）。</p>
+<h3>4. 驗證層</h3>
+<ul>
+<li>資料自洽：<code>sanity_data.py</code>（字形／筆順／筆數／次序對照）</li>
+<li>筆順數字：<code>sanity_numbers.js</code>（57,796 個數字：碰撞、錨點是否落在自己筆畫）</li>
+<li>解析器：<code>sanity_parser_sample.py</code>（抽樣重抓 EDB 動畫，確認可重現出貨字形）</li>
+<li>介面回歸：<code>regression.py</code>（72 項：版面矩陣、比例、默書版、列印、手機、溢出）</li>
+<li>來源統計：<code>build_provenance.py</code> → <code>data/glyph_sources.json</code></li>
+</ul>
+<hr />
+<h2>三、現行判字規則（逐條）</h2>
+<p><strong>R1｜字形權威順序</strong>：EDB ＞ twpen（台灣） ＞ HanziWriter（通用） ＞ 系統字型。
+有 EDB 字形者一定用 EDB，即使該字另有更通行的寫法。</p>
+<p><strong>R2｜正字判定</strong>：以 EDB 條目為準。判定方法（工程上可重現）：</p>
+<ol>
+<li>以字查詢 EDB，取得筆順動畫 id；</li>
+<li>動畫所畫之字形＝該條目的「代表字形」（正字）；</li>
+<li>若查詢頁出現「轉自『X』」黃框，代表此字被導向另一形，屬<strong>異體</strong>；</li>
+<li>「異體字」欄的 GIF 顯示異體寫法、「簡化字」欄顯示對應簡化字；</li>
+<li>同一 id 往往由正字與異體共用（本站 21 組）。</li>
+</ol>
+<p><strong>R3｜異體字輸出</strong>：預設一律輸出<strong>香港正字字形</strong>（輸入「峰」顯示「峯」形）。2026-10 新增可選項「直出異體字」：勾選後跟着輸入字出字形（峰→山在左、峯→山在上）。</p>
+<p><strong>R4｜筆畫數</strong>：以<strong>實際出貨字形</strong>的筆數為準（有字形則不信 Unihan）；無字形者跟 HanziWriter 筆數。理由：卡片「N 畫」、描紅格筆順數字個數、筆順工作紙格數三處必須一致，否則會出現「標 13 畫但工作紙只印 13 格、第 14 筆永遠不出」。</p>
+<p><strong>R5｜筆順次序</strong>：以 EDB 官方動畫為準。與 HanziWriter（通用次序）不同者，以 permutation 表覆核（現有 671 字非 identity）。無 EDB 動畫者：twpen（台灣標準）→ HanziWriter。</p>
+<p><strong>R6｜讀音</strong>：粵音以 CUHK 為第一權威，並處理「異讀字」註記（例：佢 keoi5、睇 tai2、咁 gam3）；HKSCS 字（冧咗哋喺嗰嘅嘞嘢嘥嚟攞）CUHK 網上查不到，改用 Unihan kCantonese 並以 Wiktionary 覆核（例：攞 lo2）。普通話用 Unihan kMandarin。</p>
+<p><strong>R7｜簡→繁</strong>：詞組（OpenCC 詞組表，過濾「后后→後後」等噪音）→ 逐字（先保留已在字表者，再無歧義對應，再一次多義取常用義）→ <strong>香港正字歸一</strong>（台灣異體→香港正字，現 9 組：說→説、衛→衞、鉤→鈎、敘→敍、蘊→藴、醞→醖、銳→鋭、閱→閲、裡→裏）。</p>
+<p><strong>R8｜教學用語</strong>：說明頁與介面一律用香港書面語（是／在／沒有／的），不用口語。</p>
+<hr />
+<h2>四、遇到的問題（逐項）</h2>
+<h3>P1｜正字與社會通用寫法不一致（最核心）</h3>
+<p>EDB 代表字形與香港人日常／台灣習慣寫法常有落差。已確認的 21 組（括號內為 EDB 代表字形）：</p>
+<ul>
+<li>峰（峯）— EDB 動畫畫「山在上」的峯形；查「峰」頁有「轉自」框</li>
+<li>說（説）、衛（衞）、鉤（鈎）、敘（敍）、蘊（藴）、醞（醖）、銳（鋭）、閱（閲）、裡（裏）</li>
+<li>兌（兑）、臥（卧）、戶（户）、稅（税）、脫（脱）、蔥（葱）、囪（囱）、悅（悦）、媪（媼）、溫（温）</li>
+<li>床（牀）</li>
+</ul>
+<p><strong>問題</strong>：使用者輸入通用寫法，卻得到另一個字形，第一反應是「系統出錯」。本站現以「香港標準優先」處理，並提供「直出異體字」選項；但<strong>教學上應該教哪一個</strong>，需要顧問判斷。</p>
+<h3>P2｜部件計法差異（香港／台灣 vs 大陸）</h3>
+<p>同一部件，三地計法不同：艹（3／4）、辶（3／4）、阝（2／3）、糹（3／6）、骨（9／10）、之（3／4）、為（9／12）。
+本站有字形者一律跟字形（EDB＝香港計法）；無字形者過去誤用 Unihan（大陸計法），已修正 33 字，例：</p>
+<ul>
+<li>蒔 13→14、蕎 15→16、薺 17→18、莧 10→11</li>
+<li>髖 23→25（骨 10＋寬 15）</li>
+</ul>
+<p><strong>問題</strong>：這 33 字其實<strong>不在 EDB 字詞表</strong>（查詢回「找不到」），即香港無官方筆數可比對，現時跟 HanziWriter（偏台灣計法）。是否可接受？</p>
+<h3>P3｜「正字」自身的筆數與其他權威不一致</h3>
+<ul>
+<li>「為」：EDB 作「火部 9 畫」；Unihan／漢典以「爲」計 12 畫。</li>
+<li>因此「撝」＝扌3＋為9＝<strong>12 畫</strong>（本站字形），而 Unihan／漢典標 <strong>15 畫</strong>。</li>
+<li>「臺」：EDB 查「臺」回「口部 5 畫」並有「轉自」框 → 本站判「台」為正字、「臺」為異體。</li>
+</ul>
+<p><strong>問題</strong>：上述個案是否應在介面加註「依香港字形表，與其他地區計法不同」？</p>
+<h3>P4｜異體字是否應「直出」</h3>
+<p>勾選「直出異體字」後，峰顯示峰形（山在左）、說顯示說形（兌）。目前 12 字支援：兌、囪、悅、戶、敘、稅、脫、臥、說、銳、閱、峰；另有 8 字<strong>暫不支援</strong>：衛、蔥、蘊、醞、裡、鉤、溫、床——原因是可用的替代字形（HanziWriter）筆數與 EDB 字形不同（例 蔥 15 vs 13、衛 15 vs 16），強行採用會出現「卡片 13 畫、描紅 15 筆」。</p>
+<p><strong>問題</strong>：小一至小三教學，讓學生看到「同一個字兩種寫法」是否適宜？應否加註「此為另一種通行寫法，香港標準寫法見下」？</p>
+<h3>P5｜粵語字無官方字形</h3>
+<p>香港常用粵語字（嘅、咗、喺、嗰、佢、乜、冇、睇、嘢、咩、哋、嚟、攞、噉）不在 EDB 字詞表。本站以 twpen（台灣教育部標準）逆向出字形，並在頁腳標明來源。</p>
+<p><strong>問題</strong>：教學上使用台灣標準字形教香港粵語字，是否需要更明確的來源標示或改用其他權威？</p>
+<h3>P6｜筆順次序的來源差異</h3>
+<p>EDB 與 HanziWriter 對 671 個字的筆順不同（本站以 EDB 為準，並存 permutation 表）。另有一批字（如「洪」的三點水首兩點）曾出現中線方向倒轉的系統性問題，已按「與 HanziWriter 方向比對」修正 1,164 筆，仍有約 300 筆因兩來源字形差異無法自動判定，暫不處理。</p>
+<p><strong>問題</strong>：是否需要一份「香港小學常用字筆順異同」清單供教師參考？</p>
+<h3>P7｜部件推導字形（已證實不可行）</h3>
+<p>曾嘗試用同部首／同聲符的 EDB 字形推導缺字字形。以 70 個有官方真值的字盲測：筆畫數正確率 36%、墨跡重疊度（IoU）平均 0.41、筆順完全相同僅 2/17。原因是部件在合體字中會變形（手→扌 4→3 畫、水→氵、心→忄），且切回部件本身就需要未知的分解資訊。<strong>結論：不以推導字形出貨</strong>。若語言學上有可靠的部件–筆畫對應規則，歡迎指導。</p>
+<h3>P8｜一字多音與又讀</h3>
+<p>例：說（siu3／seoi3）、睇（tai2／dai6）、佢（keoi5）、冇（mou5）。CUHK 首行未必是正讀，本站改以「異讀字」註記所指者為主讀音，其餘列為又讀。</p>
+<p><strong>問題</strong>：小學教材應否只顯示一個讀音？以哪個為準？</p>
+<h3>P9｜簡繁一對多</h3>
+<p>發／髮、乾／幹、麵／面、後／后、隻／只、繫／系 等須靠詞組判斷。詞組表非完備，未收錄詞語會逐字轉換而可能出錯（例「系鞋帶」曾誤轉，已補詞組）。</p>
+<p><strong>問題</strong>：是否有香港小學常用詞表可作為詞組優先序的依據？</p>
+<h3>P10｜標點與符號</h3>
+<p>標點全形直出、每字佔一格（，。！？：；、等）。標點沒有字形資料（EDB／HanziWriter 皆無），只顯示格線與描紅位置。</p>
+<p><strong>問題</strong>：小學練字簿的標點是否應佔格？位置（左下、中央）是否須依標點種類調整？</p>
+<h3>P11｜字形來源混合的標示方式</h3>
+<p>現時一個工作紙內可能同時有 EDB、twpen、HanziWriter 三種字形，頁腳只統一聲明。曾考慮逐字標示來源，但會令列印版面擁擠。</p>
+<p><strong>問題</strong>：教學上是否需要逐字標示？以何種形式（頁腳註、字旁小字）？</p>
+<hr />
+<h2>五、已作的決定與理由</h2>
+<ol>
+<li><strong>字形、筆順、筆畫數一律以香港教育局為第一權威</strong>；其他來源只作後備，並在頁腳聲明。</li>
+<li><strong>筆畫數服從字形</strong>：字形畫幾筆就標幾畫，確保卡片、數字、工作紙三處一致。</li>
+<li><strong>異體字預設歸一為香港正字</strong>，另設「直出異體字」讓使用者自行選擇（預設關閉）。</li>
+<li><strong>不推導字形</strong>（P7 已證不可靠）；寧可標明「此字無官方字形」。</li>
+<li><strong>8 組異體字暫不支援直出</strong>，原因與清單已寫入網站的「開發說明」頁。</li>
+<li><strong>頁腳必須有非官方聲明</strong>：本工具為教育用途，與香港教育局無隸屬關係。</li>
+</ol>
+<hr />
+<h2>六、想請顧問裁定的問題</h2>
+<ol>
+<li>香港小學教學應以 EDB 代表字形（峯、説、衞、鈎）為準，還是以社會通用寫法（峰、說、衛、鉤）為準？兩者並列是否適宜？</li>
+<li>「峰／峯」這類「部件位置不同」的異體，是否需要區分「異體字」與「異體字形」兩個概念？本站現時一律稱「異體」。</li>
+<li>筆畫數應以《常用字字形表》／EDB 為準，還是應跟隨課本？三地部件計法差異（艹、辶、阝、糹、骨、為）應如何在教材中說明？</li>
+<li>「臺／台」「為／爲」「撝 12／15 畫」等個案，本站現行判斷是否恰當？</li>
+<li>粵語字（嘅、咗、喺、嗰）使用台灣教育部字形，是否可接受？有否更合適的香港來源？</li>
+<li>一字多音：小學階段應顯示一個讀音還是全部又讀？</li>
+<li>「直出異體字」對初小學生是幫助還是干擾？建議預設開或關？</li>
+<li>部件推導字形在學理上是否有可靠規則（例如依《漢字部件表》或《康熙字典》部首系統）？</li>
+<li>標點是否應佔格、是否需依標點種類調整位置？</li>
+<li>是否需要一份「香港小學常用字：正字／異體／筆數／筆順」對照表作為教學附錄？</li>
+</ol>
+<hr />
+<h2>七、系統限制（工程事實，非語言判斷）</h2>
+<ul>
+<li>全站為靜態單頁應用，無後端、無追蹤；資料以 JSON 隨字載入。</li>
+<li>字形為向量輪廓，非字型檔，因此可逐筆上色、編號、動畫；亦因此每個字須獨立建檔。</li>
+<li>現有字形 4,718 個（EDB 4,525／twpen 193），字表 5,557 字，其餘 839 字用 HanziWriter 通用字形（無 EDB 字形）。</li>
+<li>筆順數字 57,796 個，已驗證 0 碰撞、0 個落在其他筆畫。</li>
+<li>可重跑驗證：<code>sanity_data.py</code>、<code>sanity_numbers.js</code>、<code>sanity_parser_sample.py</code>、<code>audit_full.py</code>、<code>audit_hw_fallback.py</code>、<code>regression.py</code>（72 項介面回歸）。</li>
+</ul>
+<hr />
+<h2>八、名詞對照（本文件用法）</h2>
+<ul>
+<li><strong>正字／代表字形</strong>：EDB 條目動畫所畫的字形。</li>
+<li><strong>異體</strong>：與正字同義、寫法不同，EDB 以同一動畫 id 處理者（例 峰／峯）。</li>
+<li><strong>通用字形</strong>：HanziWriter（Make Me a Hanzi）字形，非香港標準，作後備。</li>
+<li><strong>台灣標準</strong>：twpen（台灣教育部《筆順字典》）字形，用於 EDB 未收字。</li>
+<li><strong>筆順編號</strong>：以數字表示筆畫類型序（1 橫、2 豎、3 撇、4 點、5 折），中國大陸常用。</li>
+<li><strong>筆畫數</strong>：字的總筆數，隨部件計法而異（本文件所稱「香港計法」指 EDB 字形實際筆數）。</li>
+</ul>
+<hr />
+<p><em>本文件由系統維護者整理，數據均出自可重跑的檢查腳本；文中「本站判斷」部分歡迎顧問指正。</em></p>
+</div>
+</body>
+</html>
