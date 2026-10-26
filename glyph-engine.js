@@ -48,7 +48,7 @@ function glyphDir() { return window.GLYPH_DIR || 'glyphs/'; }
 
 // 「直出異體字」模式：window.CW_VARIANT_GLYPH = true 時，以下字改用 glyphs/variants/ 嘅字形
 // （即跟着輸入字嘅寫法出，唔歸一成香港正字）。目前只有 峰（山在左，HanziWriter 通用字形）。
-const VARIANT_GLYPHS = { '5cf0': 1 };
+const VARIANT_GLYPHS = { '514c': 1, '56ea': 1, '5cf0': 1, '6085': 1, '6236': 1, '6558': 1, '7a05': 1, '812b': 1, '81e5': 1, '8aaa': 1, '92b3': 1, '95b1': 1 };
 function variantMode(ch) {
   return !!(window.CW_VARIANT_GLYPH && VARIANT_GLYPHS[ch.codePointAt(0).toString(16)]);
 }

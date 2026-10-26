@@ -10,8 +10,9 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - **標點浪費一個 404 請求**：`installHKGlyphs()` 對「，。！？」都去 fetch `glyphs/XXXX.json`（EDB／HanziWriter 根本冇標點字形）→ console 每次生成都一堆 404。已喺引擎內用 `isPunct()` 過濾。
 
 ### Added
-- `tools/regression.py`：69 項 Playwright 回歸套件（版面矩陣、比例、默書版、異體字直出、列印、手機、溢出、錯誤）。
-- `tools/audit_full.py`、`tools/audit_hw_fallback.py`、`tools/sanity_parser_sample.py`：資料層交叉審計、HanziWriter 覆蓋率、抽樣 parser 驗證（唔需要 /tmp/edb_strokes）。
+- **直出異體字覆蓋 1 → 12 字**（`tools/build_variants.py`）：自動搵出「同一 EDB 動畫、glyph 檔案 byte-identical」嘅正字／異體組，為**異體**補上自己嘅 HanziWriter 字形（`glyphs/variants/`）：兌 囪 峰 悅 戶 敘 稅 脫 臥 說 銳 閱。香港正字（兑 卧 囱 悦 户 敍 税 脱 説 鋭 閲 峯 …）維持 EDB 官方字形。8 組（衛 蔥 蘊 醞 裡 鉤 溫 床 媼）因為 HanziWriter 筆數同 CHAR_DB 唔一致（例 蔥 15 vs 13）而暫不支援——寧可唔出，唔好出現「卡片 13 畫但畫 15 筆」。
+- `tools/regression.py`：72 項 Playwright 回歸套件（版面矩陣、比例、默書版、異體字直出、列印、手機、溢出、錯誤）。
+- `tools/build_variants.py`（重建異體字字形 + 自動同步 `VARIANT_GLYPHS` 白名單）、`tools/audit_full.py`、`tools/audit_hw_fallback.py`、`tools/sanity_parser_sample.py`：資料層交叉審計、HanziWriter 覆蓋率、抽樣 parser 驗證（唔需要 /tmp/edb_strokes）。
 
 ## [1.3.3] - 2026-10-26
 

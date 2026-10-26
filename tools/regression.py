@@ -281,13 +281,23 @@ def main():
         # ---------- 12. variant glyphs ----------
         std = json.load(open(os.path.join(ROOT, 'glyphs/5cf0.json')))['s'][0][:40]
         var = json.load(open(os.path.join(ROOT, 'glyphs/variants/5cf0.json')))['s'][0][:40]
+        shuo_std = json.load(open(os.path.join(ROOT, 'glyphs/8aaa.json')))['s'][0][:40]
+        shuo_var = json.load(open(os.path.join(ROOT, 'glyphs/variants/8aaa.json')))['s'][0][:40]
         for variant, want, label in [(False, std, 'standard'), (True, var, 'variant')]:
-            h.generate(pg, '峰峯', {'optVariant': variant, 'optStrokePage': False}, wait=2600)
+            h.generate(pg, '峰峯說', {'optVariant': variant, 'optStrokePage': False}, wait=2600)
             got = pg.evaluate("""() => [...document.querySelectorAll('.char-card')].map(c => {
               const p = c.querySelector('.char-glyph svg path');
               return p ? p.getAttribute('d').slice(0, 40) : null; })""")
             check('12 variant=%s: 峰 uses %s glyph' % (variant, label), got[0], want, got)
             check('12 variant=%s: 峯 keeps HK glyph' % variant, got[1], std)
+            check('12 variant=%s: 說 uses %s glyph' % (variant, label),
+                  got[2], shuo_var if variant else shuo_std, got)
+        # 香港正字（説）永遠用 EDB 字形，唔會被 HanziWriter 版本取代
+        shuo_hk = json.load(open(os.path.join(ROOT, 'glyphs/%x.json' % ord('説'))))['s'][0][:40]
+        h.generate(pg, '説', {'optVariant': True}, wait=2000)
+        got = pg.evaluate("""() => { const p = document.querySelector('.char-glyph svg path');
+          return p ? p.getAttribute('d').slice(0, 40) : null; }""")
+        check('12 variant mode: HK 正字説 keeps EDB glyph', got, shuo_hk)
 
         # ---------- 13. simplified -> traditional ----------
         h.generate(pg, '发展头发干杯皇后什么', {'optS2T': True, 'optVariant': False}, wait=1500)
