@@ -5,7 +5,7 @@ The enhanced page lives one directory down but reuses the shared assets
 (data.js, glyphs/, fonts/, bgm/, caoni-bg.jpg) from the site root, so every
 asset URL gets a ../ prefix and the glyph engine is pointed at ../glyphs/.
 """
-import os, re, sys
+import os, re, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
@@ -15,7 +15,7 @@ rep = [
     ('<script src="data.js?', '<script src="../data.js?'),
     ('<script src="hk_order.js?', '<script src="../hk_order.js?'),
     ('<script src="stroke_seq.js?', '<script src="../stroke_seq.js?'),
-    ('<script src="glyph-engine.js?', '<script src="../glyph-engine.js?'),
+    ('<script src="glyph-engine.js?', '<script src="glyph-engine.js?'),
     ('src="bgm/bishun-song-v2.mp3"', 'src="../bgm/bishun-song-v2.mp3"'),
     ('<image href="caoni-bg.jpg"', '<image href="../caoni-bg.jpg"'),
 ]
@@ -25,7 +25,14 @@ for a, b in rep:
     src = src.replace(a, b)
 
 # glyph engine needs GLYPH_DIR + NS before it runs in a subdirectory
-anchor = '<script src="../glyph-engine.js?'
+# /enhanced/ 用自己嗰份引擎（連 assets 一齊 copy），主站根目錄嗰份唔動，
+# 咁樣預覽版改字形/字身框都唔會影響未批核的主站。
+eng_src = os.path.join(ROOT, 'glyph-engine.js')
+eng_dst = os.path.join(ROOT, 'enhanced', 'glyph-engine.js')
+os.makedirs(os.path.dirname(eng_dst), exist_ok=True)
+shutil.copyfile(eng_src, eng_dst)
+
+anchor = '<script src="glyph-engine.js?'
 assert src.count(anchor) == 1
 src = src.replace(anchor,
     "<script>window.GLYPH_DIR='../glyphs/';window.NS='http://www.w3.org/2000/svg';</script>\n" + anchor)

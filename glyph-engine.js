@@ -356,12 +356,16 @@ function glyphInkBBox(paths) {
 function glyphFrame(rec) {
   const b = glyphInkBBox(rec.s);
   if (!b) return null;
-  const box = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+  // 字身框（em）固定：以前用「自身墨跡框」做 box，等於每個字都放大到填滿格子，
+  // 結果少筆劃而方正的字（白、西、口、日）視覺上撐爆格，同筆劃多的字唔協調。
+  // 900 ≈ 全字庫墨跡中位數（856）同 1024 字身之間，令密字大小不變、疏字自然收細。
+  const EM = 900;
+  const box = EM;
   const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   return {
     ...b, box, cx, cy,
     C: b.y0 + b.y1,
-    fs: box * 0.14,
+    fs: box * 0.12,
     viewBox: `${(cx - box / 2).toFixed(1)} ${(cy - box / 2).toFixed(1)} `
            + `${box.toFixed(1)} ${box.toFixed(1)}`,
   };
