@@ -1195,11 +1195,48 @@ details.advance-collapse summary:hover { color: var(--red); }
             <option value="word" selected>每字練習（預設）</option>
             <option value="word+sentence">每字 + 整句</option>
             <option value="sentence">整句練習</option>
+            <option value="article">文章抄寫紙（整篇）</option>
           </select>
         </div>
         <div class="opt-group" id="optSentenceGroup" style="display:none;">
           <label>整句練習次數</label>
           <input type="number" id="optSentenceTimes" value="2" min="1" max="8">
+        </div>        <div class="opt-group art-opt" id="optArtOrientGroup" style="display:none;">
+          <label>紙張</label>
+          <select id="optArtOrient"><option value="portrait" selected>A4 直式</option><option value="landscape">A4 橫式</option></select>
+        </div>
+        <div class="opt-group art-opt" id="optArtDirGroup" style="display:none;">
+          <label>書寫方向</label>
+          <select id="optArtDir"><option value="h" selected>橫排（左至右）</option><option value="v">直排（右至左）</option></select>
+        </div>
+        <div class="opt-group art-opt" id="optArtColsGroup" style="display:none;">
+          <label>每頁欄數</label>
+          <input type="number" id="optArtCols" value="20" min="3" max="40">
+        </div>
+        <div class="opt-group art-opt" id="optArtRowsGroup" style="display:none;">
+          <label>每頁行數</label>
+          <input type="number" id="optArtRows" value="13" min="3" max="40">
+        </div>
+        <div class="opt-group art-opt" id="optArtModeGroup" style="display:none;">
+          <label>文章練習模式</label>
+          <select id="optArtMode"><option value="all" selected>全部底字</option><option value="alt">一行底字、一行空白</option></select>
+        </div>
+        <div class="opt-group art-opt" id="optArtScaleGroup" style="display:none;">
+          <label>底字大小 <output id="artScaleOut">82%</output></label>
+          <input type="range" id="optArtScale" min="55" max="95" value="82">
+        </div>
+        <div class="opt-group art-opt" id="optArtGrayGroup" style="display:none;">
+          <label>底字深淺 <output id="artGrayOut">35%</output></label>
+          <input type="range" id="optArtGray" min="0" max="100" value="35">
+        </div>
+        <div class="opt-group art-opt" id="optArtAvoidGroup" style="display:none;">
+          <div class="toggle-row"><input type="checkbox" id="optArtAvoid" checked><label for="optArtAvoid">行首標點併入上一格（避頭）</label></div>
+        </div>
+        <div class="opt-group art-opt" id="optArtParaGroup" style="display:none;">
+          <div class="toggle-row"><input type="checkbox" id="optArtNewPara" checked><label for="optArtNewPara">每段另起一行</label></div>
+        </div>
+        <div class="opt-group art-opt" id="optArtIndentGroup" style="display:none;">
+          <div class="toggle-row"><input type="checkbox" id="optArtIndent"><label for="optArtIndent">段首空兩格</label></div>
         </div>
       </div>
     </div>
@@ -1324,6 +1361,13 @@ details.advance-collapse summary:hover { color: var(--red); }
         <div class="opt-group">
           <label>日期</label>
           <input type="text" id="optDate" value="" placeholder="例：2024年9月1日">
+        </div>
+        <div class="opt-group">
+          <label>班別</label>
+          <input type="text" id="optClass" value="" placeholder="例如：1A">
+        </div>
+        <div class="opt-group">
+          <div class="toggle-row"><input type="checkbox" id="optSign"><label for="optSign">家長簽名欄</label></div>
         </div>
       </div>
     </div>
@@ -1455,6 +1499,7 @@ const S2T_PHRASES={"一准":"一準","一划":"一劃","一别":"一別","一发
 
 // ===== STATE =====
 let currentChars = [];
+let currentArticleText = '';
 let currentSentences = [];
 let currentOptions = {};
 let quizWriter = null;
@@ -1639,10 +1684,11 @@ function bindAutoRegenerate() {
 // Show/hide layout-dependent options (called on select change + settings restore)
 function toggleLayoutOpts() {
   const layout = document.getElementById('optLayout').value;
-  const hasSent = layout !== 'word';
+  const hasSent = layout !== 'word' && layout !== 'article';
   document.getElementById('optSentenceGroup').style.display = hasSent ? '' : 'none';
   const pg = document.getElementById('optPractice').closest('.opt-group');
-  if (pg) pg.style.display = (layout === 'sentence') ? 'none' : '';
+  if (pg) pg.style.display = (layout === 'sentence' || layout === 'article') ? 'none' : '';
+  document.querySelectorAll('.art-opt').forEach(el => { el.style.display = (layout === 'article') ? '' : 'none'; });
 }
 
 // ===== GENERATE WORKSHEET =====
@@ -1684,6 +1730,18 @@ function readOptions() {
     variant: $('optVariant').checked,
     layout: $('optLayout').value,
     sentenceTimes: parseInt($('optSentenceTimes').value) || 2,
+    artOrient: $('optArtOrient').value,
+    artDir: $('optArtDir').value,
+    artCols: Math.min(40, Math.max(3, parseInt($('optArtCols').value) || 20)),
+    artRows: Math.min(40, Math.max(3, parseInt($('optArtRows').value) || 13)),
+    artMode: $('optArtMode').value,
+    artScale: (parseInt($('optArtScale').value) || 82) / 100,
+    artGray: (parseInt($('optArtGray').value) || 0) / 100,
+    artAvoid: $('optArtAvoid').checked,
+    artNewPara: $('optArtNewPara').checked,
+    artIndent: $('optArtIndent').checked,
+    artClass: $('optClass').value,
+    artSign: $('optSign').checked,
     quizMode: quizMode
   };
 }
@@ -1707,8 +1765,9 @@ function generate() {
   }
   document.getElementById('inputText').value = raw;
 
+  currentArticleText = raw;
   let chars = parseInput(raw);
-  if (chars.length === 0) { showToast('未找到中文字'); return; }
+  if (chars.length === 0 && (opts.layout || 'word') !== 'article') { showToast('未找到中文字'); return; }
 
   if (opts.dedup) {
     const seen = new Set();
@@ -1752,6 +1811,18 @@ function generate() {
     s2t: opts.s2t,
     variant: opts.variant === true,
     layout: layout,
+    artOrient: opts.artOrient || 'portrait',
+    artDir: opts.artDir || 'h',
+    artCols: opts.artCols || 20,
+    artRows: opts.artRows || 13,
+    artMode: opts.artMode || 'all',
+    artScale: opts.artScale || 0.82,
+    artGray: opts.artGray == null ? 0.35 : opts.artGray,
+    artAvoid: opts.artAvoid !== false,
+    artNewPara: opts.artNewPara !== false,
+    artIndent: opts.artIndent === true,
+    artClass: opts.artClass || '',
+    artSign: opts.artSign === true,
     sentenceTimes: (layout !== 'word') ? (parseInt(opts.sentenceTimes) || 2) : 0,
     quizMode: opts.quizMode,
   };
@@ -2165,6 +2236,107 @@ function applyHeader(o) {
   }
 }
 
+
+// ===== 文章抄寫紙（prototype 2026-11-03）=====
+function artTint(g) {
+  // g: 0 = 極淺, 1 = 較深；用同一隻紅調，只改透明度
+  const a = (0.10 + 0.55 * Math.max(0, Math.min(1, g))).toFixed(2);
+  return `rgba(168,52,42,${a})`;
+}
+function artLayoutLines(text, o) {
+  const lineLen = (o.artDir === 'v') ? o.artRows : o.artCols;
+  const paras = String(text).replace(/\r/g, '').split(/\n+/)
+    .map(p => p.replace(/[ \t\u3000\u00a0]/g, '')).filter(Boolean);
+  const lines = [];
+  const push = (arr) => {
+    let cur = [];
+    arr.forEach(ch => {
+      if (cur.length === lineLen) { lines.push(cur); cur = []; }
+      cur.push({ c: ch, att: [] });
+    });
+    if (cur.length) lines.push(cur);
+  };
+  if (o.artNewPara !== false) {
+    paras.forEach(p => push((o.artIndent ? ['', ''] : []).concat(Array.from(p))));
+  } else {
+    push(Array.from(paras.join('')));
+  }
+  if (o.artAvoid !== false) {
+    for (let i = 1; i < lines.length; i++) {
+      while (lines[i].length && isPunct(lines[i][0].c) && lines[i - 1].length) {
+        const t = lines[i].shift();
+        const last = lines[i - 1][lines[i - 1].length - 1];
+        if (last.att.length < 2) last.att.push(t.c); else break;
+      }
+    }
+  }
+  return lines.filter(l => l.length);
+}
+function artHeadHtml(o, page, pages) {
+  const fld = (label, value) => `<span class="fld">${label}：<span class="line">${esc(value || '')}</span></span>`;
+  return `<div class="art-head"><div class="art-title">${esc(o.title || '')}</div><div class="art-fields">`
+    + fld('姓名', o.name) + fld('班別', o.artClass || '') + fld('日期', o.date)
+    + (o.artSign ? fld('家長簽名', '') : '')
+    + `</div></div>`;
+}
+function articlePagesHtml(o) {
+  const cols = o.artCols || 20, rows = o.artRows || 13;
+  const vertical = o.artDir === 'v';
+  const lineLen = vertical ? rows : cols;
+  let lines = artLayoutLines(currentArticleText || '', o);
+  if (o.artMode === 'alt') lines = lines.flatMap(l => [l, []]);
+  const perPage = vertical ? cols : rows;
+  const pageCount = Math.max(1, Math.ceil(lines.length / perPage));
+  const landscape = o.artOrient === 'landscape';
+  const pw = landscape ? 1123 : 794;
+  const ph = landscape ? 794 : 1123;
+  const pad = 38;
+  const headH = o.showHeader ? 46 : 0;
+  const cw = (pw - pad * 2) / cols;
+  const ch = (ph - pad * 2 - headH - 16) / rows;
+  const fs = Math.min(cw, ch) * (o.artScale || 0.82);
+  const tint = artTint(o.artGray == null ? 0.35 : o.artGray);
+  const pgs = document.getElementById('artPageStyle');
+  if (pgs) pgs.textContent = '@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:0}';
+  let html = '';
+  for (let p = 0; p < pageCount; p++) {
+    html += `<section class="ws-page${vertical ? ' is-vertical' : ''}" style="--pw:${pw}px;--ph:${ph}px;--guide-tint:${tint}">`;
+    if (o.showHeader) html += artHeadHtml(o, p + 1, pageCount);
+    html += `<div class="art-grid" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);font-size:${fs.toFixed(1)}px">`;
+    for (let li = 0; li < perPage; li++) {
+      const line = lines[p * perPage + li] || [];
+      for (let k = 0; k < lineLen; k++) {
+        const t = line[k];
+        const pos = vertical
+          ? `grid-column:${cols - li};grid-row:${k + 1}`
+          : `grid-row:${li + 1};grid-column:${k + 1}`;
+        html += `<div class="article-cell" style="${pos}">` + guideSvg(0);
+        if (t && t.c && t.c.trim()) {
+          html += `<span class="guide-char"><span class="guide-glyph" data-ch="${esc(t.c)}">${esc(t.c)}</span></span>`;
+        }
+        if (t && t.att && t.att.length) html += `<span class="attached">${esc(t.att.join(''))}</span>`;
+        html += `</div>`;
+      }
+    }
+    html += `</div><div class="art-page-no">${p + 1} / ${pageCount}</div></section>`;
+  }
+  return html;
+}
+// 文章頁在螢幕上等比縮到容器闊（列印時 zoom 還原為 1，尺寸不受影響）
+function fitArticlePages() {
+  const content = document.getElementById('wsContent');
+  if (!content) return;
+  const pages = [...content.querySelectorAll('.ws-page')];
+  if (!pages.length) return;
+  const avail = Math.max(280, content.clientWidth || document.documentElement.clientWidth);
+  const pw = parseFloat(pages[0].style.getPropertyValue('--pw')) || pages[0].offsetWidth || 794;
+  const scale = Math.max(0.22, Math.min(1, (avail - 4) / pw));
+  pages.forEach(p => { p.style.zoom = scale; });
+}
+window.addEventListener('resize', () => {
+  if (currentOptions && currentOptions.layout === 'article') fitArticlePages();
+});
+
 function renderWorksheet() {
   const o = currentOptions;
   const ws = document.getElementById('worksheet');
@@ -2180,6 +2352,15 @@ function renderWorksheet() {
   applyCellSizes(ws, o);
   applyGuideStyle(ws, o);   // 樣式表見 GUIDE_STYLES
   applyHeader(o);
+  ws.classList.toggle('article-mode', o.layout === 'article');
+  if (o.layout === 'article') {
+    content.innerHTML = articlePagesHtml(o);
+    content.classList.toggle('quiz-mode', !!o.quizMode);
+    setWsFooter(o);
+    installGlyphLayer(content);
+    fitArticlePages();
+    return;
+  }
 
   // Content
   let html = '';
@@ -2343,7 +2524,7 @@ function openA4Preview() {
     perRowNote = ` ⚠️ 每行 ${o.perRow} 格 + 印刷格 ${o.printSize === 'auto' ? '自動' : o.printSize}：列印時格仔跟隨
       A4 寬度自動換行，實際每行格數可能同螢幕預覽唔同（flex 覆蓋 width）。`;
   }
-  info.textContent = `排版：${o.layout === 'sentence' ? '整句' : o.layout === 'word+sentence' ? '每字+整句' : '每字'}
+  info.textContent = `排版：${o.layout === 'article' ? '文章抄寫紙' : o.layout === 'sentence' ? '整句' : o.layout === 'word+sentence' ? '每字+整句' : '每字'}
     · 印刷格：${o.printSize === 'auto' ? '自動（' + (o.size || '中') + '屏）' : o.printSize}
     · 導線：${o.guideStyle || '米字格'} · 字數：${(currentChars || []).length}`;
   warn.textContent = perRowNote;
@@ -2356,7 +2537,13 @@ function openA4Preview() {
     const cm = ((SIZE_PX[o.size] || 96) / 96) * 2.54;
     ps = Math.min(Math.max(cm, 1.5), 2.6).toFixed(2) + 'cm';
   }
-  const clone = ws.cloneNode(true);
+  let clone = ws.cloneNode(true);
+  if (o.layout === 'article') {
+    const pages = clone.querySelectorAll('.ws-page');
+    const n = pages.length;
+    for (let i = 1; i < n; i++) pages[i].remove();
+    if (info) info.textContent += ` · 文章共 ${n} 頁（預覽只顯示第 1 頁）`;
+  }
   clone.style.position = 'relative';
   clone.style.margin = '0';
   clone.style.width = '794px';          // A4 width @96dpi (screen px)
@@ -2900,5 +3087,44 @@ if (document.fonts && document.fonts.ready) {
 }
 </script>
 
+<style id="artPageStyle">@page{size:A4 portrait;margin:0}</style>
+<style>
+/* ===== 文章抄寫紙 prototype ===== */
+#worksheet.article-mode{padding:0;max-width:none;background:transparent;box-shadow:none}
+#worksheet.article-mode .ws-header{display:none}
+.ws-page{background:#fff;width:var(--pw,794px);height:var(--ph,1123px);margin:0 auto 18px;padding:10mm;box-sizing:border-box;box-shadow:0 2px 16px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px}
+.ws-page .art-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid var(--red-grid);padding-bottom:5px}
+.ws-page .art-title{font-size:17px;font-weight:600;color:#333}
+.ws-page .art-fields{display:flex;gap:14px;font-size:12px;color:#555}
+.ws-page .art-fields .line{display:inline-block;min-width:62px;border-bottom:1px solid #9a9a9a}
+.art-grid{flex:1;display:grid;border-left:1px solid var(--red-grid);border-top:1px solid var(--red-grid);background:#fff;min-height:0}
+.article-cell{position:relative;border-right:1px solid var(--red-grid);border-bottom:1px solid var(--red-grid);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.article-cell .guide-char{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--guide-tint);font-family:"LXGW WenKai TC","KaiTi","STKaiti",serif}
+.article-cell .attached{position:absolute;right:3%;bottom:0;font-size:.58em;line-height:1.1;color:var(--guide-tint)}
+.art-page-no{font-size:10px;color:#999;text-align:right}
+.art-opt output{font-size:.85em;color:#777;margin-left:4px}
+@media print{
+  .ws-page{zoom:1!important}
+  #worksheet.article-mode{padding:0;margin:0;max-width:none}
+  .ws-page{box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  .ws-page:last-child{break-after:auto;page-break-after:auto}
+  .art-page-no{display:none}
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const sc=document.getElementById('optArtScale'), scO=document.getElementById('artScaleOut');
+  const gr=document.getElementById('optArtGray'), grO=document.getElementById('artGrayOut');
+  if(sc&&scO) sc.addEventListener('input',()=>{scO.textContent=sc.value+'%';});
+  const ori=document.getElementById('optArtOrient');
+  if(ori) ori.addEventListener('change',()=>{
+    const c=document.getElementById('optArtCols'), r=document.getElementById('optArtRows');
+    if(!c||!r) return;
+    if(ori.value==='landscape'){ c.value=20; r.value=13; } else { c.value=15; r.value=20; }
+    document.querySelector('.generate-btn').click();
+  });
+  if(gr&&grO) gr.addEventListener('input',()=>{grO.textContent=gr.value+'%';});
+});
+</script>
 </body>
 </html>

@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - 2026-11-03 ／ enhanced 預覽版
+
+### Added
+- **文章抄寫紙（`#optLayout = article`）**：貼一整篇／一整段，自動分頁成格紙。A4 直式／橫式、橫排（左至右）／**直排（右至左）**、每頁欄×行（3–40）、全部底字／一行底字一行空白。每頁獨立 `<section class="ws-page">`，列印時 `break-after:page`（最後一頁 auto），動態 `@page{size:A4 portrait|landscape}`。
+- **中文排版三寶**：行首標點併入上一格（避頭）、每段另起一行、段首空兩格（全部可勾選）。
+- **底字大小（55–95%）＋ 底字深淺 slider**：即時重生；深淺以 `--guide-tint` alpha 表達（0.10–0.65）。
+- **班別欄、家長簽名欄**（文章模式頁首）。
+- 文章模式螢幕自動等比縮到容器闊（`fitArticlePages()`，`zoom`；列印時 `zoom:1!important`），手機 390px 實測 0.326 倍、零橫向溢出。
+- `enhanced/` 預覽路徑（`https://chineseword.we1co.me/enhanced/`）：由 `tools/build_enhanced.py` 生成——資產改 `../` 前綴、`window.GLYPH_DIR='../glyphs/'`、頁面角標明 enhanced 預覽並連回原版；主站 `index.html` 不受影響。
+- `tools/apply_article_v1.py`／`apply_article_fit.py`（可重跑、有 anchor assert）、`tools/deploy_preview.py`（staging＝主站舊版＋enhanced，主站 md5 不變）。
+
+### Notes
+- 實作與回歸：`tools/regression.py` 85 項 0 失敗；文章模式分頁、直排、避頭、兩個 slider、列印 zoom 全部以 DOM 實測（非截圖判斷）。
+- 字形照用 EDB SVG（每頁只 fetch 用到的字），標點不請求 glyph；未在文章模式加筆順數字（下一步選項）。
+- 備份：git tag `ver-oct`（`bb72987`）＋ `~/backups/chinese-worksheet-ver-oct-20261103/`。
+
+## [1.3.4] - 2026-10-26
 ## [1.3.4] - 2026-10-26
 
 ### Fixed
