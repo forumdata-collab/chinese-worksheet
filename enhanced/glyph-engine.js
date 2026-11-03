@@ -365,7 +365,7 @@ function glyphFrame(rec) {
   return {
     ...b, box, cx, cy,
     C: b.y0 + b.y1,
-    fs: box * 0.12,
+    fs: box * 0.14,
     viewBox: `${(cx - box / 2).toFixed(1)} ${(cy - box / 2).toFixed(1)} `
            + `${box.toFixed(1)} ${box.toFixed(1)}`,
   };
