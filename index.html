@@ -9,7 +9,7 @@
 <script src="hk_order.js?v=1794746956"></script>
 <script src="hw_hk_same.js?v=1"></script>
 <script src="stroke_seq.js?v=3"></script>
-<script src="glyph-engine.js?v=13"></script>
+<script src="glyph-engine.js?v=14"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
 <style>
@@ -1750,8 +1750,8 @@ let GLYPH_SOURCES = {};
 let VARIANT_PAIRS = {};
 function loadGlyphMeta() {
   Promise.all([
-    fetch('data/glyph_sources.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
-    fetch('data/variant_pairs.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
+    fetch('data/glyph_sources.json?v=235').then(r => (r.ok ? r.json() : null)).catch(() => null),
+    fetch('data/variant_pairs.json?v=235').then(r => (r.ok ? r.json() : null)).catch(() => null),
   ]).then(([gs, vp]) => {
     if (gs) GLYPH_SOURCES = gs.glyphs || {};
     if (vp) {

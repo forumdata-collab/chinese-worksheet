@@ -27,7 +27,11 @@ OUT = os.path.join(ROOT, 'data', 'glyph_sources.json')
 
 # 2026-09-21 手動補嘅 26 個香港正字（glyph 由 EDB 動畫 copy/build，唔喺 edb_id_map）
 # 2026-11-13 獒：EDB 敖(U+6556) + EDB 犬(U+72AC) 拼合，來源仍係 EDB
-HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀峯麪羣獒祕秘'
+# 2026-11-15 v2.35：菇/窿/蜒 為 EDB 新字形（用戶提供），一併加入；氳 屬 EDB 修訂（Edb.R）
+HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀峯麪羣獒祕秘菇窿蜒'
+
+# 字形由 EDB 動畫修訂（edb refined）而成：筆順按異體字原則核對，來源標 Edb.R 而非 EDB。
+EDB_REVISED = {f'{ord(c):x}': c for c in '氳'}
 
 # 2026-11-14 v232c：23 個 HanziWriter 通用字形（筆順／筆數已按 EDB 拆字核實修正）。
 # 字形本身唔係 EDB／twpen，來源維持 HW——唔可以被下面嘅預設邏輯翻做 twpen。
@@ -48,7 +52,7 @@ def load_edb_chars():
 def main():
     edb_chars = load_edb_chars()
     glyphs = {}
-    n_edb = n_twpen = n_hw = 0
+    n_edb = n_twpen = n_hw = n_rev = 0
     for fn in sorted(os.listdir(GLYPHS)):
         if not fn.endswith('.json'):
             continue
@@ -57,6 +61,9 @@ def main():
         if hexv in HW_GLYPHS:
             glyphs[hexv] = 'HW'
             n_hw += 1
+        elif hexv in EDB_REVISED:
+            glyphs[hexv] = 'Edb.R'
+            n_rev += 1
         elif ch in edb_chars:
             glyphs[hexv] = 'EDB'
             n_edb += 1
@@ -81,6 +88,12 @@ def main():
                 'verified': True,
                 'note': 'breakdown PNG 逆向（台灣標準，非香港）',
             },
+            'Edb.R': {
+                'name': 'EDB 字形修訂',
+                'url': 'https://www.edbchinese.hk/lexlist_ch/',
+                'verified': True,
+                'note': 'EDB 字形修補（edb refined），筆順按異體字原則核對',
+            },
             'HW': {
                 'name': 'HanziWriter 通用字形（已按香港次序修正）',
                 'url': 'https://github.com/chanind/hanzi-writer-data',
@@ -92,7 +105,7 @@ def main():
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     json.dump(rec, open(OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
-    print(f'glyph_sources.json: {len(glyphs)} glyphs (EDB {n_edb} / twpen {n_twpen} / HW {n_hw})')
+    print(f'glyph_sources.json: {len(glyphs)} glyphs (EDB {n_edb} / twpen {n_twpen} / HW {n_hw} / Edb.R {n_rev})')
 
 
 if __name__ == '__main__':
