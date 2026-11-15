@@ -1,0 +1,342 @@
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink: #2c2c2c;
+  --ink-light: #4a4a4a;
+  --paper: #f5f0e6;
+  --paper-dark: #e8e0d0;
+  --accent: #8b3a3a;
+  --accent-hover: #6d2e2e;
+  --gold: #c9a227;
+  --shadow: rgba(44, 44, 44, 0.15);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Hero */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: url('bg.jpg') center / cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 240, 230, 0.55) 0%,
+    rgba(245, 240, 230, 0.35) 40%,
+    rgba(245, 240, 230, 0.7) 100%
+  );
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.5rem;
+  max-width: 640px;
+}
+
+.title {
+  font-family: 'Noto Serif TC', 'Songti TC', serif;
+  font-size: clamp(2.2rem, 7vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.subtitle {
+  font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+  letter-spacing: 0.35em;
+  color: var(--ink-light);
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.35);
+}
+
+.tagline {
+  font-size: 1.05rem;
+  color: var(--ink-light);
+  margin-bottom: 2.25rem;
+  letter-spacing: 0.08em;
+}
+
+.cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  letter-spacing: 0.05em;
+  border: 2px solid transparent;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(139, 58, 58, 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(139, 58, 58, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  border-color: rgba(44, 44, 44, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.btn-secondary:hover {
+  background: #fff;
+  border-color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.btn-lg {
+  padding: 1rem 2.25rem;
+  font-size: 1.05rem;
+}
+
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  opacity: 0.8;
+  letter-spacing: 0.1em;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+
+/* Features */
+.features {
+  padding: 5rem 0 4rem;
+  background: var(--paper);
+}
+
+.section-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  letter-spacing: 0.12em;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--accent);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.75rem;
+}
+
+.feature-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 4px 20px var(--shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(44, 44, 44, 0.12);
+}
+
+.feature-icon {
+  font-size: 2.25rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.feature-card p {
+  font-size: 0.95rem;
+  color: var(--ink-light);
+  line-height: 1.75;
+}
+
+/* About */
+.about {
+  padding: 4rem 0;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--paper-dark) 100%);
+}
+
+.about-content {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.about-content p {
+  font-size: 1.05rem;
+  color: var(--ink-light);
+  margin-bottom: 1.25rem;
+}
+
+.about-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Download */
+.download {
+  padding: 5rem 0;
+  background: var(--paper);
+  text-align: center;
+}
+
+.download-desc {
+  max-width: 480px;
+  margin: 0 auto 2rem;
+  color: var(--ink-light);
+  font-size: 1.05rem;
+}
+
+/* Footer */
+.footer {
+  padding: 2.5rem 0;
+  background: #2c2c2c;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.footer p {
+  margin-bottom: 0.5rem;
+}
+
+.footer-links a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-links span {
+  margin: 0 0.5rem;
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .hero-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .cta-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .features {
+    padding: 3.5rem 0 3rem;
+  }
+
+  .feature-card {
+    padding: 1.75rem 1.5rem;
+  }
+}
+
+/* 壓縮「三大核心功能」：手機一屏放得落三張卡（2026-11-13 用戶要求） */
+@media (max-width: 768px) {
+  .features { padding: 2rem 0 2rem; }
+  .features .section-title { font-size: 1.35rem; margin-bottom: 1rem; }
+  .features .section-title::after { margin: 0.45rem auto 0; height: 2px; }
+  .feature-grid { gap: 0.7rem; }
+  .feature-card { padding: 1rem 1.15rem; }
+  .feature-icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .feature-card h3 { font-size: 1.05rem; margin-bottom: 0.3rem; }
+  .feature-card p { font-size: 0.875rem; line-height: 1.55; }
+}

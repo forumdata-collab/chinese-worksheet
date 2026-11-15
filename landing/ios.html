@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iOS 安裝 — 中文筆順練習簿</title>
+  <meta name="description" content="用 AltStore 在 iPhone / iPad 安裝中文筆順練習簿：加入 source、一鍵安裝，離線使用。">
+  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    .doc { max-width: 760px; margin: 0 auto; padding: 3.5rem 1.5rem 4rem; }
+    .doc h1 { font-family: 'Noto Serif TC', serif; font-size: clamp(1.7rem, 5vw, 2.3rem); letter-spacing: .04em; margin-bottom: .5rem; }
+    .doc .lead { color: var(--ink-light); margin-bottom: 2.2rem; }
+    .doc h2 { font-family: 'Noto Serif TC', serif; font-size: 1.12rem; margin: 2rem 0 .7rem; padding-left: .7rem; border-left: 3px solid var(--accent); }
+    .doc p, .doc li { color: var(--ink-light); font-size: .97rem; }
+    .doc ol { padding-left: 1.3rem; }
+    .doc li { margin: .35rem 0; }
+    .copybox {
+      display: flex; gap: .5rem; align-items: stretch; flex-wrap: wrap;
+      background: var(--paper-dark); border: 1px solid rgba(44,44,44,.12);
+      border-radius: 8px; padding: .55rem .6rem; margin: .8rem 0 1.2rem;
+    }
+    .copybox code {
+      flex: 1 1 16rem; font-size: .8rem; word-break: break-all; color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; align-self: center;
+    }
+    .copybox button {
+      font: inherit; font-size: .85rem; cursor: pointer; white-space: nowrap;
+      background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: .5rem .9rem;
+    }
+    .copybox button:hover { background: var(--accent-hover); }
+    .note { font-size: .88rem; color: var(--ink-light); border-top: 1px solid rgba(44,44,44,.12); margin-top: 2.2rem; padding-top: 1.1rem; }
+    .note strong { color: var(--ink); }
+    .back { display: inline-block; margin-top: 2rem; font-size: .9rem; color: var(--accent); text-decoration: none; }
+    .back:hover { text-decoration: underline; }
+    .btn-row { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+    <h1>iPhone / iPad 安裝</h1>
+    <p class="lead">用 <strong>AltStore</strong> 安裝，免費 Apple ID 即可（不用開發者帳號）。App 完全離線，唔需要連線都用得。</p>
+
+    <h2>一、先裝 AltStore</h2>
+    <ol>
+      <li>電腦（Mac 或 Windows）安裝 <a href="https://altstore.io" target="_blank" rel="noopener">AltServer</a></li>
+      <li>iPhone 用 USB 連電腦，AltServer 選單 → Install AltStore → 揀你部機，輸入 Apple ID</li>
+      <li>之後可以在 iPhone 直接用（首次要在「設定 → 一般 → VPN 與裝置管理」信任 AltStore）</li>
+    </ol>
+
+    <h2>二、加入本站 source</h2>
+    <p>AltStore → <strong>Browse</strong> → 右上角 <strong>+</strong>，貼上：</p>
+    <div class="copybox">
+      <code id="src">https://raw.githubusercontent.com/forumdata-collab/chineseword-ios/main/altstore-source.json</code>
+      <button type="button" onclick="copySrc(this)">複製</button>
+    </div>
+
+    <h2>三、安裝</h2>
+    <p>Source 入面見到「中文筆順練習簿」→ 按 <strong>Free</strong> / <strong>Get</strong>，AltStore 會用你嘅 Apple ID 重新簽署並安裝（約一分鐘）。</p>
+
+    <div class="btn-row">
+      <a class="btn btn-primary" href="altstore://source?url=https://raw.githubusercontent.com/forumdata-collab/chineseword-ios/main/altstore-source.json">用 AltStore 直接開啟</a>
+      <a class="btn btn-secondary" href="https://github.com/forumdata-collab/chineseword-ios/releases/download/v2.31/chineseword-ios-v2.31.ipa" target="_blank" rel="noopener">下載 IPA（手動安裝）</a>
+      <a class="btn btn-secondary" href="android">Android 安裝</a>
+    </div>
+
+    <p class="note">
+      <strong>關於 7 日有效期：</strong>免費 Apple ID 簽署的 App 每 7 日要重新簽署一次；只要 AltServer 同手機喺同一個 Wi-Fi，AltStore 會自動背景續簽（保持 AltServer 開住）。付費開發者帳號則為 1 年。<br>
+      <strong>版本：</strong>v2.31（build 35）· 最低 iOS 15.0 · 完全離線 · 不收集任何資料。
+    </p>
+
+    <a class="back" href="./">← 返回介紹頁</a>
+  </main>
+
+  <script>
+    function copySrc(btn) {
+      const text = document.getElementById('src').textContent.trim();
+      const done = () => { btn.textContent = '已複製'; setTimeout(() => btn.textContent = '複製', 1500); };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        const r = document.createRange(); r.selectNodeContents(document.getElementById('src'));
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = '請長按複製'; }
+      }
+    }
+  </script>
+</body>
+</html>
