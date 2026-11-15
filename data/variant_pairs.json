@@ -3,6 +3,24 @@
  "generated": "2026-10-26",
  "note": "同一字的另一寫法（字形檔案相同＝同一個 EDB 筆順動畫）。standard = EDB 動畫所畫的香港教育標準字形；own_glyph = 有冇該字自己的字形。",
  "pairs": {
+  "9eaa": {
+   "char": "麪",
+   "alts": [
+    "麵"
+   ],
+   "standard": "麪",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "9eb5": {
+   "char": "麵",
+   "alts": [
+    "麪"
+   ],
+   "standard": "麪",
+   "relation": "同字異寫",
+   "own_glyph": false
+  },
   "7a0e": {
    "char": "税",
    "alts": [
@@ -37,6 +55,24 @@
    ],
    "standard": "衞",
    "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "7fa4": {
+   "char": "群",
+   "alts": [
+    "羣"
+   ],
+   "standard": "群",
+   "relation": "部件位置變體",
+   "own_glyph": true
+  },
+  "7fa3": {
+   "char": "羣",
+   "alts": [
+    "群"
+   ],
+   "standard": "群",
+   "relation": "部件位置變體",
    "own_glyph": false
   },
   "8471": {
@@ -199,6 +235,24 @@
    ],
    "standard": "鈎",
    "relation": "同字異寫",
+   "own_glyph": false
+  },
+  "79d8": {
+   "char": "秘",
+   "alts": [
+    "祕"
+   ],
+   "standard": "祕",
+   "relation": "偏旁變體",
+   "own_glyph": true
+  },
+  "7955": {
+   "char": "祕",
+   "alts": [
+    "秘"
+   ],
+   "standard": "祕",
+   "relation": "偏旁變體",
    "own_glyph": false
   },
   "5aaa": {

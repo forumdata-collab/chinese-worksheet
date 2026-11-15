@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中文筆順練習簿 — 粵音普通話朗讀 · 筆順練習 · 列印練習紙</title>
 <link href="fonts/lxgw.css" rel="stylesheet">
-<script src="data.js?v=1794186217"></script>
-<script src="hk_order.js?v=2"></script>
+<script src="data.js?v=1794746955"></script>
+<script src="hk_order.js?v=1794746956"></script>
+<script src="hw_hk_same.js?v=1"></script>
 <script src="stroke_seq.js?v=3"></script>
-<script src="glyph-engine.js?v=9"></script>
+<script src="glyph-engine.js?v=13"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>✍️</text></svg>">
 <style>
@@ -324,10 +325,20 @@ body {
 }
 .char-display {
   flex-shrink: 0;
-  width: var(--cell-practice, 96px);
-  height: var(--cell-practice, 96px);
+  width: auto;
+  min-width: var(--cell-practice, 96px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
   cursor: pointer;
+}
+.char-display .si-note {
+  font-size: 11px;
+  line-height: 1.1;
+  color: #8a8f98;
+  margin-top: 2px;
+  white-space: nowrap;
 }
 .char-cell {
   width: var(--cell-practice, 96px);
@@ -352,8 +363,10 @@ body {
 .reading-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: 5px;
+  row-gap: 0;
+  margin-bottom: 1px;
+  line-height: 1.2;
   align-items: center;
 }
 .reading-label {
@@ -368,9 +381,10 @@ body {
 }
 .reading-label.canto { background: var(--red); }
 .reading-value {
-  font-size: 1.15em;
+  font-size: 1.02em;
   font-weight: 600;
   font-family: inherit;
+  line-height: 1.2;
 }
 .reading-alt {
   font-size: 0.8em;
@@ -378,10 +392,14 @@ body {
 }
 /* 又讀：預設收起，點開才顯示；列印不顯示（顧問 Q6） */
 .alt-readings {
+  display: inline;
   font-size: 0.78em;
   color: #8a8f98;
-  margin-top: 2px;
+  margin-left: 6px;
 }
+.alt-readings:not([open]) > div { display: none !important; }
+.alt-readings[open] { display: block; flex-basis: 100%; margin-left: 0; margin-top: 1px; }
+.alt-readings[open] > div { display: block; margin-top: 1px; white-space: normal; overflow-wrap: anywhere; }
 .alt-readings summary {
   cursor: pointer;
   color: #9a9a9a;
@@ -399,9 +417,9 @@ body {
   background: none;
   border: 1.5px solid #ccc;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 16px;
+  width: 27px;
+  height: 27px;
+  font-size: 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -599,8 +617,10 @@ body {
 /* ===== HIDDEN IN PRINT (but shown on screen) ===== */
 .action-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
+  margin-bottom: 8px;
 }
 .action-btn {
   background: #f4f2ee;
@@ -694,6 +714,84 @@ body {
   margin: 0 auto;
 }
 #stroke-target svg { width: 100% !important; height: 100% !important; }
+/* Landscape: the viewport is only ~360-400px tall, so a fixed 300px
+   canvas + header + speed control + buttons would exceed it and force
+   scrolling. Scale the canvas with the viewport height and tighten the
+   paddings so the whole stroke modal fits at once. The SVG already
+   fills its container (100% !important), so shrinking the container is
+   enough — HanziWriter's 300px creation size is untouched. Portrait
+   keeps the 300px canvas. Height budget at 360px viewport (modal
+   max-height 85vh = 306px): header ~36 + canvas 46vh ~166 + speed
+   ~28 + body padding 20 + controls ~48 = ~298px < 306px. */
+@media (orientation: landscape) {
+  /* v2.9: stroke modal goes side-by-side in landscape — canvas left,
+     speed + buttons right — so the whole modal fits without scrolling.
+     v2.8's min(300px,46vh) alone did NOT work: HanziWriter's SVG has no
+     viewBox, so CSS-shrinking the container cropped the character instead
+     of scaling it. The canvas size is now set by JS (strokeCanvasSize()
+     in openStroke), and the SVG gets a viewBox as a safety net. */
+  #strokeModal .modal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header header"
+      "body controls";
+    max-width: 640px;
+    max-height: 92vh;
+  }
+  #strokeModal .modal-header { grid-area: header; padding: 8px 16px; }
+  #strokeModal .modal-body {
+    grid-area: body;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #strokeModal .modal-controls {
+    grid-area: controls;
+    flex-direction: column; justify-content: center; align-items: stretch;
+    border-top: none; border-left: 1px solid #eee;
+    padding: 10px 12px;
+  }
+  #strokeModal .modal-controls button { width: 100%; white-space: nowrap; }
+}
+@media (orientation: landscape) {
+  /* v2.12: quiz modal goes side-by-side in landscape, same pattern as
+     the v2.9 stroke-modal fix: HanziWriter's SVG has no viewBox, so
+     CSS-shrinking the container crops the character instead of scaling
+     it. Canvas size is set by JS (quizCanvasSize()); the SVG gets a
+     viewBox as a safety net. Quiz modal has more rows than the stroke
+     modal (prompt + optional hint + quizResult), so its landscape
+     canvas is smaller, and smaller again in 默書 mode (hint row).
+     Height budget at 360px viewport (modal max-height 92vh = 331px),
+     measured: header ~43 + body padding 16 + prompt ~33 + hint ~36
+     (dictation only) + canvas 174 (normal) / 150 (dictation) +
+     result ~38 = ~304px (normal) / ~316px (dictation). */
+  #quizModal .modal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header header"
+      "body controls";
+    max-width: 640px;
+    max-height: 92vh;
+  }
+  #quizModal .modal-header { grid-area: header; padding: 4px 16px; }
+  #quizModal .modal-body {
+    grid-area: body;
+    padding: 8px 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  /* Compact hint in landscape (higher specificity beats the #cwQuizHint
+     rule further down the file): smaller padding/margin/font so the
+     dictation hint row costs ~36px instead of ~52px. */
+  #quizModal #cwQuizHint { padding: 4px 8px; margin-bottom: 6px; font-size: 0.85em; }
+  #quizModal .modal-controls {
+    grid-area: controls;
+    flex-direction: column; justify-content: center; align-items: stretch;
+    border-top: none; border-left: 1px solid #eee;
+    padding: 10px 12px;
+  }
+  #quizModal .modal-controls button { width: 100%; white-space: nowrap; }
+}
 .modal-controls {
   padding: 16px 20px;
   border-top: 1px solid #eee;
@@ -1063,6 +1161,136 @@ details.advance-collapse summary:hover { color: var(--red); }
   }
 }
 </style>
+
+<style>
+/* App: options panel collapsible on phones (default collapsed) */
+#optToggle{display:none}
+@media (max-width:768px){
+  #optToggle{display:flex;align-items:center;justify-content:space-between;width:100%;
+    padding:12px 16px;margin:12px 0 0;background:#f8f6f2;border:1px solid #e5ddd0;
+    border-radius:8px;font-size:16px;color:#3d3225;cursor:pointer}
+  #optToggle .chev{transition:transform .25s}
+  #optionsPanel{overflow:hidden;max-height:0;opacity:0;margin:0;padding-top:0;padding-bottom:0;
+    border:0;transition:max-height .3s ease,opacity .3s ease}
+  #optionsPanel.expanded{max-height:4000px;opacity:1;margin:18px 0;padding:16px}
+  #optionsPanel.expanded + #optToggle .chev{transform:rotate(180deg)}
+}
+</style>
+
+<style>
+/* ===== App v2.2: flat traditional restyle — less web, no AI rounded boxes ===== */
+:root { --radius: 2px; }
+/* Flatten the boxy panels/buttons (keep .bgm-toggle/.play-btn/.back-to-top circular) */
+.input-section, .options, .modal,
+.input-section textarea, .opt-group input[type="number"], .opt-group select,
+.generate-btn, .print-bar button, .action-btn, .modal-controls button,
+.quick-btns button, .audio-toast, details.sample-collapse summary {
+  border-radius: 2px !important;
+}
+/* Flat panels: hairline border, no shadow */
+.input-section, .options { border: 1px solid #e5ddd0; box-shadow: none; }
+/* Traditional Kai headings (LXGW WenKai, bundled) */
+h1, h2, h3, .preview-heading {
+  font-family: 'LXGW WenKai TC', 'Kaiti TC', 'STKaiti', serif;
+}
+</style>
+
+<style>
+/* ===== App v2.3: hide web-only clutter (bottom bar + menu cover these) ===== */
+/* Site print bar duplicates the native bottom bar (列印/默書); A4 預覽 + 朗讀全文 live in the ⋮ menu. */
+#printBar { display: none !important; }
+/* Site back-to-top duplicates the 輸入 tab (scrolls to top). */
+#backToTop { display: none !important; }
+/* Sources/declaration footer hidden by default in the app; the ⋮ menu
+   "資料來源與聲明" reveals it (inline style overrides this, no !important). */
+.ws-footer { display: none; }
+</style>
+
+<style>
+/* ===== App v2.4: audio toast wraps so long readings show in full ===== */
+.audio-toast {
+  width: max-content !important;
+  max-width: 92vw !important;
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.6;
+}
+</style>
+
+<style>
+/* ===== App v2.5: 生字冊掣 / 每日一字 / 測驗提示 / 深色模式（只限螢幕，列印永遠用淺色） ===== */
+.action-btn.wb-btn { color: #b7791f; font-weight: 700; }
+#cwDailyBar { display: flex; align-items: center; gap: 10px; background: #fff8e6; border: 1px solid #e8d9a8; border-left: 4px solid var(--red); padding: 10px 14px; margin-bottom: 12px; }
+#cwDailyBar .cw-daily-label { font-weight: 700; color: var(--ink); }
+#cwDailyBar .cw-daily-char { font-family: 'LXGW WenKai TC', 'KaiTi', 'STKaiti', serif; font-size: 2em; line-height: 1; color: var(--red); }
+#cwDailyBar .cw-daily-btn { margin-left: auto; background: var(--red); color: #fff; border: none; padding: 8px 14px; font-size: 0.95em; cursor: pointer; border-radius: 2px; }
+#cwQuizHint { font-size: 0.95em; color: var(--ink); background: var(--blue-light); border-left: 4px solid var(--blue); padding: 8px 12px; margin-bottom: 12px; }
+@media screen {
+  html.cw-dark { --bg: #1a1714; --ink: #e8e0d0; --red: #d4654a; --red-light: #3a2a26; --red-grid: #5a463e; --guide-line: #4a4038; --guide-tint: #6b5a4a; --blue: #7aa7d4; --blue-light: #22303f; --green: #7fb069; --paper: #221e1a; --card-bg: #26211c; --shadow: rgba(0,0,0,0.4); }
+  html.cw-dark body { background: var(--bg); color: var(--ink); }
+  html.cw-dark .char-cell, html.cw-dark .practice-cell, html.cw-dark .sentence-cell { background: #2a251f; }
+  html.cw-dark .input-section textarea, html.cw-dark .opt-group input[type="number"], html.cw-dark .opt-group select { background: #2a251f; color: var(--ink); border-color: #4a4038; }
+  html.cw-dark .options { background: #221e1a; }
+  html.cw-dark .modal { background: #26211c; color: var(--ink); }
+  html.cw-dark .input-section { background: var(--paper); }
+  html.cw-dark .action-btn, html.cw-dark .print-bar button, html.cw-dark .quick-btns button, html.cw-dark .modal-controls button { background: #2a251f; color: var(--ink); border-color: #4a4038; }
+  html.cw-dark .generate-btn { background: var(--red); color: #fff; }
+  html.cw-dark .audio-toast { background: #3a332c; color: #e8e0d0; }
+  html.cw-dark .caoni-bg rect { opacity: 0.3; }
+  html.cw-dark #cwDailyBar { background: #2a251f; border-color: #4a4038; }
+  html.cw-dark #cwQuizHint { background: var(--blue-light); }
+  html.cw-dark .char-card + .char-card { border-top-color: #3a332c; }
+  html.cw-dark .char-info { border-bottom-color: #3a332c; }
+}
+</style>
+
+<style>
+/* ===== App v2.6: 生字冊成頁（全版 overlay，列印時隱藏） ===== */
+.cw-wb-page { position: fixed; inset: 0; z-index: 1100; display: flex; flex-direction: column; background: var(--bg); color: var(--ink); }
+.cw-wb-page[hidden] { display: none; }
+.cw-wb-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5ddd0; }
+.cw-wb-back { background: none; border: none; font-size: 1.05em; color: var(--red); cursor: pointer; padding: 6px 4px; white-space: nowrap; }
+.cw-wb-title { flex: 1; margin: 0; font-size: 1.3em; text-align: center; font-family: 'LXGW WenKai TC', 'KaiTi', 'STKaiti', serif; }
+.cw-wb-total { font-size: 0.85em; color: #888; min-width: 52px; text-align: right; white-space: nowrap; }
+.cw-wb-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #e5ddd0; }
+.cw-wb-tool { background: #fff; border: 1px solid #d8cfc0; padding: 6px 12px; font-size: 0.95em; cursor: pointer; border-radius: 2px; color: var(--ink); }
+.cw-wb-picked { flex: 1; text-align: center; font-weight: 700; color: var(--red); }
+.cw-wb-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 16px; align-content: start; }
+.cw-wb-card { position: relative; background: #fff; border: 1px solid #e5ddd0; padding: 12px 6px 10px; text-align: center; cursor: pointer; }
+.cw-wb-card.cw-wb-sel { border: 2px solid var(--red); background: #fdf0ec; }
+.cw-wb-char { display: block; font-family: 'LXGW WenKai TC', 'KaiTi', 'STKaiti', serif; font-size: 2.2em; line-height: 1.15; color: var(--ink); }
+.cw-wb-jy, .cw-wb-py { display: block; font-size: 0.8em; color: #777; line-height: 1.45; }
+.cw-wb-del { position: absolute; top: 2px; right: 2px; background: none; border: none; font-size: 1.15em; color: #aaa; cursor: pointer; padding: 2px 7px; line-height: 1; }
+.cw-wb-tick { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; line-height: 20px; text-align: center; background: var(--red); color: #fff; font-size: 0.8em; border-radius: 50%; }
+.cw-wb-empty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; color: #888; padding: 40px 24px; line-height: 1.8; }
+.cw-wb-empty[hidden] { display: none; }
+.cw-wb-footer { padding: 12px 16px; border-top: 1px solid #e5ddd0; }
+.cw-wb-generate { width: 100%; background: var(--red); color: #fff; border: none; padding: 14px; font-size: 1.1em; font-weight: 700; cursor: pointer; border-radius: 2px; }
+@media screen {
+  html.cw-dark .cw-wb-card { background: #2a251f; border-color: #4a4038; }
+  html.cw-dark .cw-wb-card.cw-wb-sel { background: #3a2a26; border-color: var(--red); }
+  html.cw-dark .cw-wb-tool { background: #2a251f; color: var(--ink); border-color: #4a4038; }
+  html.cw-dark .cw-wb-header, html.cw-dark .cw-wb-toolbar, html.cw-dark .cw-wb-footer { border-color: #3a332c; }
+  html.cw-dark .cw-wb-jy, html.cw-dark .cw-wb-py, html.cw-dark .cw-wb-total { color: #a99e8a; }
+  html.cw-dark .cw-wb-empty { color: #a99e8a; }
+}
+@media print { .cw-wb-page { display: none !important; } }
+</style>
+<style id="appV27Style">
+/* ===== App v2.7: 讀音放大（字卡粵拼／拼音加大，方便小朋友） ===== */
+.char-details .reading-value { font-size: 1.45em !important; line-height: 1.35 !important; }
+.char-details .reading-label { font-size: 0.9em !important; }
+.char-details .reading-alt { font-size: 1em !important; }
+.char-details .reading-row { gap: 8px; }
+/* ===== App v2.7: 簡單模式（收埋進階選項，只留輸入＋基本練習） ===== */
+html.cw-simple .cw-adv-hide { display: none !important; }
+/* ===== App v2.7: 手機排版重排（action-bar 全闊列 + 窄屏收緊） ===== */
+@media (max-width: 480px) {
+  #worksheet { padding: 14px; }
+  .char-info { gap: 8px; }
+  .action-btn { padding: 4px 8px; }
+}
+</style>
 </head>
 <body>
 
@@ -1110,7 +1338,7 @@ details.advance-collapse summary:hover { color: var(--red); }
 <!-- INPUT SECTION -->
 <div class="input-section screen-only" id="inputSection">
   <label for="inputText">✏️ 輸入中文字或一段文字</label>
-  <textarea id="inputText" placeholder="例如：你好，我是香港人。今天天氣很好。">你好，我是香港人。今天天氣很好。</textarea>
+  <textarea id="inputText" placeholder="例如：天地玄黃，宇宙洪荒。">天地玄黃，宇宙洪荒。</textarea>
   <details class="sample-collapse">
     <summary>🎲 常用範例</summary>
     <div class="quick-btns">
@@ -1149,13 +1377,14 @@ details.advance-collapse summary:hover { color: var(--red); }
     </div>
   </details>
 
-  <div class="options" id="optionsPanel">
+  <button id="optToggle" type="button"><span>⚙️ 練習選項</span><span class="chev">▾</span></button>
+<div class="options" id="optionsPanel">
     <div class="opt-section">
       <h3>格選項</h3>
       <div class="opt-grid">
         <div class="opt-group">
           <label>每字練習格數</label>
-          <input type="number" id="optPractice" value="4" min="0" max="10">
+          <input type="number" id="optPractice" value="3" min="0" max="10">
         </div>
         <div class="opt-group">
           <label>每行格數</label>
@@ -1423,8 +1652,8 @@ details.advance-collapse summary:hover { color: var(--red); }
   <div class="ws-footer" id="wsFooter">
     <div class="wsf-block">
       <div class="wsf-title">資料來源與聲明</div>
-      <div class="wsf-row"><span class="wsf-label">字形與筆順</span>香港教育局《香港小學學習字詞表》（edbchinese.hk）。字詞表未收錄之字，以內建字形配合 HanziWriter 筆順顯示，其筆順次序另參漢典（zdic.net）及筆順字典（twpen.com）。</div>
-      <div class="wsf-row"><span class="wsf-label">語言資料</span>粵拼：開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音：pypinyin；簡繁轉換：OpenCC；筆畫數：Unicode Unihan。</div>
+      <div class="wsf-row"><span class="wsf-label">字形與筆順</span>香港教育局《香港小學學習字詞表》（edbchinese.hk）。字詞表未收錄之字，以台灣教育部《筆順字典》字形（筆順已按香港次序）或 HanziWriter 通用字形顯示（筆順已按香港次序核對嘅字會標明「香港次序」）。詳見「開發說明」。</div>
+      <div class="wsf-row"><span class="wsf-label">語言資料</span>粵拼：開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音：pypinyin；簡繁轉換：OpenCC；筆畫數：以實際字形筆數為準。</div>
       <div class="wsf-row"><span class="wsf-label">天草泥格線</span>「天草泥格線印章教材套」由協康會職業治療師團隊推出，以「天空」、「草地」和「泥土」的圖案，將視覺提示融入書寫訓練。本站「彩色天草泥井字」及「天草泥三色」格線為教學參考應用。</div>
       <div class="wsf-row"><span class="wsf-label">聲明</span>本站為非官方教學輔助工具，與上述機構並無隸屬或合作關係；相關名稱、教材及資料之版權屬原機構所有。列印建議：A4 直向。</div>
     </div>
@@ -1525,7 +1754,14 @@ function loadGlyphMeta() {
     fetch('data/variant_pairs.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
   ]).then(([gs, vp]) => {
     if (gs) GLYPH_SOURCES = gs.glyphs || {};
-    if (vp) VARIANT_PAIRS = vp.pairs || {};
+    if (vp) {
+      VARIANT_PAIRS = vp.pairs || {};
+      // 標準寫法對照：輸入字 → 香港教育標準字（秘→祕、羣→群…），供 loader 預設示範標準字形
+      window.CW_STD_FORM = {};
+      for (const [hex, p] of Object.entries(VARIANT_PAIRS)) {
+        if (p && p.standard && p.char && p.standard !== p.char) window.CW_STD_FORM[hex] = p.standard;
+      }
+    }
     // 已產生工作紙就重畫一次，令來源標示／另一寫法即時出現
     if (document.querySelector('.char-card')) renderWorksheet();
   });
@@ -1534,7 +1770,13 @@ loadGlyphMeta();
 
 
 // ===== INIT =====
+// ===== 預設例句（v2.35）：每次載入隨機顯示四句之一；首句為預設 =====
+const CW_DEFAULT_SENTENCES = ['天地玄黃，宇宙洪荒。', '學而時習之，不亦說乎？', '一日之計在於晨，一年之計在於春。', '書山有路勤為徑，學海無涯苦作舟。'];
+function cwPickDefaultSentence() {
+  return CW_DEFAULT_SENTENCES[Math.floor(Math.random() * CW_DEFAULT_SENTENCES.length)];
+}
 document.addEventListener('DOMContentLoaded', () => {
+  { const _ta = document.getElementById('inputText'); const _s = cwPickDefaultSentence(); if (_ta) { _ta.value = _s; _ta.placeholder = '例如：' + _s; } }
   buildGuideStyleSelect();               // 格線樣式選項由 GUIDE_STYLES 生成（要先於還原設定）
   document.getElementById('optDate').value = todayStr();
 
@@ -1542,7 +1784,8 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const saved = JSON.parse(localStorage.getItem('chinese-ws-settings'));
     if (saved) {
-      if (saved.practice != null) document.getElementById('optPractice').value = saved.practice;
+      // 預設由 4 改 3：已儲存嘅舊預設 4 一併遷移；刻意揀過其他數嘅用戶唔受影響
+      if (saved.practice != null) document.getElementById('optPractice').value = (saved.practice == 4 ? 3 : saved.practice);
       if (saved.size) document.getElementById('optSize').value = saved.size;
       if (GUIDE_STYLES[saved.guideStyle]) {
         document.getElementById('optGuideStyle').value = saved.guideStyle;
@@ -1748,6 +1991,11 @@ function readOptions() {
 
 function generate() {
   const opts = readOptions();
+  // @page 規則係全局：文章模式設 8mm、其他模式要清空，否則會蓋過一般 12mm 邊界
+  if (opts.layout !== 'article') {
+    const pgs0 = document.getElementById('artPageStyle');
+    if (pgs0) pgs0.textContent = '';
+  }
   // save options to localStorage
   try {
     localStorage.setItem('chinese-ws-settings', JSON.stringify(opts));
@@ -1956,28 +2204,13 @@ function charCardHtml(ch, o, cardIdx) {
   // 彩色天草泥：每卡一個 slice（卡 0/1/2 = 原圖左/中/右），3 張卡併返埋 = 完整原圖
   const slice = (cardIdx == null) ? 0 : (cardIdx % 3);
   html += `<div class="char-cell">${guideSvg(slice)}<span class="char-glyph" data-ch="${esc(ch)}">${esc(ch)}</span></div>`;
+  if (d.si) html += `<div class="si-note">簡體：${esc(d.si)}</div>`;
   html += `</div>`;
   html += `<div class="char-details">`;
 
-  // Canto reading
-  if (o.canto && d.jy) {
-    html += `<div class="reading-row">`;
-    html += `<span class="reading-label canto">粵拼</span>`;
-    html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
-    html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
-    html += `</div>`;
-  }
-
-  // Mandarin reading
-  if (o.pinyin && d.py) {
-    html += `<div class="reading-row">`;
-    html += `<span class="reading-label">拼音</span>`;
-    html += `<span class="reading-value">${esc(d.py)}</span>`;
-    html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
-    html += `</div>`;
-  }
-
   // 又讀：預設收起（顧問 Q6：主讀一行，其餘折叠；列印不顯示）
+  // 只保留摘要 inline 接在最後一行讀音後面，唔另開一行
+  let altHtml = '';
   {
     const alts = [];
     if (o.canto && d.jy2 && d.jy2.length) {
@@ -1987,29 +2220,65 @@ function charCardHtml(ch, o, cardIdx) {
       alts.push(`拼音又讀：${esc(d.py2.join('、'))}`);
     }
     if (alts.length) {
-      html += `<details class="alt-readings"><summary>又讀</summary>`
+      altHtml = `<details class="alt-readings"><summary>又讀</summary>`
         + `<div>${alts.join('　')}</div></details>`;
     }
+  }
+  const hasMand = !!(o.pinyin && d.py);
+  const hasCanto = !!(o.canto && d.jy);
+
+  // Canto reading
+  if (hasCanto) {
+    html += `<div class="reading-row">`;
+    html += `<span class="reading-label canto">粵拼</span>`;
+    html += `<span class="reading-value">${jyutpingHtml(d.jy)}</span>`;
+    html += `<button class="play-btn canto" onclick="event.stopPropagation();speak('${esc(ch)}','canto')" title="粵語朗讀">🔊</button>`;
+    if (!hasMand) html += altHtml;
+    html += `</div>`;
+  }
+
+  // Mandarin reading
+  if (hasMand) {
+    html += `<div class="reading-row">`;
+    html += `<span class="reading-label">拼音</span>`;
+    html += `<span class="reading-value">${esc(d.py)}</span>`;
+    html += `<button class="play-btn" onclick="event.stopPropagation();speak('${esc(ch)}','mand')" title="普通話朗讀">🔊</button>`;
+    html += altHtml;
+    html += `</div>`;
+  }
+  if (altHtml && !hasCanto && !hasMand) {
+    html += `<div class="reading-row">${altHtml}</div>`;
   }
 
   // Meta info
   let metaParts = [];
   if (o.strokes && d.s) {
     const hex = ch.codePointAt(0).toString(16);
+    // 字形與筆數必須一致：未勾「顯示我輸入的寫法」而字形取標準字時（秘→祕），
+    // 畫數／部首要用標準字的資料，否則卡片寫「10畫」但描紅格只畫 9 筆。
+    const _stdCh = (!o.variant && window.CW_STD_FORM && window.CW_STD_FORM[hex]) || null;
+    const dg = (_stdCh && window.CHAR_DB[_stdCh]) || d;
     const src = GLYPH_SOURCES[hex] || (window.CHAR_DB[ch] ? 'HW' : null);
-    const tier = src === 'EDB' ? '香港教育標準' : (src ? '參考字形' : '');
-    metaParts.push(`✏️ ${tier ? tier + ' ' : ''}${d.s}畫`);
+    // HW chars whose stroke order is Hong Kong order (verified 2026-11-12):
+    // either reordered via HK_ORDER, or already HK order (HW_HK_SAME).
+    const hwHkOrder = src === 'HW' && (window.HK_ORDER[ch] || (window.HW_HK_SAME && window.HW_HK_SAME.has(ch)));
+    const tier = src === 'EDB' ? '香港教育標準' : (src === 'twpen' ? '香港次序' : (src === 'Edb.R' ? 'EDB 修訂' : (src ? (hwHkOrder ? '香港次序' : '參考字形') : '')));
+    metaParts.push(`✏️ ${tier ? tier + ' ' : ''}${dg.s}畫`);
+    if (dg.r) metaParts.push(`部首：${esc(dg.r)}`);
     if (src) {
-      const code = src === 'EDB' ? 'EDB' : (src === 'twpen' ? 'TW' : 'HW');
+      const code = src === 'EDB' ? 'EDB' : (src === 'twpen' ? 'TW' : (src === 'Edb.R' ? 'Edb.R' : 'HW'));
       const label = src === 'EDB'
         ? '字形來源：香港教育局《香港小學學習字詞表》'
-        : (src === 'twpen'
-          ? '字形來源：台灣教育部《筆順字典》，非香港官方字形'
-          : '字形來源：HanziWriter 通用字形，非香港官方字形');
+        : (src === 'Edb.R'
+          ? '字形來源：EDB 字形修補（edb refined），筆順按異體字原則核對'
+          : (src === 'twpen'
+          ? '字形源自台灣教育部《筆順字典》，筆順已按香港次序'
+          : (hwHkOrder
+            ? '字形源自 HanziWriter 通用字形，筆順已按香港次序'
+            : '字形及筆順源自 HanziWriter 通用字形，非香港官方標準')));
       metaParts.push(`<span class="src-badge" data-src="${code}" title="${label}">${code}</span>`);
     }
   }
-  if (d.si) metaParts.push(`簡體：${esc(d.si)}`);
   if (metaParts.length) {
     html += `<div class="meta-row">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>`;
   }
@@ -2040,18 +2309,21 @@ function charCardHtml(ch, o, cardIdx) {
   }
 
 
-  // Action bar (screen only) — 標點無筆順資料，唔顯示按鈕
+  html += `</div>`; // .char-details
+  html += `</div>`; // .char-info
+
+  // Action bar (screen only) — v2.7 重排：由 .char-details 窄欄搬出嚟，
+  // 改做 .char-card 入面、.char-info 下面嘅全闊獨立列，等手機唔使橫向捲動。
+  // 標點無筆順資料，唔顯示按鈕。五粒掣（筆順／試寫／☆／粵／普）不變。
   if (!isPunct(ch)) {
     html += `<div class="action-bar no-print">`;
     html += `<button class="action-btn" onclick="openStroke('${esc(ch)}')">✍️ 筆順</button>`;
     html += `<button class="action-btn" onclick="openQuiz('${esc(ch)}')">✏️ 試寫</button>`;
+    html += `<button class="action-btn wb-btn" onclick="if(window.cwWordbankToggle)cwWordbankToggle('${esc(ch)}',this)" title="收藏生字">${(typeof cwWordbankHas === 'function' && cwWordbankHas(ch)) ? '★' : '☆'}</button>`;
     html += `<button class="action-btn btn-canto" onclick="speak('${esc(ch)}','canto')" title="粵語朗讀">🔊 粵</button>`;
     html += `<button class="action-btn btn-mand" onclick="speak('${esc(ch)}','mand')" title="普通話朗讀">🔊 普</button>`;
     html += `</div>`;
   }
-
-  html += `</div>`; // .char-details
-  html += `</div>`; // .char-info
 
   // Practice grids
   if (o.practice > 0) {
@@ -2150,9 +2422,9 @@ function setWsFooter(o) {
     `<div class="wsf-block">` +
       `<div class="wsf-title">資料來源與聲明</div>` +
       `<div class="wsf-row"><span class="wsf-label">字形與筆順</span>` +
-        `香港教育局《香港小學學習字詞表》（edbchinese.hk）。字詞表未收錄之字，以內建字形配合 HanziWriter 筆順顯示，其筆順次序另參漢典（zdic.net）及筆順字典（twpen.com）。</div>` +
+        `香港教育局《香港小學學習字詞表》（edbchinese.hk）。字詞表未收錄之字，以台灣教育部《筆順字典》字形（筆順已按香港次序）或 HanziWriter 通用字形顯示（筆順已按香港次序核對嘅字會標明「香港次序」）。詳見「開發說明」。</div>` +
       `<div class="wsf-row"><span class="wsf-label">語言資料</span>` +
-        `粵拼：開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音：pypinyin；簡繁轉換：OpenCC；筆畫數：Unicode Unihan。</div>` +
+        `粵拼：開放粵語字典（kaifangcidian.com，CC-BY 3.0）；普通話拼音：pypinyin；簡繁轉換：OpenCC；筆畫數：以實際字形筆數為準。</div>` +
       `<div class="wsf-row"><span class="wsf-label">天草泥格線</span>` +
         `「天草泥格線印章教材套」由協康會職業治療師團隊推出，以「天空」、「草地」和「泥土」的圖案，將視覺提示融入書寫訓練。本站「彩色天草泥井字」及「天草泥三色」格線為教學參考應用。</div>` +
       `<div class="wsf-row"><span class="wsf-label">聲明</span>` +
@@ -2294,15 +2566,17 @@ function articlePagesHtml(o) {
   const headH = o.showHeader ? 46 : 0;
   const cw = (pw - pad * 2) / cols;
   const ch = (ph - pad * 2 - headH - 16) / rows;
-  const fs = Math.min(cw, ch) * (o.artScale || 0.82);
+  // 每字格要正方形：取可容納邊長，整組格居中（唔再拉長填滿）
+  const cell = Math.floor(Math.min(cw, ch));
+  const fs = cell * (o.artScale || 0.82);
   const tint = artTint(o.artGray == null ? 0.35 : o.artGray);
   const pgs = document.getElementById('artPageStyle');
-  if (pgs) pgs.textContent = '@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:0}';
+  if (pgs) pgs.textContent = '@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:8mm}';
   let html = '';
   for (let p = 0; p < pageCount; p++) {
     html += `<section class="ws-page${vertical ? ' is-vertical' : ''}" style="--pw:${pw}px;--ph:${ph}px;--guide-tint:${tint}">`;
     if (o.showHeader) html += artHeadHtml(o, p + 1, pageCount);
-    html += `<div class="art-grid" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);font-size:${fs.toFixed(1)}px">`;
+    html += `<div class="art-grid" style="grid-template-columns:repeat(${cols},${cell}px);grid-template-rows:repeat(${rows},${cell}px);justify-content:center;align-content:center;font-size:${fs.toFixed(1)}px">`;
     for (let li = 0; li < perPage; li++) {
       const line = lines[p * perPage + li] || [];
       for (let k = 0; k < lineLen; k++) {
@@ -2360,6 +2634,9 @@ function renderWorksheet() {
     installGlyphLayer(content);
     fitArticlePages();
     return;
+  } else {
+    var pgs = document.getElementById('artPageStyle');
+    if (pgs) pgs.textContent = '@page{size:A4 portrait;margin:12mm}';
   }
 
   // Content
@@ -2549,7 +2826,15 @@ function openA4Preview() {
   clone.style.width = '794px';          // A4 width @96dpi (screen px)
   clone.style.maxWidth = 'none';
   clone.style.boxShadow = 'none';
-  clone.style.padding = '45px';         // ≈ 12mm @96dpi
+  clone.style.padding = '45px';         // 每字／整句：@page margin 12mm ≈ 45px
+  if (o.layout === 'article') {
+    // 文章抄寫紙：實際列印係 @page 8mm + .ws-page(10mm 內距 ×0.92 zoom)
+    // → 內容內縮 17.2mm ≈ 65px，預覽要一樣，否則印出嚟會「邊界全失」
+    clone.style.padding = '30px';                      // 8mm 頁邊
+    clone.style.height = '1123px';
+    clone.style.overflow = 'hidden';
+    clone.querySelectorAll('.ws-page').forEach(pg => { pg.style.zoom = '0.92'; });
+  }
   clone.style.setProperty('--cell-practice', ps);
   clone.style.setProperty('--cell-font', `calc(${ps} * ${GLYPH_RATIO})`);
   clone.style.setProperty('--cell-guide-font', `calc(${ps} * ${GLYPH_RATIO})`);
@@ -2725,6 +3010,126 @@ function hanziWriterOpts(extra = {}) {
   }, extra);
 }
 
+// ===== v2.9: stroke-modal canvas size (orientation-aware) =====
+// v2.8's CSS-only shrink (min(300px,46vh)) did NOT work: HanziWriter's SVG
+// has no viewBox, so shrinking the container cropped the character instead
+// of scaling it. The canvas must be created at the right pixel size.
+// Portrait: 300px (unchanged). Landscape: fit the viewport height so the
+// whole modal (header + canvas + speed + buttons) fits without scrolling.
+function strokeCanvasSize() {
+  if (window.innerWidth > window.innerHeight) {
+    return Math.max(160, Math.min(260, window.innerHeight - 134));
+  }
+  return 300;
+}
+let strokeCanvasSizeUsed = 0;
+// (Re)create the stroke-order writer at the right size for the current
+// orientation and animate it. Used by openStroke() and by the
+// resize/orientationchange handler below.
+function renderStrokeWriter() {
+  const ch = currentStrokeChar;
+  if (!ch) return;
+  const size = strokeCanvasSize();
+  const target = document.getElementById('stroke-target');
+  target.innerHTML = '';
+  target.style.width = size + 'px';
+  target.style.height = size + 'px';
+  strokeCanvasSizeUsed = size;
+  try {
+    strokeWriter = HanziWriter.create(target, ch, hanziWriterOpts({
+      width: size, height: size,
+      showCharacter: true,
+      strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
+      strokeColor: '#33302A',
+    }));
+    // Safety net: give the SVG a viewBox matching its size, so any future
+    // CSS shrink scales the character instead of cropping it.
+    const svg = target.querySelector('svg');
+    if (svg) svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+    const p = strokeWriter.animateCharacter();
+    if (p && p.catch) p.catch(() => showStrokeUnavailable(ch));
+  } catch(e) {
+    target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
+  }
+}
+// If the user rotates while the stroke modal is open, re-render at the
+// size for the new orientation (debounced; only when the size actually changes).
+let strokeResizeTimer = null;
+window.addEventListener('resize', function() {
+  if (strokeResizeTimer) clearTimeout(strokeResizeTimer);
+  strokeResizeTimer = setTimeout(function() {
+    const modal = document.getElementById('strokeModal');
+    if (modal && modal.classList.contains('show') && currentStrokeChar && strokeWriter) {
+      if (Math.abs(strokeCanvasSize() - strokeCanvasSizeUsed) > 10) {
+        strokeStepIndex = 0;
+        renderStrokeWriter();
+      }
+    }
+  }, 200);
+});
+
+// ===== v2.12: quiz-modal canvas size (orientation-aware) =====
+// Same root cause as the v2.9 stroke-modal bug: HanziWriter's SVG has no
+// viewBox, so a CSS-shrunk container crops the character instead of
+// scaling it. The canvas must be created at the right pixel size.
+// Portrait: 300px (unchanged). Landscape: fit the viewport height so the
+// whole quiz modal (header + prompt + hint + canvas + result + buttons)
+// fits without scrolling. Quiz modal has more rows than the stroke modal
+// (prompt + optional hint + quizResult), so its landscape canvas is
+// smaller than strokeCanvasSize().
+function quizCanvasSize() {
+  if (window.innerWidth > window.innerHeight) {
+    // 默書 mode adds the hint row (~36px in landscape, compacted by the
+    // CSS above); shrink the canvas so the whole modal still fits
+    // without scrolling. The hint div is created lazily by cwQuizShow
+    // and stays in the DOM afterwards, so "exists + has text" matches
+    // the space it actually occupies (stale hint included).
+    const hint = document.getElementById('cwQuizHint');
+    const hintExtra = (hint && hint.textContent && hint.style.display !== 'none') ? 40 : 0;
+    return Math.max(150, Math.min(200, window.innerHeight - 186 - hintExtra));
+  }
+  return 300;
+}
+let quizCanvasSizeUsed = 0;
+// Size the quiz canvas container for the current orientation.
+function setQuizTargetSize(size) {
+  const target = document.getElementById('quiz-target');
+  target.style.width = size + 'px';
+  target.style.height = size + 'px';
+  quizCanvasSizeUsed = size;
+}
+// Safety net: give the quiz SVG a viewBox matching its size, so any
+// future CSS shrink scales the character instead of cropping it.
+function quizSetViewBox() {
+  const target = document.getElementById('quiz-target');
+  const svg = target && target.querySelector('svg');
+  if (svg) svg.setAttribute('viewBox', '0 0 ' + quizCanvasSizeUsed + ' ' + quizCanvasSizeUsed);
+}
+// If the user rotates while the quiz modal is open, re-create the writer
+// at the size for the new orientation (debounced; only when the size
+// actually changes). Only re-create when a writer is actually live
+// (#quiz-target holds an SVG); if the modal is showing the
+// "unavailable" fallback instead, leave it alone.
+// startQuiz() is wrapped by the app module (v2.5 IIFE): in 默書 mode it
+// restarts the current char (cwQuizRestartChar, score/index kept);
+// otherwise it re-runs the normal 試寫 quiz. Either way the writer is
+// re-created at the new size. NOTE: cwQuiz / cwQuizCreateWriter live
+// inside that IIFE, so they are NOT reachable here -- do not reference
+// them; go through the wrapped startQuiz() instead.
+let quizResizeTimer = null;
+window.addEventListener('resize', function() {
+  if (quizResizeTimer) clearTimeout(quizResizeTimer);
+  quizResizeTimer = setTimeout(function() {
+    const modal = document.getElementById('quizModal');
+    if (!modal || !modal.classList.contains('show')) return;
+    const target = document.getElementById('quiz-target');
+    if (!target || !target.querySelector('svg')) return;
+    if (Math.abs(quizCanvasSize() - quizCanvasSizeUsed) > 10) {
+      startQuiz();
+    }
+  }, 200);
+});
+
 function openStroke(ch) {
   if (isPunct(ch)) return;
   strokeUnavailable(ch).then(missing => {
@@ -2736,22 +3141,8 @@ function openStroke(ch) {
   // a previous 「未收錄」 char may have left the controls disabled
   document.querySelectorAll('#strokeModal button, #strokeModal input').forEach(el => { el.disabled = false; });
 
-    const target = document.getElementById('stroke-target');
-    target.innerHTML = '';
-
-    try {
-      strokeWriter = HanziWriter.create(target, ch, hanziWriterOpts({
-        showCharacter: true,
-        strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
-        strokeColor: '#33302A',
-      }));
-      // if the data turns out to be missing/offline after all, degrade instead of
-      // leaving a blank animation with dead controls
-      const p = strokeWriter.animateCharacter();
-      if (p && p.catch) p.catch(() => showStrokeUnavailable(ch));
-    } catch(e) {
-      target.innerHTML = `<div style="font-size:120px;font-family:'Noto Serif TC','Songti TC',serif;line-height:1;">${esc(ch)}</div><p style="margin-top:10px;color:#999;">此字暫無筆順數據</p>`;
-    }
+    // v2.9: create the writer at the orientation-aware size (renderStrokeWriter).
+    renderStrokeWriter();
 
     // Bind speed change
     document.getElementById('strokeSpeed').oninput = function() {
@@ -2793,6 +3184,7 @@ async function strokeUnavailable(ch) {
 // 小字註解：無香港筆順資料時，指向「筆順字典 twpen.com」（台灣教育部標準）作參考。
 // 香港教育局《香港小學學習字詞表》未有此字嘅官方筆順，twpen 有 GIF 動畫可睇寫法。
 function twpenNoteHtml(ch, opts) {
+  if (isPunct(ch)) return '';  // 標點唔顯示筆順參考訊息（v2.35）
   const small = (opts && opts.small);
   const url = `https://www.twpen.com/${encodeURIComponent(ch)}.html`;
   return `<p class="twpen-note${small ? ' small' : ''}">` +
@@ -2810,8 +3202,9 @@ function showStrokeUnavailable(ch, modalId = 'strokeModal', targetId = 'stroke-t
     `<div style="font-size:110px;font-family:var(--cell-guide-font,serif);line-height:1.1;">${esc(ch)}</div>` +
     strokeSeqHtml(ch) +
     twpenNoteHtml(ch) +
+    (isPunct(ch) ? '' :
     `<p style="margin-top:12px;color:#8a8a8a;font-size:13px;line-height:1.6;">` +
-    `未收錄於《香港小學學習字詞表》，暫無官方筆順字形（示範字仍可作字形參考，練習格可正常列印）。</p>`;
+    `未收錄於《香港小學學習字詞表》，暫無官方筆順字形（示範字仍可作字形參考，練習格可正常列印）。</p>`);
   document.querySelectorAll(`#${modalId} button, #${modalId} input`).forEach(el => {
     if (el.classList.contains('modal-close')) return;            // × 一定要撳得
     if (/關閉|close/i.test(el.textContent)) return;
@@ -2889,6 +3282,7 @@ function strokeReplay() {
   // throw，令「▶ 重播」靜靜壞掉。用 pauseAnimation + setCharacter 重置再播。
   try { if (strokeWriter.pauseAnimation) strokeWriter.pauseAnimation(); } catch (e) {}
   try { if (strokeWriter.setCharacter) strokeWriter.setCharacter(currentStrokeChar, hanziWriterOpts({
+      width: strokeCanvasSize(), height: strokeCanvasSize(),
       showCharacter: true,
       strokeAnimationSpeed: parseFloat(document.getElementById('strokeSpeed').value),
       strokeColor: '#33302A',
@@ -2931,13 +3325,18 @@ function startQuiz() {
   target.innerHTML = '';
   document.getElementById('quizResult').textContent = '';
 
+  // v2.12: create at the orientation-aware size (quizCanvasSize).
+  const size = quizCanvasSize();
+  setQuizTargetSize(size);
   try {
     quizWriter = HanziWriter.create(target, currentStrokeChar, hanziWriterOpts({
+      width: size, height: size,
       showCharacter: false,
       highlightOnCorrect: true,
       drawOnStroke: true,
       strokeAnimationSpeed: 1,
     }));
+    quizSetViewBox();
     quizWriter.quiz({
       onCorrectStroke: (data) => {
         const done = data.strokeNum + 1;
@@ -3087,7 +3486,7 @@ if (document.fonts && document.fonts.ready) {
 }
 </script>
 
-<style id="artPageStyle">@page{size:A4 portrait;margin:0}</style>
+<style id="artPageStyle">@page{size:A4 portrait;margin:8mm}</style>
 <style>
 /* ===== 文章抄寫紙 prototype ===== */
 #worksheet.article-mode{padding:0;max-width:none;background:transparent;box-shadow:none}
@@ -3104,7 +3503,8 @@ if (document.fonts && document.fonts.ready) {
 .art-page-no{font-size:10px;color:#999;text-align:right}
 .art-opt output{font-size:.85em;color:#777;margin-left:4px}
 @media print{
-  .ws-page{zoom:1!important}
+  /* @page 有 8mm 邊界，可列印區 194×281mm；794×1123px 畫布要縮 0.92 才不會被裁邊 */
+  .ws-page{zoom:.92!important}
   #worksheet.article-mode{padding:0;margin:0;max-width:none}
   .ws-page{box-shadow:none;margin:0;break-after:page;page-break-after:always}
   .ws-page:last-child{break-after:auto;page-break-after:auto}
@@ -3125,6 +3525,615 @@ document.addEventListener('DOMContentLoaded', function(){
   });
   if(gr&&grO) gr.addEventListener('input',()=>{grO.textContent=gr.value+'%';});
 });
+</script>
+
+<script>
+(function(){
+  var btn=document.getElementById('optToggle');
+  var panel=document.getElementById('optionsPanel');
+  if(!btn||!panel) return;
+  btn.addEventListener('click',function(){
+    var open=panel.classList.toggle('expanded');
+    btn.querySelector('.chev').textContent = open ? '▴' : '▾';
+  });
+})();
+</script>
+<script>
+/* ===== App v2.5: 生字冊 / 默書測驗 / 深色模式 / 學習進度 / 每日一字 ===== */
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+function cwLSGet(key, fallback){
+  try { var v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
+  catch(e){ return fallback; }
+}
+function cwLSSet(key, val){
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+}
+function cwPad(n){ return n < 10 ? '0' + n : '' + n; }
+function cwDateStr(d){
+  return d.getFullYear() + '-' + cwPad(d.getMonth() + 1) + '-' + cwPad(d.getDate());
+}
+function cwTodayStr(){ return cwDateStr(new Date()); }
+function cwIsCJK(ch){ return !!ch && /[\u3400-\u9FFF\uF900-\uFAFF]/.test(ch); }
+function cwCharsFromText(text){
+  var out = [], seen = {};
+  (text || '').split('').forEach(function(c){
+    if (cwIsCJK(c) && !seen[c]) { seen[c] = 1; out.push(c); }
+  });
+  return out;
+}
+function cwReading(ch){
+  var d = (window.CHAR_DB && window.CHAR_DB[ch]) || {};
+  return { jy: d.jy || '', py: d.py || '' };
+}
+
+/* ================= 1. 生字冊 ================= */
+var WB_KEY = 'cw_wordbank';
+function cwWordbankLoad(){
+  var list = cwLSGet(WB_KEY, []);
+  if (!Array.isArray(list)) return [];
+  return list.filter(function(c){ return cwIsCJK(c); });
+}
+function cwWordbankSave(list){ cwLSSet(WB_KEY, list); }
+function cwWordbankHas(ch){ return cwWordbankLoad().indexOf(ch) >= 0; }
+function cwWordbankToggle(ch, btn){
+  var list = cwWordbankLoad();
+  var i = list.indexOf(ch);
+  if (i >= 0) { list.splice(i, 1); }
+  else { list.push(ch); }
+  cwWordbankSave(list);
+  if (btn) btn.textContent = (i >= 0) ? '☆' : '★';
+  try {
+    if (window.showToast) {
+      showToast((i >= 0) ? '已取消收藏「' + ch + '」' : '已收藏「' + ch + '」到生字冊');
+    }
+  } catch(e){}
+}
+function cwWordbankDetails(){
+  return JSON.stringify(cwWordbankLoad().map(function(ch){
+    var r = cwReading(ch);
+    return { ch: ch, jy: r.jy, py: r.py };
+  }));
+}
+window.cwWordbankToggle = cwWordbankToggle;
+window.cwWordbankDetails = cwWordbankDetails;
+window.cwWordbankHas = cwWordbankHas;
+
+/* ================= 4. 學習進度 ================= */
+var PROG_KEY = 'cw_progress';
+var cwProgress = {
+  load: function(){ var p = cwLSGet(PROG_KEY, null); return (p && typeof p === 'object') ? p : { days: {}, quizzes: [], lastSig: '', lastDate: '' }; },
+  save: function(p){ cwLSSet(PROG_KEY, p); },
+  recordPractice: function(chars){
+    var uniq = {}, n = 0, sig = '';
+    (chars || []).forEach(function(c){ if (cwIsCJK(c) && !uniq[c]) { uniq[c] = 1; n++; } });
+    if (n <= 0) return;
+    sig = Object.keys(uniq).sort().join('');
+    var p = this.load();
+    var today = cwTodayStr();
+    // 同一日、同一組字唔重複計（撳選項觸發嘅自動重新生成唔當新練習）
+    if (p.lastSig === sig && p.lastDate === today) return;
+    p.days[today] = (p.days[today] || 0) + n;
+    p.lastSig = sig; p.lastDate = today;
+    this.save(p);
+  },
+  recordQuiz: function(score, total){
+    var p = this.load();
+    if (!Array.isArray(p.quizzes)) p.quizzes = [];
+    p.quizzes.push({ d: cwTodayStr(), s: score, t: total });
+    if (p.quizzes.length > 60) p.quizzes = p.quizzes.slice(-60);
+    this.save(p);
+  },
+  stats: function(){
+    var p = this.load();
+    var days = p.days || {};
+    var total = 0, k;
+    for (k in days) total += days[k] || 0;
+    var today = cwTodayStr();
+    var todayCount = days[today] || 0;
+    // streak：由今日（今日未練就由尋日）開始連續倒數
+    var streak = 0;
+    var d = new Date();
+    if (!(days[cwDateStr(d)] > 0)) d.setDate(d.getDate() - 1);
+    var guard = 0;
+    while (guard++ < 3650) {
+      var ds = cwDateStr(d);
+      if (days[ds] > 0) { streak++; d.setDate(d.getDate() - 1); }
+      else break;
+    }
+    var last7 = [];
+    for (var i = 6; i >= 0; i--) {
+      var dd = new Date(); dd.setDate(dd.getDate() - i);
+      var s = cwDateStr(dd);
+      last7.push({ d: s.slice(5), n: days[s] || 0 });
+    }
+    var qTotal = 0, qScore = 0;
+    (p.quizzes || []).forEach(function(q){ qTotal += q.t || 0; qScore += q.s || 0; });
+    var lastQuiz = (p.quizzes && p.quizzes.length) ? p.quizzes[p.quizzes.length - 1] : null;
+    return JSON.stringify({
+      total: total, streak: streak, today: todayCount, last7: last7,
+      quizTotal: qTotal, quizScore: qScore, lastQuiz: lastQuiz
+    });
+  }
+};
+window.cwProgressStats = function(){ return cwProgress.stats(); };
+
+// 掛鈎 generate()：成功生成工作紙先記一次練習
+if (typeof window.generate === 'function') {
+  var _cwOrigGenerate = window.generate;
+  window.generate = function(){
+    var r = _cwOrigGenerate.apply(this, arguments);
+    try {
+      if (window.currentChars && window.currentChars.length > 0) {
+        cwProgress.recordPractice(window.currentChars);
+      }
+    } catch(e){}
+    return r;
+  };
+}
+
+/* ================= 3. 深色模式 ================= */
+function cwDarkIsOn(){
+  try { return localStorage.getItem('cw_dark') === '1'; } catch(e){ return false; }
+}
+function cwDarkSet(on){
+  try { localStorage.setItem('cw_dark', on ? '1' : '0'); } catch(e){}
+  document.documentElement.classList.toggle('cw-dark', !!on);
+}
+function cwDarkToggle(){
+  var on = !cwDarkIsOn();
+  cwDarkSet(on);
+  return on;
+}
+window.cwDarkIsOn = cwDarkIsOn;
+window.cwDarkSet = cwDarkSet;
+window.cwDarkToggle = cwDarkToggle;
+cwDarkSet(cwDarkIsOn());
+
+/* ================= 5. 每日一字 ================= */
+var DAILY_CHARS = ('人大小日月山川天地水火木金土子女男好學書生先早晚上下左右前後來去出入開關看聽說讀寫字文心手足目耳口頭家國年春夏秋冬風雨雪花草樹鳥魚牛羊馬紅黃藍白黑多少高新美愛樂走跑跳坐立行食睡明光正平安福').split('');
+function cwDailyChar(){
+  var list = DAILY_CHARS.filter(function(ch){ return window.CHAR_DB && window.CHAR_DB[ch]; });
+  if (!list.length) list = ['人', '大', '日'];
+  var now = new Date();
+  var start = new Date(now.getFullYear(), 0, 0);
+  var doy = Math.floor((now - start) / 86400000);
+  var idx = (now.getFullYear() * 366 + doy) % list.length;
+  return list[idx];
+}
+function cwDailyLoad(){
+  var ch = cwDailyChar();
+  var ta = document.getElementById('inputText');
+  if (ta) ta.value = ch;
+  try { if (typeof window.generate === 'function') generate(); } catch(e){}
+  try {
+    var el = document.getElementById('inputSection');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e){}
+}
+window.cwDailyLoad = cwDailyLoad;
+
+/* ================= 6. 生字冊成頁（v2.6，全版 overlay） ================= */
+var cwWBSelected = []; /* 今次開頁已選嘅字（按生字冊次序） */
+function cwPrimaryReading(s){ return (s || '').split('/')[0].trim(); }
+function cwWBSelectedHas(ch){ return cwWBSelected.indexOf(ch) >= 0; }
+function cwWordbankPageEl(){ return document.getElementById('cwWordbankPage'); }
+function cwWordbankPageIsOpen(){
+  var p = cwWordbankPageEl();
+  return !!(p && !p.hidden);
+}
+function cwWordbankPageBuild(){
+  if (document.getElementById('cwWordbankPage')) return;
+  var page = document.createElement('div');
+  page.id = 'cwWordbankPage';
+  page.className = 'cw-wb-page no-print';
+  page.hidden = true;
+  page.innerHTML =
+    '<div class="cw-wb-header">'
+    + '<button type="button" class="cw-wb-back" onclick="cwWordbankPageClose()">‹ 返回</button>'
+    + '<h2 class="cw-wb-title">生字冊</h2>'
+    + '<span class="cw-wb-total" id="cwWbTotal"></span>'
+    + '</div>'
+    + '<div class="cw-wb-toolbar">'
+    + '<button type="button" class="cw-wb-tool" onclick="cwWordbankPageSelectAll()">全選</button>'
+    + '<button type="button" class="cw-wb-tool" onclick="cwWordbankPageClear()">清除</button>'
+    + '<span class="cw-wb-picked" id="cwWbPicked">已選 0 字</span>'
+    + '<button type="button" class="cw-wb-tool" onclick="cwWordbankPageExport()">匯出</button>'
+    + '</div>'
+    + '<div class="cw-wb-grid" id="cwWbGrid"></div>'
+    + '<div class="cw-wb-empty" id="cwWbEmpty" hidden>未收藏任何生字。<br>去字卡撳 ☆ 收藏生字，之後喺呢度揀字生成練習簿。</div>'
+    + '<div class="cw-wb-footer">'
+    + '<button type="button" class="cw-wb-generate" onclick="cwWordbankPageGenerate()">生成練習簿</button>'
+    + '</div>';
+  document.body.appendChild(page);
+}
+function cwWordbankPageRender(){
+  var page = cwWordbankPageEl(); if (!page) return;
+  var list = cwWordbankLoad();
+  cwWBSelected = cwWBSelected.filter(function(ch){ return list.indexOf(ch) >= 0; });
+  var total = document.getElementById('cwWbTotal');
+  if (total) total.textContent = '共 ' + list.length + ' 字';
+  var picked = document.getElementById('cwWbPicked');
+  if (picked) picked.textContent = '已選 ' + cwWBSelected.length + ' 字';
+  var grid = document.getElementById('cwWbGrid');
+  var empty = document.getElementById('cwWbEmpty');
+  if (!list.length) {
+    if (grid) grid.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+  var html = '';
+  list.forEach(function(ch){
+    var r = cwReading(ch);
+    var jy = cwPrimaryReading(r.jy), py = cwPrimaryReading(r.py);
+    var sel = cwWBSelectedHas(ch);
+    html += '<div class="cw-wb-card' + (sel ? ' cw-wb-sel' : '') + '" onclick="cwWordbankPageToggle(\'' + ch + '\')">'
+      + '<button type="button" class="cw-wb-del" title="由生字冊刪除" onclick="event.stopPropagation();cwWordbankPageDelete(\'' + ch + '\')">×</button>'
+      + (sel ? '<span class="cw-wb-tick">✓</span>' : '')
+      + '<span class="cw-wb-char">' + ch + '</span>'
+      + (jy ? '<span class="cw-wb-jy">' + jy + '</span>' : '')
+      + (py ? '<span class="cw-wb-py">' + py + '</span>' : '')
+      + '</div>';
+  });
+  if (grid) grid.innerHTML = html;
+}
+function cwWordbankPageToggle(ch){
+  var i = cwWBSelected.indexOf(ch);
+  if (i >= 0) cwWBSelected.splice(i, 1); else cwWBSelected.push(ch);
+  cwWordbankPageRender();
+}
+function cwWordbankPageSelectAll(){
+  cwWBSelected = cwWordbankLoad().slice();
+  cwWordbankPageRender();
+}
+function cwWordbankPageClear(){
+  cwWBSelected = [];
+  cwWordbankPageRender();
+}
+function cwWordbankPageDelete(ch){
+  var list = cwWordbankLoad();
+  var i = list.indexOf(ch);
+  if (i >= 0) { list.splice(i, 1); cwWordbankSave(list); }
+  cwWordbankPageRender();
+  try {
+    document.querySelectorAll('.wb-btn').forEach(function(btn){
+      var oc = btn.getAttribute('onclick') || '';
+      if (oc.indexOf("'" + ch + "'") >= 0) btn.textContent = '☆';
+    });
+  } catch(e){}
+  try { if (window.showToast) showToast('已由生字冊刪除「' + ch + '」'); } catch(e){}
+}
+function cwWordbankPageExport(){
+  var list = cwWordbankLoad();
+  if (!list.length) {
+    try { if (window.showToast) showToast('生字冊仲係空嘅'); } catch(e){}
+    return;
+  }
+  var text = '我的生字冊（' + list.length + '隻字）\n' + list.join('、');
+  try {
+    if (window.AndroidShare && AndroidShare.shareText) { AndroidShare.shareText('我的生字冊', text); }
+    else if (navigator.share) { navigator.share({ title: '我的生字冊', text: text }).catch(function(){}); }
+    else if (window.showToast) showToast('呢部裝置唔支援分享');
+  } catch(e){
+    try { if (window.showToast) showToast('匯出失敗'); } catch(e2){}
+  }
+}
+function cwWordbankPageGenerate(){
+  var sel = cwWBSelected.slice();
+  if (!sel.length) {
+    try { if (window.showToast) showToast('請先選字'); } catch(e){}
+    return;
+  }
+  var ta = document.getElementById('inputText');
+  if (ta) ta.value = sel.join('');
+  try { if (typeof generate === 'function') generate(); } catch(e){}
+  cwWordbankPageClose();
+  setTimeout(function(){
+    try {
+      var ws = document.getElementById('worksheet');
+      if (ws) ws.scrollIntoView();
+    } catch(e){}
+  }, 150);
+}
+function cwWordbankPageOpen(){
+  cwWordbankPageBuild();
+  cwWBSelected = [];
+  cwWordbankPageRender();
+  var page = cwWordbankPageEl();
+  if (page) {
+    page.hidden = false;
+    var grid = document.getElementById('cwWbGrid');
+    if (grid) grid.scrollTop = 0;
+    try { if (window.AndroidWordbank) AndroidWordbank.setOpen(true); } catch(e){}
+  }
+}
+function cwWordbankPageClose(){
+  var page = cwWordbankPageEl();
+  if (!page || page.hidden) return;
+  page.hidden = true;
+  try { if (window.AndroidWordbank) AndroidWordbank.setOpen(false); } catch(e){}
+}
+window.cwWordbankPageOpen = cwWordbankPageOpen;
+window.cwWordbankPageClose = cwWordbankPageClose;
+window.cwWordbankPageIsOpen = cwWordbankPageIsOpen;
+window.cwWordbankPageToggle = cwWordbankPageToggle;
+window.cwWordbankPageSelectAll = cwWordbankPageSelectAll;
+window.cwWordbankPageClear = cwWordbankPageClear;
+window.cwWordbankPageDelete = cwWordbankPageDelete;
+window.cwWordbankPageGenerate = cwWordbankPageGenerate;
+window.cwWordbankPageExport = cwWordbankPageExport;
+window.cwPrimaryReading = cwPrimaryReading;
+function cwDailyInit(){
+  var sec = document.getElementById('inputSection');
+  if (!sec || document.getElementById('cwDailyBar')) return;
+  var ch = cwDailyChar();
+  var bar = document.createElement('div');
+  bar.id = 'cwDailyBar';
+  bar.innerHTML = '<span class="cw-daily-label">📅 今日一字</span>'
+    + '<span class="cw-daily-char">' + ch + '</span>'
+    + '<button type="button" class="cw-daily-btn" onclick="cwDailyLoad()">練呢個字 ✏️</button>';
+  sec.insertBefore(bar, sec.firstChild);
+}
+
+/* ================= 2. 默書測驗 ================= */
+var cwQuiz = {
+  active: false, chars: [], idx: 0, score: 0, qMistakes: 0,
+  restarting: false, advancing: false, writer: null
+};
+function cwQuizStart(){
+  var chars = cwCharsFromText((document.getElementById('inputText') || {}).value || '');
+  if (!chars.length) chars = cwWordbankLoad();
+  cwQuizStartWith(chars);
+}
+function cwQuizStartFromWordbank(){
+  cwQuizStartWith(cwWordbankLoad());
+}
+function cwQuizStartWith(chars){
+  if (!chars.length) {
+    try { if (window.showToast) showToast('請先輸入文字，或去生字冊收藏生字'); } catch(e){}
+    return;
+  }
+  if (chars.length > 10) chars = chars.slice(0, 10);
+  cwQuiz.chars = chars; cwQuiz.idx = 0; cwQuiz.score = 0; cwQuiz.active = true;
+  cwQuiz.advancing = false; cwQuiz.restarting = false;
+  try { if (typeof window.openModal === 'function') openModal('quizModal'); } catch(e){}
+  cwQuizShow(0);
+}
+function cwQuizShow(i){
+  if (!cwQuiz.active) return;
+  if (i >= cwQuiz.chars.length) { cwQuizFinish(); return; }
+  var ch = cwQuiz.chars[i];
+  cwQuiz.qMistakes = 0; cwQuiz.restarting = false;
+  var title = document.getElementById('quizModalTitle');
+  if (title) title.textContent = '默書測驗 ' + (i + 1) + '/' + cwQuiz.chars.length;
+  var hint = document.getElementById('cwQuizHint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'cwQuizHint';
+    var target = document.getElementById('quiz-target');
+    if (target && target.parentNode) target.parentNode.insertBefore(hint, target);
+  }
+  var r = cwReading(ch);
+  var parts = [];
+  if (r.jy) parts.push('粵拼 ' + r.jy);
+  if (r.py) parts.push('拼音 ' + r.py);
+  hint.textContent = (parts.length ? '提示：' + parts.join(' · ') : '聽讀音，寫返個字出嚟')
+    + '　（唔會顯示個字）';
+  hint.style.display = '';
+  var res = document.getElementById('quizResult');
+  if (res) { res.textContent = ''; }
+  try { if (typeof window.speak === 'function') speak(ch, 'canto'); } catch(e){}
+  cwQuizCreateWriter(ch);
+}
+function cwQuizCreateWriter(ch){
+  var target = document.getElementById('quiz-target');
+  if (!target) return;
+  target.innerHTML = '';
+  cwQuiz.restarting = false;
+  // v2.12: create at the orientation-aware size (quizCanvasSize).
+  var size = quizCanvasSize();
+  setQuizTargetSize(size);
+  try {
+    cwQuiz.writer = HanziWriter.create(target, ch, hanziWriterOpts({
+      width: size, height: size,
+      showCharacter: false,
+      highlightOnCorrect: true,
+      drawOnStroke: true,
+      strokeAnimationSpeed: 1
+    }));
+    quizSetViewBox();
+    cwQuiz.writer.quiz({
+      onCorrectStroke: function(data){
+        var done = data.strokeNum + 1;
+        var total = data.strokesRemaining + data.strokeNum + 1;
+        var res = document.getElementById('quizResult');
+        if (res) {
+          res.textContent = '✅ 正確！已寫 ' + done + ' / ' + total + ' 筆';
+          res.style.color = 'var(--green)';
+        }
+      },
+      onMistake: function(){
+        if (cwQuiz.restarting || !cwQuiz.active) return;
+        cwQuiz.qMistakes++;
+        var res = document.getElementById('quizResult');
+        if (cwQuiz.qMistakes === 1) {
+          if (res) {
+            res.textContent = '❌ 寫錯咗，再試一次（仲有 1 次機會）';
+            res.style.color = 'var(--red)';
+          }
+          cwQuiz.restarting = true;
+          setTimeout(function(){ if (cwQuiz.active) cwQuizCreateWriter(ch); }, 900);
+        } else {
+          if (res) {
+            res.textContent = '❌ 呢隻字係「' + ch + '」，下一題';
+            res.style.color = 'var(--red)';
+          }
+          cwQuizAdvance();
+        }
+      },
+      onComplete: function(){
+        cwQuiz.score++;
+        var res = document.getElementById('quizResult');
+        if (res) {
+          res.textContent = '🎉 啱晒！';
+          res.style.color = 'var(--green)';
+        }
+        cwQuizAdvance();
+      }
+    });
+  } catch(e) {
+    var res2 = document.getElementById('quizResult');
+    if (res2) res2.textContent = '此字暫無試寫功能，跳過';
+    cwQuizAdvance();
+  }
+}
+function cwQuizAdvance(){
+  if (!cwQuiz.active || cwQuiz.advancing) return;
+  cwQuiz.advancing = true;
+  setTimeout(function(){
+    cwQuiz.advancing = false;
+    if (!cwQuiz.active) return;
+    cwQuiz.idx++;
+    cwQuizShow(cwQuiz.idx);
+  }, 1100);
+}
+function cwQuizRestartChar(){
+  if (!cwQuiz.active) return;
+  cwQuiz.qMistakes = 0;
+  var ch = cwQuiz.chars[cwQuiz.idx];
+  var res = document.getElementById('quizResult');
+  if (res) res.textContent = '';
+  try { if (typeof window.speak === 'function') speak(ch, 'canto'); } catch(e){}
+  cwQuizCreateWriter(ch);
+}
+function cwQuizReplay(){
+  if (cwQuiz.active) {
+    var ch = cwQuiz.chars[cwQuiz.idx];
+    try { if (typeof window.speak === 'function') speak(ch, 'canto'); } catch(e){}
+    return;
+  }
+  try {
+    if (window.currentStrokeChar && typeof window.speak === 'function') {
+      speak(window.currentStrokeChar, 'canto');
+    }
+  } catch(e){}
+}
+function cwQuizFinish(){
+  if (!cwQuiz.active) return;
+  var score = cwQuiz.score, total = cwQuiz.chars.length;
+  cwQuiz.active = false;
+  try { cwProgress.recordQuiz(score, total); } catch(e){}
+  try { if (typeof window.closeModal === 'function') closeModal('quizModal'); } catch(e){}
+  try {
+    if (window.AndroidQuiz && window.AndroidQuiz.onDone) {
+      window.AndroidQuiz.onDone(score, total);
+    } else if (window.showToast) {
+      showToast('默書測驗完成：' + score + ' / ' + total + ' 分');
+    }
+  } catch(e){}
+}
+window.cwQuizStart = cwQuizStart;
+window.cwQuizStartFromWordbank = cwQuizStartFromWordbank;
+window.cwQuizReplay = cwQuizReplay;
+window.cwQuizRestartChar = cwQuizRestartChar;
+
+/* 測驗中途取消：用戶撳關閉／點遮罩閂 modal 即取消，唔計分 */
+if (typeof window.closeModal === 'function') {
+  var _cwOrigCloseModal = window.closeModal;
+  window.closeModal = function(id){
+    if (id === 'quizModal' && cwQuiz.active) {
+      cwQuiz.active = false;
+      try { if (window.showToast) showToast('已取消測驗'); } catch(e){}
+    }
+    return _cwOrigCloseModal.apply(this, arguments);
+  };
+}
+/* 重新開始掣喺測驗期間 = 重做而家呢隻字（唔係開正常試寫） */
+if (typeof window.startQuiz === 'function') {
+  var _cwOrigStartQuiz = window.startQuiz;
+  window.startQuiz = function(){
+    if (cwQuiz.active) { cwQuizRestartChar(); return; }
+    return _cwOrigStartQuiz.apply(this, arguments);
+  };
+}
+
+/* ---------- init ---------- */
+function cwAppInit(){
+  cwDailyInit();
+  cwWordbankPageBuild();
+  // 測驗 modal 加「再聽一次」掣（正常試寫都用得）
+  try {
+    var controls = document.querySelector('#quizModal .modal-controls');
+    if (controls && !document.getElementById('cwQuizReplayBtn')) {
+      var b = document.createElement('button');
+      b.id = 'cwQuizReplayBtn';
+      b.type = 'button';
+      b.textContent = '🔊 再聽一次';
+      b.onclick = function(){ cwQuizReplay(); };
+      controls.insertBefore(b, controls.firstChild);
+    }
+  } catch(e){}
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', cwAppInit);
+} else {
+  cwAppInit();
+}
+})();
+</script>
+<script id="appV27Script">
+/* ===== App v2.7: 簡單模式（Simple Mode） =====
+   開咗之後收埋進階選項（描紅格選項、頁面、印刷格大小、導線樣式、
+   整句練習次數、文章選項），只留輸入框＋生成＋基本練習，等幼稚園
+   至小二學生唔會俾成版掣嚇親。關咗就還原全部選項。
+   選擇記喺 localStorage（cw_simple），跟深色模式同一個做法。 */
+(function () {
+  'use strict';
+  function cwLSGet(key, fallback) {
+    try { var v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  }
+  function cwLSSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+  var SIMPLE_KEY = 'cw_simple';
+  function cwSimpleTargets() {
+    var targets = [];
+    // 描紅格選項、頁面（按 h3 標題搵，網站核心冇改過呢啲標題）
+    var secs = document.querySelectorAll('.opt-section');
+    for (var i = 0; i < secs.length; i++) {
+      var h = secs[i].querySelector('h3');
+      var t = h ? h.textContent.trim() : '';
+      if (t === '描紅格選項' || t === '頁面') targets.push(secs[i]);
+    }
+    // 印刷格大小、導線樣式、整句練習次數（格選項入面嘅進階組）
+    ['optPrintSize', 'optGuideStyle', 'optSentenceGroup'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { var g = el.closest('.opt-group'); if (g) targets.push(g); }
+    });
+    // 文章選項
+    var arts = document.querySelectorAll('.art-opt');
+    for (var j = 0; j < arts.length; j++) targets.push(arts[j]);
+    return targets;
+  }
+  function cwSimpleApply(on) {
+    document.documentElement.classList.toggle('cw-simple', !!on);
+    cwSimpleTargets().forEach(function (el) {
+      el.classList.toggle('cw-adv-hide', !!on);
+    });
+    cwLSSet(SIMPLE_KEY, !!on);
+  }
+  function cwSimpleIsOn() { return cwLSGet(SIMPLE_KEY, false) === true; }
+  function cwSimpleSet(on) { cwSimpleApply(!!on); }
+  function cwSimpleToggle() { cwSimpleSet(!cwSimpleIsOn()); }
+  window.cwSimpleIsOn = cwSimpleIsOn;
+  window.cwSimpleSet = cwSimpleSet;
+  window.cwSimpleToggle = cwSimpleToggle;
+  cwSimpleApply(cwSimpleIsOn());
+})();
 </script>
 </body>
 </html>

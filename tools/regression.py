@@ -189,7 +189,8 @@ def main():
             check_true('4 style %s: guide svg present' % style, guides > 0, guides)
 
         # ---------- 5. tracing row counts (天 4 practice rows) ----------
-        for gc, want in [('none', 0), ('1', 1), ('2', 2), ('all', 4)]:
+        # 2026-11-13：預設練習格數由 4 改 3（App v2.21 同步）
+        for gc, want in [('none', 0), ('1', 1), ('2', 2), ('all', 3)]:
             h.generate(pg, '天', {'optGuideStyle': 'mizi', 'optGuideCount': gc}, wait=1200)
             check('5 guideCount %s: .guide-glyph' % gc, h.stats(pg)['guideGlyphs'], want)
 
@@ -300,7 +301,8 @@ def main():
         check('12 variant mode: HK 正字説 keeps EDB glyph', got, shuo_hk)
 
         # ---------- 12b. 字形語意層：來源碼、筆數層級、另一寫法行 ----------
-        h.generate(pg, '峰蒔', {'optVariant': False}, wait=2600)
+        # 蒔、冪 已列入 HK_ORDER（v2.30／v2.32），參考字形 fallback 改用墩（仍屬 HW 未核對層）
+        h.generate(pg, '峰墩', {'optVariant': False}, wait=2600)
         labels = pg.evaluate("""() => {
           const card = c => ({
             meta: (c.querySelector('.meta-row') || {}).textContent || '',

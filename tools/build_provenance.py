@@ -26,7 +26,15 @@ GLYPHS = os.path.join(ROOT, 'glyphs')
 OUT = os.path.join(ROOT, 'data', 'glyph_sources.json')
 
 # 2026-09-21 手動補嘅 26 個香港正字（glyph 由 EDB 動畫 copy/build，唔喺 edb_id_map）
-HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀峯麪羣'
+# 2026-11-13 獒：EDB 敖(U+6556) + EDB 犬(U+72AC) 拼合，來源仍係 EDB
+HK_NEW_CHARS = '兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲着絃愠枴氲蜕裏牀峯麪羣獒祕秘'
+
+# 2026-11-14 v232c：23 個 HanziWriter 通用字形（筆順／筆數已按 EDB 拆字核實修正）。
+# 字形本身唔係 EDB／twpen，來源維持 HW——唔可以被下面嘅預設邏輯翻做 twpen。
+HW_GLYPHS = frozenset(
+    '5577 74e4 7934 7a70 7cbc 7ccd 89b7 9011 9036 9052 905b 9062 '
+    '9083 9088 908b 9312 93a9 991a 9957 9a4a 9ab6 9b2e 9f10'.split()
+)
 
 
 def load_edb_chars():
@@ -40,13 +48,16 @@ def load_edb_chars():
 def main():
     edb_chars = load_edb_chars()
     glyphs = {}
-    n_edb = n_twpen = 0
+    n_edb = n_twpen = n_hw = 0
     for fn in sorted(os.listdir(GLYPHS)):
         if not fn.endswith('.json'):
             continue
         hexv = fn[:-5]
         ch = chr(int(hexv, 16))
-        if ch in edb_chars:
+        if hexv in HW_GLYPHS:
+            glyphs[hexv] = 'HW'
+            n_hw += 1
+        elif ch in edb_chars:
             glyphs[hexv] = 'EDB'
             n_edb += 1
         else:
@@ -70,12 +81,18 @@ def main():
                 'verified': True,
                 'note': 'breakdown PNG 逆向（台灣標準，非香港）',
             },
+            'HW': {
+                'name': 'HanziWriter 通用字形（已按香港次序修正）',
+                'url': 'https://github.com/chanind/hanzi-writer-data',
+                'verified': True,
+                'note': '字形來自 HanziWriter 通用數據，筆順／筆數已按香港教育局《香港小學學習字詞表》拆字核實修正；非 EDB 官方字形',
+            },
         },
         'glyphs': glyphs,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     json.dump(rec, open(OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
-    print(f'glyph_sources.json: {len(glyphs)} glyphs (EDB {n_edb} / twpen {n_twpen})')
+    print(f'glyph_sources.json: {len(glyphs)} glyphs (EDB {n_edb} / twpen {n_twpen} / HW {n_hw})')
 
 
 if __name__ == '__main__':

@@ -25,3 +25,6 @@ Thumbs.db
 # Deployment artifacts (keep only source)
 .wrangler/
 dist/
+
+# deploy marker
+.last-deploy

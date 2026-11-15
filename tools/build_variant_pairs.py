@@ -19,9 +19,11 @@ import re
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # EDB／《常用字字形表》代表字形（與 tools/build_variants.py 的白名單一致）
-HK_PRIMARY = set('兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲裏牀峯')
+HK_PRIMARY = set('兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲裏牀峯祕')
 # 位置不同（部件左右↔上下）的組別，其餘一律「同字異寫」
 POSITION_VARIANTS = {'峰', '峯', '群', '羣'}
+# 偏旁不同（禾↔示 等），唔係位置變體；UI 會照 relation 原文顯示
+RADICAL_VARIANTS = {'秘', '祕'}
 
 groups = {}
 for fn in os.listdir(os.path.join(ROOT, 'glyphs')):
@@ -40,7 +42,8 @@ for members in groups.values():
         continue
     primary = [c for c in members if c in HK_PRIMARY]
     standard = primary[0] if len(primary) == 1 else None
-    relation = '部件位置變體' if any(c in POSITION_VARIANTS for c in members) else '同字異寫'
+    relation = ('部件位置變體' if any(c in POSITION_VARIANTS for c in members)
+                else '偏旁變體' if any(c in RADICAL_VARIANTS for c in members) else '同字異寫')
     for ch in members:
         pairs['%x' % ord(ch)] = {
             'char': ch,

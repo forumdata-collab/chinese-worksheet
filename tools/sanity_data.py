@@ -128,8 +128,12 @@ def main():
         for m in re.finditer(r'"([^"]+)"\s*:\s*\[([0-9,\s]+)\]', txt):
             ch, perm = m.group(1), [int(x) for x in m.group(2).split(',') if x.strip()]
             rec = parsed.get('%x.json' % ord(ch))
-            if rec and len(perm) != len(rec['s']):
-                bad_order.append((ch, len(perm), len(rec['s'])))
+            gN = len(rec['s']) if rec else None
+            dbN = (db.get(ch) or {}).get('s')
+            # 異體歸一正字（例 秘 用祕 嘅 9 筆 EDB 字形，但本身係 10 筆）：
+            # perm 係對 HanziWriter／異體字形，長度唔一定等於 shipped glyph 筆數
+            if gN is not None and len(perm) != gN and len(perm) != dbN:
+                bad_order.append((ch, len(perm), gN))
             if sorted(perm) != list(range(len(perm))):
                 bad_order.append((ch, 'not a permutation'))
         if bad_order:

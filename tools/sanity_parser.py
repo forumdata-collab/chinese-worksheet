@@ -53,7 +53,7 @@ def main():
     label_diff, glyph_diff, missing = [], [], []
     checked = 0
     for ch, jid in idmap.items():
-        fn = os.path.join(STROKES, '%04d.js' % jid)
+        fn = os.path.join(STROKES, ('%04d.js' % int(jid)) if str(jid).isdigit() else '%s.js' % jid)
         if not os.path.exists(fn):
             missing.append(ch)
             continue

@@ -48,7 +48,7 @@ function glyphDir() { return window.GLYPH_DIR || 'glyphs/'; }
 
 // 「直出異體字」模式：window.CW_VARIANT_GLYPH = true 時，以下字改用 glyphs/variants/ 嘅字形
 // （即跟着輸入字嘅寫法出，唔歸一成香港正字）。目前只有 峰（山在左，HanziWriter 通用字形）。
-const VARIANT_GLYPHS = { '514c': 1, '56ea': 1, '5cf0': 1, '6085': 1, '6236': 1, '6558': 1, '7a05': 1, '812b': 1, '81e5': 1, '8aaa': 1, '92b3': 1, '95b1': 1 };
+const VARIANT_GLYPHS = { '514c': 1, '56ea': 1, '5cf0': 1, '6085': 1, '6236': 1, '6558': 1, '7a05': 1, '7fa4': 1, '812b': 1, '81e5': 1, '8aaa': 1, '92b3': 1, '95b1': 1 };
 function variantMode(ch) {
   return !!(window.CW_VARIANT_GLYPH && VARIANT_GLYPHS[ch.codePointAt(0).toString(16)]);
 }
@@ -58,7 +58,13 @@ function hkGlyph(ch) {
   if (!ch) return Promise.resolve(null);
   if (_hkGlyphCache.has(ch)) return _hkGlyphCache.get(ch);
   const hex = ch.codePointAt(0).toString(16);
-  const std = () => fetch(`${glyphDir()}${hex}.json?v=22`).then(r => (r.ok ? r.json() : null));
+  // 預設（未勾「顯示我輸入的寫法」）示範香港教育標準寫法：輸入字若有另一寫法而標準不同，
+  // 字形取標準字（秘→祕、羣→群），與「字形：」標示一致（跟 web 版）。
+  const stdForm = !window.CW_VARIANT_GLYPH && window.CW_STD_FORM ? window.CW_STD_FORM[hex] : null;
+  const fetchGlyph = (c) => fetch(`${glyphDir()}${c.codePointAt(0).toString(16)}.json?v=25`).then(r => (r.ok ? r.json() : null));
+  const std = () => (stdForm && stdForm !== ch
+    ? fetchGlyph(stdForm).then(rec => rec || fetchGlyph(ch))
+    : fetchGlyph(ch));
   const load = variantMode(ch)
     ? () => fetch(`${glyphDir()}variants/${hex}.json?v=1`).then(r => (r.ok ? r.json() : std()))
     : std;
@@ -76,7 +82,7 @@ async function glyphSource(ch) {
   if (!ch) return null;
   if (!_glyphSources) {
     try {
-      const r = await fetch(`${glyphDir()}../data/glyph_sources.json`);
+      const r = await fetch(`${glyphDir()}../data/glyph_sources.json?v=232c`);
       _glyphSources = r.ok ? (await r.json()).glyphs : {};
     } catch (e) { _glyphSources = {}; }
   }

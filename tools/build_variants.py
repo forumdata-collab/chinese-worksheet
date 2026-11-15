@@ -39,7 +39,7 @@ pairs = [g for g in groups.values() if len(g) > 1]
 print('identical-glyph groups: %d → %s' % (len(pairs), ''.join(''.join(g) for g in pairs)))
 
 # EDB／《常用字字形表》嘅香港正字：呢批字保留官方字形，唔應該被 HanziWriter 版本取代
-HK_PRIMARY = set('兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲裏牀峯')
+HK_PRIMARY = set('兑卧囱媪悦户敍温税脱葱藴衞説醖鈎鋭閲裏牀峯祕')
 
 
 def hw_data(ch):
